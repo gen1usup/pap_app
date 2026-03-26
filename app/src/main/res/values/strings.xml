@@ -1,0 +1,238 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Папа рядом</string>
+
+    <string name="dashboard_title">Что делать сейчас</string>
+    <string name="dashboard_subtitle">Короткие действия для спокойного и быстрого реагирования</string>
+    <string name="quick_actions">Быстрые действия</string>
+
+    <string name="action_contraction_counter">Счетчик схваток</string>
+    <string name="action_water_break_timer">Таймер после отхождения вод</string>
+    <string name="action_when_go_hospital">Когда ехать в роддом</string>
+    <string name="action_checklists">Чек-листы</string>
+    <string name="action_sos">SOS</string>
+    <string name="action_help_mom">Помощь маме</string>
+    <string name="action_labor">В родах</string>
+    <string name="action_postpartum">После родов</string>
+    <string name="action_timeline">Хронология</string>
+    <string name="action_trackers">Трекеры</string>
+    <string name="action_settings">Настройки</string>
+
+    <string name="contraction_title">Счетчик схваток</string>
+    <string name="session_status_active">Сессия активна</string>
+    <string name="session_status_idle">Сессия не активна</string>
+    <string name="start_session">Начать сессию</string>
+    <string name="finish_session">Завершить сессию</string>
+    <string name="finish_session_confirm_title">Завершить сессию схваток?</string>
+    <string name="finish_session_confirm_message">Сессия будет остановлена. Нажмите "Завершить сессию", если это действие намеренное.</string>
+    <string name="start_contraction">Начать схватку</string>
+    <string name="stop_contraction">Завершить схватку</string>
+    <string name="current_duration">Текущая длительность</string>
+    <string name="session_duration">Длительность сессии</string>
+    <string name="last_interval">Последний интервал</string>
+    <string name="average_duration">Средняя длительность</string>
+    <string name="average_interval">Средний интервал</string>
+    <string name="recent_contraction_count">Схваток в окне</string>
+    <string name="recent_interval_count">Интервалов в окне</string>
+    <string name="recent_average_duration">Недавняя средняя длительность</string>
+    <string name="recent_average_interval">Недавний средний интервал</string>
+    <string name="interval_std_deviation">Разброс интервала</string>
+    <string name="recent_window_span">Охват недавнего окна</string>
+    <string name="current_pattern_held_for">Текущий паттерн держится</string>
+    <string name="pattern_regular_prepare">Регулярность (базовая)</string>
+    <string name="pattern_regular_go">Регулярность (строгая)</string>
+    <string name="pattern_regular">Регулярность</string>
+    <string name="pattern_regular_yes">Регулярный</string>
+    <string name="pattern_regular_no">Нерегулярный</string>
+    <string name="trend">Динамика</string>
+    <string name="recommendation">Рекомендация</string>
+    <string name="history">История</string>
+    <string name="no_history">История пока пуста</string>
+    <string name="contraction_item_title">Схватка %1$d</string>
+
+    <string name="water_break_title">Таймер вод</string>
+    <string name="record_water_break">Зафиксировать отхождение вод</string>
+    <string name="water_break_time">Время отхождения вод</string>
+    <string name="water_break_elapsed">Прошло времени</string>
+    <string name="water_break_color">Цвет вод</string>
+    <string name="water_break_notes">Заметки</string>
+    <string name="save_event">Сохранить событие</string>
+    <string name="active_event">Активное событие</string>
+    <string name="water_break_warning_short">Свяжитесь с врачом, если есть сомнения или необычные симптомы</string>
+    <string name="water_break_warning_long">Если воды с зеленым, коричневым оттенком, есть кровь, температура или плохое самочувствие — срочно обратитесь за медицинской помощью</string>
+    <string name="water_break_history">История вод</string>
+    <string name="no_water_break_history">События не зафиксированы</string>
+
+    <string name="decision_title">Когда ехать в роддом</string>
+    <string name="decision_question_interval">Интервал между схватками менее 5 минут?</string>
+    <string name="decision_question_duration">Схватки длятся не менее 60 секунд?</string>
+    <string name="decision_question_regular">Схватки регулярные более 1 часа?</string>
+    <string name="decision_question_water_break">Отошли воды?</string>
+    <string name="decision_question_bleeding">Есть кровотечение?</string>
+    <string name="decision_question_pain">Есть резкая непрерывная боль?</string>
+    <string name="decision_question_fever">Есть температура или ухудшение состояния?</string>
+    <string name="decision_question_movement">Снижение шевелений ребенка?</string>
+    <string name="decision_calculate">Показать рекомендацию</string>
+    <string name="decision_result">Результат</string>
+    <string name="decision_explanation">Объяснение</string>
+
+    <string name="checklist_title">Чек-листы</string>
+    <string name="checklist_progress">Прогресс: %1$d/%2$d</string>
+    <string name="add_item">Добавить пункт</string>
+    <string name="custom_item_hint">Новый пункт</string>
+    <string name="save_item">Сохранить</string>
+    <string name="no_items">Список пуст</string>
+
+    <string name="sos_title">SOS</string>
+    <string name="sos_immediate">Немедленно вызывайте скорую помощь при опасных симптомах</string>
+    <string name="sos_call_112">Позвонить 112</string>
+
+    <string name="mom_support_title">Помощь маме</string>
+    <string name="mom_support_contractions">Поддержка в схватках</string>
+    <string name="mom_support_breathing">Дыхание</string>
+    <string name="mom_support_words">Что говорить</string>
+    <string name="mom_support_massage">Массаж</string>
+    <string name="mom_support_presence">Эмоциональная поддержка</string>
+
+    <string name="labor_title">В родах</string>
+    <string name="labor_start_time">Начало родов</string>
+    <string name="birth_time">Время рождения</string>
+    <string name="birth_weight">Вес (г)</string>
+    <string name="birth_height">Рост (см)</string>
+    <string name="save_labor_info">Сохранить данные родов</string>
+    <string name="labor_event_hint">Событие родов</string>
+    <string name="labor_note_hint">Заметка</string>
+    <string name="add_timeline_event">Добавить событие</string>
+    <string name="no_timeline">Событий пока нет</string>
+
+    <string name="postpartum_title">После родов</string>
+    <string name="postpartum_for_father">Что делать отцу</string>
+    <string name="postpartum_for_mother">Наблюдение за мамой</string>
+    <string name="postpartum_for_baby">Наблюдение за ребенком</string>
+    <string name="postpartum_medical">Когда обращаться к врачу</string>
+
+    <string name="trackers_title">Трекеры</string>
+    <string name="tracker_feeding">Кормления</string>
+    <string name="tracker_diaper">Подгузники</string>
+    <string name="tracker_sleep">Сон</string>
+    <string name="tracker_notes">Заметки</string>
+    <string name="add_log">Добавить запись</string>
+    <string name="duration_minutes">Длительность (мин)</string>
+    <string name="side_left">Левая грудь</string>
+    <string name="side_right">Правая грудь</string>
+    <string name="side_bottle">Бутылочка</string>
+    <string name="diaper_wet">Мокрый</string>
+    <string name="diaper_dirty">Грязный</string>
+    <string name="diaper_mixed">Смешанный</string>
+    <string name="note_hint">Текст заметки</string>
+    <string name="sleep_start">Начало сна</string>
+    <string name="sleep_end">Конец сна</string>
+
+    <string name="timeline_title">Хронология</string>
+    <string name="timeline_filter_all">Все</string>
+    <string name="timeline_filter_labor">Роды</string>
+    <string name="timeline_filter_postpartum">После родов</string>
+
+    <string name="settings_title">Настройки</string>
+    <string name="settings_theme">Тема</string>
+    <string name="settings_name">Имя папы</string>
+    <string name="settings_due_date">ПДР</string>
+    <string name="settings_notifications">Уведомления</string>
+    <string name="settings_reset">Сброс данных</string>
+    <string name="settings_save">Сохранить настройки</string>
+    <string name="settings_reset_confirm">Удалить все локальные данные?</string>
+    <string name="settings_reset_done">Данные сброшены</string>
+
+    <string name="theme_system">Системная</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Темная</string>
+
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+    <string name="unknown">Не указано</string>
+    <string name="cancel">Отмена</string>
+    <string name="ok">ОК</string>
+
+    <string name="error_generic">Не удалось выполнить действие. Повторите попытку.</string>
+    <string name="saved">Сохранено</string>
+
+    <string name="recommendation_monitor">Продолжайте наблюдение дома, ведите таймер и сохраняйте спокойствие</string>
+    <string name="recommendation_prepare">Подготовьтесь к выезду и держите связь с врачом</string>
+    <string name="recommendation_go_hospital">Пора ехать в роддом</string>
+    <string name="recommendation_emergency">Нужна срочная медицинская помощь</string>
+
+    <string name="decision_reason_emergency_bleeding">Кровотечение относится к срочным симптомам</string>
+    <string name="decision_reason_emergency_pain">Резкая постоянная боль требует немедленной оценки врачом</string>
+    <string name="decision_reason_emergency_fever">Температура или ухудшение состояния повышают риск осложнений</string>
+    <string name="decision_reason_emergency_movement">Снижение шевелений требует срочной консультации</string>
+    <string name="decision_reason_water_break">После отхождения вод рекомендуется не откладывать поездку в роддом</string>
+    <string name="decision_reason_regular_labor">Схватки частые, длинные и регулярные — это признаки активной фазы</string>
+    <string name="decision_reason_prepare">Пока признаки не полностью соответствуют активной фазе, но стоит быть готовыми к выезду</string>
+    <string name="decision_reason_monitor">Пока можно продолжать наблюдение и фиксировать динамику</string>
+
+    <string name="status_active">Активно</string>
+    <string name="status_inactive">Не активно</string>
+
+    <string name="minutes_format">%1$d мин</string>
+    <string name="seconds_format">%1$d сек</string>
+    <string name="hours_minutes_format">%1$d ч %2$d мин</string>
+    <string name="timestamp_format">%1$s</string>
+
+    <string name="empty_state_title">Данных пока нет</string>
+    <string name="empty_state_description">Добавьте первую запись, чтобы начать вести историю</string>
+
+    <string name="water_color_clear">Прозрачные</string>
+    <string name="water_color_pink">Розоватые</string>
+    <string name="water_color_green">Зеленые</string>
+    <string name="water_color_brown">Коричневые</string>
+
+    <string name="timeline_type_contraction">Схватка</string>
+    <string name="timeline_type_water_break">Отхождение вод</string>
+    <string name="timeline_type_labor">Событие родов</string>
+    <string name="timeline_type_birth">Рождение ребенка</string>
+    <string name="timeline_type_feeding">Кормление</string>
+    <string name="timeline_type_diaper">Подгузник</string>
+    <string name="timeline_type_sleep">Сон</string>
+    <string name="timeline_type_note">Заметка</string>
+
+    <string name="nav_back">Назад</string>
+
+    <string name="stat_count">Количество: %1$d</string>
+    <string name="action_contraction_counter_desc">Запуск/остановка схваток, интервалы и динамика</string>
+    <string name="action_water_break_timer_desc">Отметка времени, цвета и напоминания</string>
+    <string name="action_when_go_hospital_desc">Алгоритм принятия решения в критический момент</string>
+    <string name="action_checklists_desc">Сумка, документы, выезд, послеродовые дела</string>
+    <string name="action_sos_desc">Экстренные симптомы и быстрые действия</string>
+    <string name="action_help_mom_desc">Поддержка мамы в схватках и родах</string>
+    <string name="action_labor_desc">Фиксация ключевых событий и параметров родов</string>
+    <string name="action_postpartum_desc">Что контролировать сразу после рождения</string>
+    <string name="action_timeline_desc">Полная временная лента важных событий</string>
+    <string name="action_trackers_desc">Кормления, подгузники, сон и заметки</string>
+    <string name="action_settings_desc">Тема, профиль, дата родов, уведомления</string>
+
+    <string name="now_action_default">Сохраняйте спокойствие и фиксируйте события по мере изменений</string>
+    <string name="now_action_contraction">Идет сессия схваток: продолжайте измерение интервалов</string>
+    <string name="now_action_open_contraction_session">Нажмите, чтобы открыть активную сессию</string>
+    <string name="now_action_water_break">После отхождения вод контролируйте время и состояние мамы</string>
+
+    <string name="decision_boolean_hint">Выберите Да или Нет</string>
+    <string name="timeline_event_saved">Событие добавлено в хронологию</string>
+
+    <string name="input_required">Заполните обязательные поля</string>
+    <string name="invalid_number">Введите корректное число</string>
+    <string name="invalid_date">Введите дату в формате ГГГГ-ММ-ДД</string>
+
+    <string name="labor_mark_now">Отметить сейчас</string>
+    <string name="close_active_water_break">Завершить активное событие</string>
+    <string name="trend_stable">Стабильно</string>
+    <string name="trend_more_intense">Становятся интенсивнее</string>
+    <string name="trend_weaker">Становятся реже и слабее</string>
+    <string name="trend_insufficient">Недостаточно данных</string>
+</resources>
+
+
+
+
+
+
+

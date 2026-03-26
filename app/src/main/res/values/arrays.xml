@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="checklist_bag_items">
+        <item>Сменная одежда для мамы</item>
+        <item>Одежда для новорожденного</item>
+        <item>Гигиенические принадлежности</item>
+        <item>Вода и легкий перекус</item>
+        <item>Зарядки и пауэрбанк</item>
+    </string-array>
+
+    <string-array name="checklist_documents_items">
+        <item>Паспорт</item>
+        <item>Полис ОМС/ДМС</item>
+        <item>Обменная карта</item>
+        <item>Результаты анализов</item>
+        <item>Договор с роддомом (если есть)</item>
+    </string-array>
+
+    <string-array name="checklist_before_departure_items">
+        <item>Проверить документы и сумки</item>
+        <item>Зарядить телефоны</item>
+        <item>Подготовить маршрут в роддом</item>
+        <item>Сообщить родственникам</item>
+        <item>Взять воду и перекус</item>
+    </string-array>
+
+    <string-array name="checklist_postpartum_items">
+        <item>Оформить документы ребенка</item>
+        <item>Подготовить место для сна дома</item>
+        <item>Организовать поддержку маме</item>
+        <item>Проконтролировать прием лекарств</item>
+        <item>Следить за графиком кормлений</item>
+    </string-array>
+
+    <string-array name="mom_support_contractions_tips">
+        <item>Помогайте менять позы каждые 20–30 минут</item>
+        <item>Напоминайте пить воду небольшими глотками</item>
+        <item>Поддерживайте спокойный темп движения</item>
+        <item>Отмечайте схватки и сообщайте динамику</item>
+    </string-array>
+
+    <string-array name="mom_support_breathing_tips">
+        <item>На схватке: медленный вдох носом, длинный выдох ртом</item>
+        <item>Между схватками: ровное спокойное дыхание</item>
+        <item>Дышите вместе, задавая ритм</item>
+    </string-array>
+
+    <string-array name="mom_support_words_tips">
+        <item>Ты отлично справляешься, я рядом</item>
+        <item>Каждая схватка приближает встречу с малышом</item>
+        <item>Ты в безопасности, мы действуем по плану</item>
+    </string-array>
+
+    <string-array name="mom_support_massage_tips">
+        <item>Массируйте поясницу круговыми движениями</item>
+        <item>Используйте теплую ладонь и умеренное давление</item>
+        <item>Спрашивайте, где комфортнее и легче</item>
+    </string-array>
+
+    <string-array name="mom_support_presence_tips">
+        <item>Поддерживайте зрительный контакт</item>
+        <item>Говорите коротко и спокойно</item>
+        <item>Берите на себя коммуникацию с персоналом</item>
+    </string-array>
+
+    <string-array name="sos_critical_scenarios">
+        <item>Сильное кровотечение</item>
+        <item>Потеря сознания</item>
+        <item>Судороги</item>
+        <item>Резкая боль без перерывов</item>
+        <item>Температура и озноб</item>
+        <item>Зеленые/коричневые воды</item>
+    </string-array>
+
+    <string-array name="sos_actions">
+        <item>Вызовите 112 и сообщите адрес</item>
+        <item>Не оставляйте маму одну</item>
+        <item>Подготовьте документы</item>
+        <item>Отметьте время начала симптомов</item>
+        <item>Сообщите персоналу о сопутствующих заболеваниях</item>
+    </string-array>
+
+    <string-array name="postpartum_father_actions">
+        <item>Организуйте тишину и отдых</item>
+        <item>Следите за водой, едой и сном мамы</item>
+        <item>Берите бытовые задачи на себя</item>
+        <item>Фиксируйте вопросы для врача</item>
+    </string-array>
+
+    <string-array name="postpartum_mother_observe">
+        <item>Температура и общее самочувствие</item>
+        <item>Боль, головокружение, слабость</item>
+        <item>Интенсивность выделений</item>
+        <item>Состояние швов (если есть)</item>
+    </string-array>
+
+    <string-array name="postpartum_baby_observe">
+        <item>Частота кормлений и мокрых подгузников</item>
+        <item>Цвет кожи и активность</item>
+        <item>Температура тела</item>
+        <item>Качество сна</item>
+    </string-array>
+
+    <string-array name="postpartum_doctor_signs">
+        <item>Температура выше 38°C</item>
+        <item>Сильная боль или кровотечение</item>
+        <item>Ребенок вялый, плохо ест</item>
+        <item>Рвота, судороги, затрудненное дыхание</item>
+    </string-array>
+
+    <string-array name="checklist_names">
+        <item>Сумка в роддом</item>
+        <item>Документы</item>
+        <item>Перед выездом</item>
+        <item>После родов</item>
+    </string-array>
+</resources>

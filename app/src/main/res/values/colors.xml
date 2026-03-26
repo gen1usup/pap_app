@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="seed_primary">#2F5D50</color>
+    <color name="seed_secondary">#5C6B73</color>
+    <color name="seed_tertiary">#8C6D46</color>
+    <color name="surface_light">#F6F7F5</color>
+    <color name="surface_dark">#111414</color>
+</resources>

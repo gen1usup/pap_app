@@ -1,0 +1,58 @@
+﻿# ------------------------------
+# Android / Kotlin project
+# ------------------------------
+
+# Local SDK/Studio settings
+local.properties
+android-sdk/
+.android/
+
+# Gradle
+.gradle/
+.gradle-home/
+build/
+**/build/
+**/.kotlin/
+
+# Keep wrapper JAR in VCS
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+captures/
+.navigation/
+.externalNativeBuild/
+.cxx/
+out/
+
+# VS Code (optional local settings)
+.vscode/
+
+# Signing keys / secrets
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+*.der
+*.crt
+keystore.properties
+signing.properties
+release.properties
+
+# Firebase / service config (if used)
+app/google-services.json
+
+# Logs / reports / heap dumps
+*.log
+*.hprof
+hs_err_pid*
+replay_pid*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

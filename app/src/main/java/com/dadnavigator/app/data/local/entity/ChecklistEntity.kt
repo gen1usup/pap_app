@@ -1,0 +1,37 @@
+﻿package com.dadnavigator.app.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import java.time.Instant
+
+/**
+ * Room entity for checklist container.
+ */
+@Entity(
+    tableName = "checklists",
+    indices = [Index("userId")]
+)
+data class ChecklistEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: String,
+    val name: String,
+    val isSystem: Boolean,
+    val createdAt: Instant
+)
+
+/**
+ * Room entity for checklist item.
+ */
+@Entity(
+    tableName = "checklist_items",
+    indices = [Index("checklistId"), Index("userId")]
+)
+data class ChecklistItemEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val checklistId: Long,
+    val userId: String,
+    val text: String,
+    val isChecked: Boolean,
+    val createdAt: Instant
+)
