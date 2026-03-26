@@ -117,7 +117,7 @@ class ContractionViewModel @Inject constructor(
 
         viewModelScope.launch(ioDispatcher) {
             runCatching {
-                val sessionId = currentState.sessionId ?: return@runCatching
+                val sessionId = currentState.sessionId ?: startContractionSessionUseCase(userId)
                 val activeContractionId = currentState.activeContractionId
                 if (activeContractionId == null) {
                     startContractionUseCase(sessionId = sessionId, userId = userId)

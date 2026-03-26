@@ -37,7 +37,10 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.DARK -> true
             }
 
-            DadNavigatorTheme(darkTheme = darkTheme ?: isSystemInDarkTheme()) {
+            DadNavigatorTheme(
+                darkTheme = darkTheme ?: isSystemInDarkTheme(),
+                dynamicColor = false
+            ) {
                 AppNavHost(
                     userId = appState.userId,
                     fatherName = appState.fatherName,

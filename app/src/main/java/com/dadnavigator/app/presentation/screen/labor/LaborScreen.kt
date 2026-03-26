@@ -1,17 +1,18 @@
-﻿package com.dadnavigator.app.presentation.screen.labor
+package com.dadnavigator.app.presentation.screen.labor
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ChildCare
+import androidx.compose.material.icons.outlined.MonitorHeart
+import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,17 +20,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dadnavigator.app.R
+import com.dadnavigator.app.core.ui.DadTheme
 import com.dadnavigator.app.core.util.toReadableDateTime
 import com.dadnavigator.app.presentation.component.EmptyState
+import com.dadnavigator.app.presentation.component.InfoCard
+import com.dadnavigator.app.presentation.component.PrimaryButton
+import com.dadnavigator.app.presentation.component.ScreenBackground
 import com.dadnavigator.app.presentation.component.ScreenScaffold
 
-/**
- * Screen for labor phase record keeping.
- */
 @Composable
 fun LaborScreen(
     userId: String,
@@ -51,134 +52,113 @@ fun LaborScreen(
         }
     }
 
+    val spacing = DadTheme.spacing
     ScreenScaffold(
         title = stringResource(id = R.string.labor_title),
-        onBack = onBack
+        subtitle = stringResource(id = R.string.labor_subtitle),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Card {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(text = stringResource(id = R.string.labor_start_time), style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            text = state.summary.laborStartTime?.toReadableDateTime() ?: stringResource(id = R.string.unknown),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Button(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = viewModel::markLaborStartNow
-                        ) {
-                            Text(text = stringResource(id = R.string.labor_mark_now))
-                        }
-
-                        Text(text = stringResource(id = R.string.birth_time), style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            text = state.summary.birthTime?.toReadableDateTime() ?: stringResource(id = R.string.unknown),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Button(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = viewModel::markBirthNow
-                        ) {
-                            Text(text = stringResource(id = R.string.labor_mark_now))
-                        }
-
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = state.weightInput,
-                            onValueChange = viewModel::updateWeight,
-                            label = { Text(text = stringResource(id = R.string.birth_weight)) }
-                        )
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = state.heightInput,
-                            onValueChange = viewModel::updateHeight,
-                            label = { Text(text = stringResource(id = R.string.birth_height)) }
-                        )
-                        Button(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = viewModel::saveSummary
-                        ) {
-                            Text(text = stringResource(id = R.string.save_labor_info))
-                        }
-                    }
-                }
-            }
-
-            item {
-                Card {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = state.customEventTitle,
-                            onValueChange = viewModel::updateEventTitle,
-                            label = { Text(text = stringResource(id = R.string.labor_event_hint)) }
-                        )
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = state.customEventNote,
-                            onValueChange = viewModel::updateEventNote,
-                            label = { Text(text = stringResource(id = R.string.labor_note_hint)) }
-                        )
-                        Button(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = viewModel::addCustomEvent
-                        ) {
-                            Text(text = stringResource(id = R.string.add_timeline_event))
-                        }
-                    }
-                }
-            }
-
-            item {
-                Text(text = stringResource(id = R.string.timeline_title), style = MaterialTheme.typography.titleMedium)
-            }
-
-            if (state.laborEvents.isEmpty()) {
+        ScreenBackground {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(horizontal = spacing.md, vertical = spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(spacing.md)
+            ) {
                 item {
-                    EmptyState(
-                        title = stringResource(id = R.string.empty_state_title),
-                        description = stringResource(id = R.string.no_timeline)
-                    )
-                }
-            } else {
-                items(state.laborEvents) { event ->
-                    Card {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
+                    InfoCard(
+                        title = stringResource(id = R.string.labor_title),
+                        description = stringResource(id = R.string.labor_description),
+                        icon = Icons.Outlined.MonitorHeart
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
                             Text(
-                                text = event.title.ifBlank { stringResource(id = R.string.timeline_type_labor) },
-                                style = MaterialTheme.typography.titleMedium
+                                text = stringResource(
+                                    id = R.string.labor_start_display,
+                                    state.summary.laborStartTime?.toReadableDateTime()
+                                        ?: stringResource(id = R.string.unknown)
+                                )
+                            )
+                            PrimaryButton(
+                                text = stringResource(id = R.string.labor_mark_now),
+                                onClick = viewModel::markLaborStartNow
                             )
                             Text(
-                                text = event.timestamp.toReadableDateTime(),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = stringResource(
+                                    id = R.string.labor_birth_display,
+                                    state.summary.birthTime?.toReadableDateTime()
+                                        ?: stringResource(id = R.string.unknown)
+                                )
                             )
-                            if (event.description.isNotBlank()) {
-                                Text(text = event.description, style = MaterialTheme.typography.bodyLarge)
-                            }
+                            PrimaryButton(
+                                text = stringResource(id = R.string.birth_time),
+                                onClick = viewModel::markBirthNow
+                            )
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = state.weightInput,
+                                onValueChange = viewModel::updateWeight,
+                                label = { Text(text = stringResource(id = R.string.birth_weight)) }
+                            )
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = state.heightInput,
+                                onValueChange = viewModel::updateHeight,
+                                label = { Text(text = stringResource(id = R.string.birth_height)) }
+                            )
+                            PrimaryButton(
+                                text = stringResource(id = R.string.save_labor_info),
+                                onClick = viewModel::saveSummary
+                            )
                         }
                     }
                 }
-            }
-
-            item {
-                SnackbarHost(hostState = snackbarHostState)
+                item {
+                    InfoCard(
+                        title = stringResource(id = R.string.labor_event_title),
+                        description = stringResource(id = R.string.labor_event_description),
+                        icon = Icons.Outlined.Timeline
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = state.customEventTitle,
+                                onValueChange = viewModel::updateEventTitle,
+                                label = { Text(text = stringResource(id = R.string.labor_event_hint)) }
+                            )
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = state.customEventNote,
+                                onValueChange = viewModel::updateEventNote,
+                                label = { Text(text = stringResource(id = R.string.labor_note_hint)) }
+                            )
+                            PrimaryButton(
+                                text = stringResource(id = R.string.add_timeline_event),
+                                onClick = viewModel::addCustomEvent
+                            )
+                        }
+                    }
+                }
+                if (state.laborEvents.isEmpty()) {
+                    item {
+                        EmptyState(
+                            title = stringResource(id = R.string.empty_state_title),
+                            description = stringResource(id = R.string.no_timeline),
+                            icon = Icons.Outlined.ChildCare
+                        )
+                    }
+                } else {
+                    items(state.laborEvents) { event ->
+                        InfoCard(
+                            title = event.title.ifBlank { stringResource(id = R.string.timeline_type_labor) },
+                            description = event.description.ifBlank { stringResource(id = R.string.timeline_type_labor) },
+                            icon = Icons.Outlined.ChildCare,
+                            overline = event.timestamp.toReadableDateTime()
+                        )
+                    }
+                }
             }
         }
     }

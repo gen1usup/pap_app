@@ -127,6 +127,60 @@ Windows:
 - Unit/UI tests
 - Gradle Kotlin DSL
 
+## UI/UX
+
+### Новый визуальный язык
+- Спокойная медицинская палитра с поддержкой light/dark theme
+- Material 3 + Material You dynamic color на Android 12+
+- Крупные touch targets и выраженная иерархия контента
+- Единые токены для spacing, shapes, typography и статусных цветов
+- Production-style reusable components вместо разрозненных локальных карточек
+
+### Дизайн-система
+- `Theme.kt` — тема приложения, dynamic color, status palette, shape tokens
+- `Color.kt` — базовая палитра и статусные цвета
+- `Typography.kt` — читаемая типографическая шкала для стрессового сценария
+- `Shapes.kt` — округлые формы для карточек, pill buttons и sheets
+- `Spacing.kt` — единая шкала отступов и минимальных touch target
+
+### Reusable components
+- `PrimaryButton`, `SecondaryButton`, `DangerButton`
+- `InfoCard`, `StatusCard`
+- `TimelineItem`
+- `ChecklistItem`
+- `EmptyState`, `ErrorState`, `LoadingState`
+- `ScreenScaffold` с roomy top app bar и спокойным background treatment
+
+### UX-улучшения
+- Главный экран теперь показывает:
+  - card "Что делать сейчас"
+  - большую CTA для старта/открытия счетчика схваток
+  - быстрый SOS
+  - карточку таймера вод
+  - прогресс чек-листов
+  - последние события timeline
+- Счетчик схваток переработан в пользу одной доминирующей кнопки и понятной стадии
+- Timeline получил иконки, фильтры и bottom sheet для ручного добавления событий
+- Чек-листы и трекеры стали удобнее для одной руки и быстрее для ввода
+- SOS-экран стал визуально более срочным: меньше текста, больше ясных действий
+
+### Адаптивность
+- Dashboard учитывает `WindowWidthSizeClass`
+- Остальные ключевые экраны переведены на responsive spacing и более устойчивые layout patterns
+- UI лучше переносится на большие телефоны и планшеты за счет карточной структуры и гибких секций
+
+### Accessibility
+- Крупные кнопки и увеличенные touch targets
+- Текстовая иерархия не полагается только на цвет
+- Иконки сопровождаются текстом
+- Улучшена читаемость в dark theme и при стрессовом использовании
+
+### Motion и state-driven UI
+- Экранные состояния строятся от данных ViewModel
+- Добавлены empty states и snackbar-driven feedback
+- Поддержаны confirm dialogs для опасных действий
+- Важные CTA подготовлены к haptic feedback в критичных сценариях
+
 ## Архитектура
 Слои:
 - `data` - Room/DataStore/DAO/entity/mappers/repository implementation

@@ -1,42 +1,48 @@
-﻿package com.dadnavigator.app.presentation.screen.trackers
+package com.dadnavigator.app.presentation.screen.trackers
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BabyChangingStation
+import androidx.compose.material.icons.outlined.ChildCare
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.Hotel
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dadnavigator.app.R
+import com.dadnavigator.app.core.ui.DadNavigatorTheme
+import com.dadnavigator.app.core.ui.DadTheme
 import com.dadnavigator.app.core.util.toReadableDateTime
 import com.dadnavigator.app.core.util.toReadableDuration
 import com.dadnavigator.app.domain.model.DiaperType
 import com.dadnavigator.app.domain.model.FeedingType
 import com.dadnavigator.app.presentation.component.EmptyState
+import com.dadnavigator.app.presentation.component.InfoCard
+import com.dadnavigator.app.presentation.component.PrimaryButton
+import com.dadnavigator.app.presentation.component.ScreenBackground
 import com.dadnavigator.app.presentation.component.ScreenScaffold
 
-/**
- * Postpartum trackers screen.
- */
 @Composable
 fun TrackersScreen(
     userId: String,
@@ -58,187 +64,210 @@ fun TrackersScreen(
         }
     }
 
+    TrackersContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        onBack = onBack,
+        onTabSelected = viewModel::setTab,
+        onDurationChange = viewModel::setFeedingDuration,
+        onFeedingTypeSelect = viewModel::setFeedingType,
+        onAddFeeding = viewModel::addFeeding,
+        onDiaperTypeSelect = viewModel::setDiaperType,
+        onDiaperNotesChange = viewModel::setDiaperNotes,
+        onAddDiaper = viewModel::addDiaper,
+        onSleepDurationChange = viewModel::setSleepDuration,
+        onSleepNotesChange = viewModel::setSleepNotes,
+        onAddSleep = viewModel::addSleep,
+        onNoteChange = viewModel::setNoteText,
+        onAddNote = viewModel::addNote
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TrackersContent(
+    state: TrackersUiState,
+    snackbarHostState: SnackbarHostState,
+    onBack: () -> Unit,
+    onTabSelected: (TrackerTab) -> Unit,
+    onDurationChange: (String) -> Unit,
+    onFeedingTypeSelect: (FeedingType) -> Unit,
+    onAddFeeding: () -> Unit,
+    onDiaperTypeSelect: (DiaperType) -> Unit,
+    onDiaperNotesChange: (String) -> Unit,
+    onAddDiaper: () -> Unit,
+    onSleepDurationChange: (String) -> Unit,
+    onSleepNotesChange: (String) -> Unit,
+    onAddSleep: () -> Unit,
+    onNoteChange: (String) -> Unit,
+    onAddNote: () -> Unit
+) {
+    val spacing = DadTheme.spacing
+
     ScreenScaffold(
         title = stringResource(id = R.string.trackers_title),
-        onBack = onBack
+        subtitle = stringResource(id = R.string.trackers_subtitle),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                ScrollableTabRow(selectedTabIndex = state.selectedTab.ordinal) {
-                    Tab(
-                        selected = state.selectedTab == TrackerTab.FEEDING,
-                        onClick = { viewModel.setTab(TrackerTab.FEEDING) },
-                        text = { Text(text = stringResource(id = R.string.tracker_feeding)) }
-                    )
-                    Tab(
-                        selected = state.selectedTab == TrackerTab.DIAPER,
-                        onClick = { viewModel.setTab(TrackerTab.DIAPER) },
-                        text = { Text(text = stringResource(id = R.string.tracker_diaper)) }
-                    )
-                    Tab(
-                        selected = state.selectedTab == TrackerTab.SLEEP,
-                        onClick = { viewModel.setTab(TrackerTab.SLEEP) },
-                        text = { Text(text = stringResource(id = R.string.tracker_sleep)) }
-                    )
-                    Tab(
-                        selected = state.selectedTab == TrackerTab.NOTES,
-                        onClick = { viewModel.setTab(TrackerTab.NOTES) },
-                        text = { Text(text = stringResource(id = R.string.tracker_notes)) }
-                    )
-                }
-            }
-
-            when (state.selectedTab) {
-                TrackerTab.FEEDING -> {
-                    item {
-                        FeedingForm(
-                            state = state,
-                            onDurationChange = viewModel::setFeedingDuration,
-                            onTypeSelect = viewModel::setFeedingType,
-                            onAdd = viewModel::addFeeding
-                        )
-                    }
-                    if (state.feedingLogs.isEmpty()) {
-                        item {
-                            EmptyState(
-                                title = stringResource(id = R.string.empty_state_title),
-                                description = stringResource(id = R.string.empty_state_description)
-                            )
-                        }
-                    } else {
-                        items(state.feedingLogs) { log ->
-                            Card {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Text(text = log.timestamp.toReadableDateTime(), style = MaterialTheme.typography.titleMedium)
-                                    Text(text = stringResource(id = feedingTypeRes(log.type)), style = MaterialTheme.typography.bodyLarge)
+        ScreenBackground {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(
+                    horizontal = spacing.md,
+                    vertical = spacing.sm
+                ),
+                verticalArrangement = Arrangement.spacedBy(spacing.md)
+            ) {
+                item {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                        verticalArrangement = Arrangement.spacedBy(spacing.sm)
+                    ) {
+                        TrackerTab.entries.forEach { tab ->
+                            FilterChip(
+                                selected = state.selectedTab == tab,
+                                onClick = { onTabSelected(tab) },
+                                label = {
                                     Text(
-                                        text = stringResource(id = R.string.minutes_format, log.durationMinutes),
-                                        style = MaterialTheme.typography.bodyMedium
+                                        text = stringResource(
+                                            id = when (tab) {
+                                                TrackerTab.FEEDING -> R.string.tracker_feeding
+                                                TrackerTab.DIAPER -> R.string.tracker_diaper
+                                                TrackerTab.SLEEP -> R.string.tracker_sleep
+                                                TrackerTab.NOTES -> R.string.tracker_notes
+                                            }
+                                        )
                                     )
                                 }
-                            }
+                            )
                         }
                     }
                 }
 
-                TrackerTab.DIAPER -> {
-                    item {
-                        DiaperForm(
-                            state = state,
-                            onTypeSelect = viewModel::setDiaperType,
-                            onNotesChange = viewModel::setDiaperNotes,
-                            onAdd = viewModel::addDiaper
-                        )
-                    }
-                    if (state.diaperLogs.isEmpty()) {
+                when (state.selectedTab) {
+                    TrackerTab.FEEDING -> {
                         item {
-                            EmptyState(
-                                title = stringResource(id = R.string.empty_state_title),
-                                description = stringResource(id = R.string.empty_state_description)
+                            FeedingForm(
+                                state = state,
+                                onDurationChange = onDurationChange,
+                                onTypeSelect = onFeedingTypeSelect,
+                                onAdd = onAddFeeding
                             )
                         }
-                    } else {
-                        items(state.diaperLogs) { log ->
-                            Card {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Text(text = log.timestamp.toReadableDateTime(), style = MaterialTheme.typography.titleMedium)
-                                    Text(text = stringResource(id = diaperTypeRes(log.type)), style = MaterialTheme.typography.bodyLarge)
-                                    if (log.notes.isNotBlank()) {
-                                        Text(text = log.notes, style = MaterialTheme.typography.bodyMedium)
+                        if (state.feedingLogs.isEmpty()) {
+                            item {
+                                EmptyState(
+                                    title = stringResource(id = R.string.empty_state_title),
+                                    description = stringResource(id = R.string.empty_state_description),
+                                    icon = Icons.Outlined.ChildCare
+                                )
+                            }
+                        } else {
+                            items(state.feedingLogs) { log ->
+                                TrackerLogCard(
+                                    title = stringResource(id = feedingTypeRes(log.type)),
+                                    time = log.timestamp.toReadableDateTime(),
+                                    description = stringResource(id = R.string.minutes_format, log.durationMinutes)
+                                )
+                            }
+                        }
+                    }
+                    TrackerTab.DIAPER -> {
+                        item {
+                            DiaperForm(
+                                state = state,
+                                onTypeSelect = onDiaperTypeSelect,
+                                onNotesChange = onDiaperNotesChange,
+                                onAdd = onAddDiaper
+                            )
+                        }
+                        if (state.diaperLogs.isEmpty()) {
+                            item {
+                                EmptyState(
+                                    title = stringResource(id = R.string.empty_state_title),
+                                    description = stringResource(id = R.string.empty_state_description),
+                                    icon = Icons.Outlined.BabyChangingStation
+                                )
+                            }
+                        } else {
+                            items(state.diaperLogs) { log ->
+                                TrackerLogCard(
+                                    title = stringResource(id = diaperTypeRes(log.type)),
+                                    time = log.timestamp.toReadableDateTime(),
+                                    description = log.notes.takeIf { it.isNotBlank() }
+                                )
+                            }
+                        }
+                    }
+                    TrackerTab.SLEEP -> {
+                        item {
+                            SleepForm(
+                                state = state,
+                                onDurationChange = onSleepDurationChange,
+                                onNotesChange = onSleepNotesChange,
+                                onAdd = onAddSleep
+                            )
+                        }
+                        if (state.sleepLogs.isEmpty()) {
+                            item {
+                                EmptyState(
+                                    title = stringResource(id = R.string.empty_state_title),
+                                    description = stringResource(id = R.string.empty_state_description),
+                                    icon = Icons.Outlined.Hotel
+                                )
+                            }
+                        } else {
+                            items(state.sleepLogs) { log ->
+                                TrackerLogCard(
+                                    title = stringResource(id = R.string.tracker_sleep),
+                                    time = log.startTime.toReadableDateTime(),
+                                    description = buildString {
+                                        append(log.duration.toReadableDuration())
+                                        if (log.notes.isNotBlank()) {
+                                            append(" • ")
+                                            append(log.notes)
+                                        }
                                     }
-                                }
+                                )
                             }
                         }
                     }
-                }
-
-                TrackerTab.SLEEP -> {
-                    item {
-                        SleepForm(
-                            state = state,
-                            onDurationChange = viewModel::setSleepDuration,
-                            onNotesChange = viewModel::setSleepNotes,
-                            onAdd = viewModel::addSleep
-                        )
-                    }
-                    if (state.sleepLogs.isEmpty()) {
+                    TrackerTab.NOTES -> {
                         item {
-                            EmptyState(
-                                title = stringResource(id = R.string.empty_state_title),
-                                description = stringResource(id = R.string.empty_state_description)
+                            NotesForm(
+                                state = state,
+                                onNoteChange = onNoteChange,
+                                onAdd = onAddNote
                             )
                         }
-                    } else {
-                        items(state.sleepLogs) { log ->
-                            Card {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Text(text = log.startTime.toReadableDateTime(), style = MaterialTheme.typography.titleMedium)
-                                    Text(
-                                        text = log.duration.toReadableDuration(),
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    if (log.notes.isNotBlank()) {
-                                        Text(text = log.notes, style = MaterialTheme.typography.bodyMedium)
-                                    }
-                                }
+                        if (state.notes.isEmpty()) {
+                            item {
+                                EmptyState(
+                                    title = stringResource(id = R.string.empty_state_title),
+                                    description = stringResource(id = R.string.empty_state_description),
+                                    icon = Icons.Outlined.EditNote
+                                )
+                            }
+                        } else {
+                            items(state.notes) { note ->
+                                TrackerLogCard(
+                                    title = stringResource(id = R.string.tracker_notes),
+                                    time = note.timestamp.toReadableDateTime(),
+                                    description = note.text
+                                )
                             }
                         }
                     }
                 }
-
-                TrackerTab.NOTES -> {
-                    item {
-                        NotesForm(
-                            state = state,
-                            onNoteChange = viewModel::setNoteText,
-                            onAdd = viewModel::addNote
-                        )
-                    }
-                    if (state.notes.isEmpty()) {
-                        item {
-                            EmptyState(
-                                title = stringResource(id = R.string.empty_state_title),
-                                description = stringResource(id = R.string.empty_state_description)
-                            )
-                        }
-                    } else {
-                        items(state.notes) { note ->
-                            Card {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Text(text = note.timestamp.toReadableDateTime(), style = MaterialTheme.typography.titleMedium)
-                                    Text(text = note.text, style = MaterialTheme.typography.bodyLarge)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            item {
-                SnackbarHost(hostState = snackbarHostState)
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FeedingForm(
     state: TrackersUiState,
@@ -246,18 +275,22 @@ private fun FeedingForm(
     onTypeSelect: (FeedingType) -> Unit,
     onAdd: () -> Unit
 ) {
-    Card {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+    InfoCard(
+        title = stringResource(id = R.string.trackers_feeding_title),
+        description = stringResource(id = R.string.trackers_feeding_description),
+        icon = Icons.Outlined.ChildCare
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.md)) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.feedingDurationInput,
                 onValueChange = onDurationChange,
                 label = { Text(text = stringResource(id = R.string.duration_minutes)) }
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)
+            ) {
                 FeedingType.entries.forEach { type ->
                     FilterChip(
                         selected = type == state.feedingType,
@@ -266,13 +299,15 @@ private fun FeedingForm(
                     )
                 }
             }
-            Button(modifier = Modifier.fillMaxWidth(), onClick = onAdd) {
-                Text(text = stringResource(id = R.string.add_log))
-            }
+            PrimaryButton(
+                text = stringResource(id = R.string.add_log),
+                onClick = onAdd
+            )
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DiaperForm(
     state: TrackersUiState,
@@ -280,12 +315,16 @@ private fun DiaperForm(
     onNotesChange: (String) -> Unit,
     onAdd: () -> Unit
 ) {
-    Card {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    InfoCard(
+        title = stringResource(id = R.string.trackers_diaper_title),
+        description = stringResource(id = R.string.trackers_diaper_description),
+        icon = Icons.Outlined.BabyChangingStation
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.md)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)
+            ) {
                 DiaperType.entries.forEach { type ->
                     FilterChip(
                         selected = type == state.diaperType,
@@ -300,9 +339,10 @@ private fun DiaperForm(
                 onValueChange = onNotesChange,
                 label = { Text(text = stringResource(id = R.string.water_break_notes)) }
             )
-            Button(modifier = Modifier.fillMaxWidth(), onClick = onAdd) {
-                Text(text = stringResource(id = R.string.add_log))
-            }
+            PrimaryButton(
+                text = stringResource(id = R.string.add_log),
+                onClick = onAdd
+            )
         }
     }
 }
@@ -314,11 +354,12 @@ private fun SleepForm(
     onNotesChange: (String) -> Unit,
     onAdd: () -> Unit
 ) {
-    Card {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+    InfoCard(
+        title = stringResource(id = R.string.trackers_sleep_title),
+        description = stringResource(id = R.string.trackers_sleep_description),
+        icon = Icons.Outlined.Hotel
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.md)) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.sleepDurationInput,
@@ -331,9 +372,10 @@ private fun SleepForm(
                 onValueChange = onNotesChange,
                 label = { Text(text = stringResource(id = R.string.water_break_notes)) }
             )
-            Button(modifier = Modifier.fillMaxWidth(), onClick = onAdd) {
-                Text(text = stringResource(id = R.string.add_log))
-            }
+            PrimaryButton(
+                text = stringResource(id = R.string.add_log),
+                onClick = onAdd
+            )
         }
     }
 }
@@ -344,19 +386,53 @@ private fun NotesForm(
     onNoteChange: (String) -> Unit,
     onAdd: () -> Unit
 ) {
-    Card {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+    InfoCard(
+        title = stringResource(id = R.string.trackers_note_title),
+        description = stringResource(id = R.string.trackers_note_description),
+        icon = Icons.Outlined.EditNote
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.md)) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.noteInput,
                 onValueChange = onNoteChange,
+                minLines = 3,
                 label = { Text(text = stringResource(id = R.string.note_hint)) }
             )
-            Button(modifier = Modifier.fillMaxWidth(), onClick = onAdd) {
-                Text(text = stringResource(id = R.string.add_log))
+            PrimaryButton(
+                text = stringResource(id = R.string.add_log),
+                onClick = onAdd
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrackerLogCard(
+    title: String,
+    time: String,
+    description: String?,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = DadTheme.shapes.card,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(DadTheme.spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.xs)
+        ) {
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = time,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (!description.isNullOrBlank()) {
+                Text(text = description, style = MaterialTheme.typography.bodyLarge)
             }
         }
     }
@@ -374,3 +450,26 @@ private fun diaperTypeRes(type: DiaperType): Int = when (type) {
     DiaperType.MIXED -> R.string.diaper_mixed
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun TrackersPreview() {
+    DadNavigatorTheme(dynamicColor = false) {
+        TrackersContent(
+            state = TrackersUiState(),
+            snackbarHostState = remember { SnackbarHostState() },
+            onBack = {},
+            onTabSelected = {},
+            onDurationChange = {},
+            onFeedingTypeSelect = {},
+            onAddFeeding = {},
+            onDiaperTypeSelect = {},
+            onDiaperNotesChange = {},
+            onAddDiaper = {},
+            onSleepDurationChange = {},
+            onSleepNotesChange = {},
+            onAddSleep = {},
+            onNoteChange = {},
+            onAddNote = {}
+        )
+    }
+}

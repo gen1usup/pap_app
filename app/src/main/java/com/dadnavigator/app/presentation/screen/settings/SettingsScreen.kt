@@ -1,19 +1,21 @@
-﻿package com.dadnavigator.app.presentation.screen.settings
+package com.dadnavigator.app.presentation.screen.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -23,16 +25,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dadnavigator.app.R
+import com.dadnavigator.app.core.ui.DadTheme
 import com.dadnavigator.app.domain.model.ThemeMode
+import com.dadnavigator.app.presentation.component.DangerButton
+import com.dadnavigator.app.presentation.component.InfoCard
+import com.dadnavigator.app.presentation.component.PrimaryButton
+import com.dadnavigator.app.presentation.component.ScreenBackground
 import com.dadnavigator.app.presentation.component.ScreenScaffold
 
-/**
- * Settings screen for personalization and maintenance operations.
- */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -73,60 +77,66 @@ fun SettingsScreen(
         )
     }
 
+    val spacing = DadTheme.spacing
     ScreenScaffold(
         title = stringResource(id = R.string.settings_title),
-        onBack = onBack
+        subtitle = stringResource(id = R.string.settings_subtitle),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Card {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+        ScreenBackground {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(horizontal = spacing.md, vertical = spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(spacing.md)
+            ) {
+                item {
+                    InfoCard(
+                        title = stringResource(id = R.string.settings_profile_title),
+                        description = stringResource(id = R.string.settings_profile_description),
+                        icon = Icons.Outlined.Person
                     ) {
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = state.fatherName,
-                            onValueChange = viewModel::updateFatherName,
-                            label = { Text(text = stringResource(id = R.string.settings_name)) }
-                        )
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = state.dueDateInput,
-                            onValueChange = viewModel::updateDueDate,
-                            label = { Text(text = stringResource(id = R.string.settings_due_date)) }
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = stringResource(id = R.string.settings_notifications),
-                                style = MaterialTheme.typography.bodyLarge
+                        Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = state.fatherName,
+                                onValueChange = viewModel::updateFatherName,
+                                label = { Text(text = stringResource(id = R.string.settings_name)) }
                             )
-                            Switch(
-                                checked = state.notificationsEnabled,
-                                onCheckedChange = viewModel::updateNotifications
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = state.dueDateInput,
+                                onValueChange = viewModel::updateDueDate,
+                                label = { Text(text = stringResource(id = R.string.settings_due_date)) }
                             )
+                            androidx.compose.foundation.layout.Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = stringResource(id = R.string.settings_notifications),
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
+                                )
+                                Switch(
+                                    checked = state.notificationsEnabled,
+                                    onCheckedChange = viewModel::updateNotifications
+                                )
+                            }
                         }
                     }
                 }
-            }
-
-            item {
-                Card {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                item {
+                    InfoCard(
+                        title = stringResource(id = R.string.settings_theme),
+                        description = stringResource(id = R.string.settings_theme_description),
+                        icon = Icons.Outlined.DarkMode
                     ) {
-                        Text(text = stringResource(id = R.string.settings_theme), style = MaterialTheme.typography.titleMedium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                            verticalArrangement = Arrangement.spacedBy(spacing.sm)
+                        ) {
                             ThemeMode.entries.forEach { mode ->
                                 FilterChip(
                                     selected = state.themeMode == mode,
@@ -137,28 +147,19 @@ fun SettingsScreen(
                         }
                     }
                 }
-            }
-
-            item {
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = viewModel::save
-                ) {
-                    Text(text = stringResource(id = R.string.settings_save))
+                item {
+                    PrimaryButton(
+                        text = stringResource(id = R.string.settings_save),
+                        onClick = viewModel::save
+                    )
                 }
-            }
-
-            item {
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = viewModel::askResetConfirmation
-                ) {
-                    Text(text = stringResource(id = R.string.settings_reset))
+                item {
+                    DangerButton(
+                        text = stringResource(id = R.string.settings_reset),
+                        onClick = viewModel::askResetConfirmation,
+                        icon = Icons.Outlined.RestartAlt
+                    )
                 }
-            }
-
-            item {
-                SnackbarHost(hostState = snackbarHostState)
             }
         }
     }

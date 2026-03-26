@@ -5,6 +5,24 @@
     <string name="dashboard_title">Что делать сейчас</string>
     <string name="dashboard_subtitle">Короткие действия для спокойного и быстрого реагирования</string>
     <string name="quick_actions">Быстрые действия</string>
+    <string name="dashboard_focus_overline">Фокус на сейчас</string>
+    <string name="dashboard_focus_title">Спокойно и по шагам</string>
+    <string name="dashboard_focus_title_named">%1$s, спокойно и по шагам</string>
+    <string name="dashboard_start_contraction_cta">Схватка началась</string>
+    <string name="dashboard_open_contraction_cta">Открыть счетчик схваток</string>
+    <string name="dashboard_sos_cta">SOS и тревожные симптомы</string>
+    <string name="dashboard_checklist_overline">Готовность к выезду</string>
+    <string name="dashboard_checklist_title">Прогресс чек-листов</string>
+    <string name="dashboard_checklist_description">Выполнено %1$d из %2$d пунктов</string>
+    <string name="dashboard_checklist_action">Открыть чек-листы</string>
+    <string name="dashboard_water_overline">Контроль после отхождения вод</string>
+    <string name="dashboard_water_title">Таймер вод</string>
+    <string name="dashboard_water_active_description">Событие активно уже %1$s</string>
+    <string name="dashboard_water_idle_description">Если воды отошли, зафиксируйте время и цвет как можно раньше</string>
+    <string name="dashboard_water_action">Открыть таймер вод</string>
+    <string name="dashboard_recent_events_title">Последние события</string>
+    <string name="dashboard_recent_events_empty_title">История пока не началась</string>
+    <string name="dashboard_recent_events_empty_description">Все важные записи будут появляться здесь в хронологическом порядке</string>
 
     <string name="action_contraction_counter">Счетчик схваток</string>
     <string name="action_water_break_timer">Таймер после отхождения вод</string>
@@ -19,6 +37,22 @@
     <string name="action_settings">Настройки</string>
 
     <string name="contraction_title">Счетчик схваток</string>
+    <string name="contraction_subtitle">Нажмите на большой круг в начале и в конце схватки</string>
+    <string name="contraction_stage_label">Текущая стадия</string>
+    <string name="contraction_stage_monitor">Наблюдаем</string>
+    <string name="contraction_stage_prepare">Готовимся к выезду</string>
+    <string name="contraction_stage_go">Пора ехать</string>
+    <string name="contraction_stage_emergency">Срочно нужна помощь</string>
+    <string name="contraction_ready_title">Если схватка началась</string>
+    <string name="contraction_ready_description">Первое нажатие сразу запустит отслеживание.</string>
+    <string name="contraction_active_label">Схватка идёт прямо сейчас</string>
+    <string name="contraction_waiting_label">Ждём следующую схватку</string>
+    <string name="contraction_graph_title">Наглядная динамика</string>
+    <string name="contraction_history_duration">Длительность: %1$s</string>
+    <string name="contraction_history_interval">Интервал до предыдущей: %1$s</string>
+    <string name="contraction_primary_hint_idle">Нажмите, когда началась следующая схватка.</string>
+    <string name="contraction_primary_hint_running">Нажмите ещё раз, когда схватка закончилась.</string>
+    <string name="contraction_circle_start_first">Начать первую схватку</string>
     <string name="session_status_active">Сессия активна</string>
     <string name="session_status_idle">Сессия не активна</string>
     <string name="start_session">Начать сессию</string>
@@ -49,8 +83,15 @@
     <string name="history">История</string>
     <string name="no_history">История пока пуста</string>
     <string name="contraction_item_title">Схватка %1$d</string>
+    <string name="stat_count_short">Схваток</string>
 
     <string name="water_break_title">Таймер вод</string>
+    <string name="water_break_subtitle">Фиксируйте время, цвет и наблюдайте за состоянием мамы</string>
+    <string name="water_break_overline">Важный медицинский маркер</string>
+    <string name="water_break_active_title">Идёт активный отсчёт после отхождения вод</string>
+    <string name="water_break_idle_title">Событие ещё не зафиксировано</string>
+    <string name="water_break_warning_title">Когда не стоит ждать</string>
+    <string name="water_break_event_details">Началось: %1$s • Цвет: %2$s</string>
     <string name="record_water_break">Зафиксировать отхождение вод</string>
     <string name="water_break_time">Время отхождения вод</string>
     <string name="water_break_elapsed">Прошло времени</string>
@@ -64,6 +105,7 @@
     <string name="no_water_break_history">События не зафиксированы</string>
 
     <string name="decision_title">Когда ехать в роддом</string>
+    <string name="decision_subtitle">Короткая проверка признаков, чтобы понять, пора ли выезжать</string>
     <string name="decision_question_interval">Интервал между схватками менее 5 минут?</string>
     <string name="decision_question_duration">Схватки длятся не менее 60 секунд?</string>
     <string name="decision_question_regular">Схватки регулярные более 1 часа?</string>
@@ -77,6 +119,9 @@
     <string name="decision_explanation">Объяснение</string>
 
     <string name="checklist_title">Чек-листы</string>
+    <string name="checklist_subtitle">Крупные пункты, явный прогресс и меньше суеты перед выездом</string>
+    <string name="checklist_summary_overline">Общий статус</string>
+    <string name="checklist_summary_title">Всё важное в одном месте</string>
     <string name="checklist_progress">Прогресс: %1$d/%2$d</string>
     <string name="add_item">Добавить пункт</string>
     <string name="custom_item_hint">Новый пункт</string>
@@ -84,10 +129,16 @@
     <string name="no_items">Список пуст</string>
 
     <string name="sos_title">SOS</string>
+    <string name="sos_screen_subtitle">Минимум текста, максимум ясных действий</string>
+    <string name="sos_immediate_title">Действуйте без промедления</string>
     <string name="sos_immediate">Немедленно вызывайте скорую помощь при опасных симптомах</string>
     <string name="sos_call_112">Позвонить 112</string>
+    <string name="sos_call_maternity">Позвонить в скорую / роддом</string>
+    <string name="sos_signs_title">Тревожные признаки</string>
+    <string name="sos_actions_title">Что делать прямо сейчас</string>
 
     <string name="mom_support_title">Помощь маме</string>
+    <string name="mom_support_subtitle">Простые подсказки, которые помогают быть рядом и не теряться</string>
     <string name="mom_support_contractions">Поддержка в схватках</string>
     <string name="mom_support_breathing">Дыхание</string>
     <string name="mom_support_words">Что говорить</string>
@@ -95,6 +146,12 @@
     <string name="mom_support_presence">Эмоциональная поддержка</string>
 
     <string name="labor_title">В родах</string>
+    <string name="labor_subtitle">Фиксация ключевых моментов родов и важных заметок</string>
+    <string name="labor_description">Здесь удобно отмечать начало родов, рождение ребёнка и собирать базовую информацию.</string>
+    <string name="labor_start_display">Начало родов: %1$s</string>
+    <string name="labor_birth_display">Время рождения: %1$s</string>
+    <string name="labor_event_title">Добавить событие</string>
+    <string name="labor_event_description">Короткая временная отметка для всего, что важно не забыть в процессе.</string>
     <string name="labor_start_time">Начало родов</string>
     <string name="birth_time">Время рождения</string>
     <string name="birth_weight">Вес (г)</string>
@@ -106,12 +163,22 @@
     <string name="no_timeline">Событий пока нет</string>
 
     <string name="postpartum_title">После родов</string>
+    <string name="postpartum_subtitle">Что держать в фокусе в первые часы и дни после рождения ребёнка</string>
     <string name="postpartum_for_father">Что делать отцу</string>
     <string name="postpartum_for_mother">Наблюдение за мамой</string>
     <string name="postpartum_for_baby">Наблюдение за ребенком</string>
     <string name="postpartum_medical">Когда обращаться к врачу</string>
 
     <string name="trackers_title">Трекеры</string>
+    <string name="trackers_subtitle">Быстрые записи по кормлению, подгузникам, сну и заметкам</string>
+    <string name="trackers_feeding_title">Быстро добавить кормление</string>
+    <string name="trackers_feeding_description">Выберите сторону или бутылочку и сразу зафиксируйте длительность.</string>
+    <string name="trackers_diaper_title">Быстро добавить подгузник</string>
+    <string name="trackers_diaper_description">Отмечайте мокрый, грязный или смешанный подгузник одним касанием.</string>
+    <string name="trackers_sleep_title">Быстро добавить сон</string>
+    <string name="trackers_sleep_description">Короткая форма для сна ребёнка без лишних полей.</string>
+    <string name="trackers_note_title">Быстрая заметка</string>
+    <string name="trackers_note_description">Сохраняйте любые важные наблюдения и договорённости.</string>
     <string name="tracker_feeding">Кормления</string>
     <string name="tracker_diaper">Подгузники</string>
     <string name="tracker_sleep">Сон</string>
@@ -129,12 +196,22 @@
     <string name="sleep_end">Конец сна</string>
 
     <string name="timeline_title">Хронология</string>
+    <string name="timeline_subtitle">Вся история родов и первых дней после них в одном месте</string>
+    <string name="timeline_add_event">Добавить событие</string>
+    <string name="timeline_empty_title">Событий ещё нет</string>
+    <string name="timeline_empty_description">Добавьте первое событие, чтобы фиксировать всю историю в одном месте.</string>
+    <string name="timeline_title_field">Короткий заголовок</string>
+    <string name="timeline_description_field">Описание или детали</string>
     <string name="timeline_filter_all">Все</string>
     <string name="timeline_filter_labor">Роды</string>
     <string name="timeline_filter_postpartum">После родов</string>
 
     <string name="settings_title">Настройки</string>
+    <string name="settings_subtitle">Личные параметры, тема и безопасное управление локальными данными</string>
+    <string name="settings_profile_title">Профиль и личные данные</string>
+    <string name="settings_profile_description">Имя, ПДР и уведомления влияют на персонализацию и сценарии подсказок.</string>
     <string name="settings_theme">Тема</string>
+    <string name="settings_theme_description">Выберите спокойный режим отображения, который удобнее днём или ночью.</string>
     <string name="settings_name">Имя папы</string>
     <string name="settings_due_date">ПДР</string>
     <string name="settings_notifications">Уведомления</string>
@@ -175,6 +252,7 @@
 
     <string name="minutes_format">%1$d мин</string>
     <string name="seconds_format">%1$d сек</string>
+    <string name="seconds_chart_label">%1$d с</string>
     <string name="hours_minutes_format">%1$d ч %2$d мин</string>
     <string name="timestamp_format">%1$s</string>
 

@@ -11,29 +11,35 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.dadnavigator.app.core.ui.DadTheme
 
 @Composable
-fun InfoSectionCard(
+fun InfoCard(
     title: String,
-    lines: List<String>,
+    description: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    overline: String? = null,
+    content: (@Composable () -> Unit)? = null
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = DadTheme.shapes.card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
         Column(
             modifier = Modifier.padding(DadTheme.spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.md)
+            verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 if (icon != null) {
                     Icon(
                         imageVector = icon,
@@ -41,14 +47,24 @@ fun InfoSectionCard(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                Text(text = title, style = MaterialTheme.typography.titleLarge)
+                Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.xxs)) {
+                    if (overline != null) {
+                        Text(
+                            text = overline,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(text = title, style = MaterialTheme.typography.titleLarge)
+                }
             }
-            lines.forEach { line ->
-                Text(
-                    text = "• $line",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (content != null) {
+                content()
             }
         }
     }
