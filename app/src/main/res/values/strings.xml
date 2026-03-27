@@ -1,6 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Папа рядом</string>
+    <string name="nav_menu">Меню</string>
+    <string name="nav_home">Главная</string>
+    <string name="nav_events">События</string>
+    <string name="nav_checklists">Чек-листы</string>
+    <string name="nav_journal">Журнал</string>
+    <string name="drawer_stage_title">Текущий этап</string>
+    <string name="app_stage_preparing">До родов</string>
+    <string name="app_stage_labor">Роды</string>
+    <string name="app_stage_after_birth">После родов</string>
 
     <string name="dashboard_title">Что делать сейчас</string>
     <string name="dashboard_subtitle">Короткие действия для спокойного и быстрого реагирования</string>
@@ -23,6 +32,56 @@
     <string name="dashboard_recent_events_title">Последние события</string>
     <string name="dashboard_recent_events_empty_title">История пока не началась</string>
     <string name="dashboard_recent_events_empty_description">Все важные записи будут появляться здесь в хронологическом порядке</string>
+    <string name="dashboard_stage_overline">Текущий этап</string>
+    <string name="dashboard_due_date_overline">Ориентир по сроку</string>
+    <string name="dashboard_due_date_title">ПДР и контекст</string>
+    <string name="dashboard_birth_details_title">Добавьте данные о ребенке</string>
+    <string name="dashboard_birth_details_description">Имя, вес и рост не обязательны, но потом их удобнее не вспоминать по памяти.</string>
+    <string name="dashboard_after_birth_overline">После родов</string>
+    <string name="dashboard_after_birth_title">Главное после рождения</string>
+    <string name="dashboard_after_birth_description">Поднимите послеродовые задачи, помощь маме и базовые трекеры, а лишние родовые инструменты не будут мешать.</string>
+    <string name="dashboard_decision_overline">Решение про выезд</string>
+    <string name="dashboard_checklist_title_preparing">Подготовка до родов</string>
+    <string name="dashboard_checklist_title_labor">Что важно в родах</string>
+    <string name="dashboard_checklist_title_after_birth">Что важно после родов</string>
+    <string name="dashboard_preparing_ready_title">Может начаться в любой момент</string>
+    <string name="dashboard_preparing_ready_description">Держите под рукой понятный план, сумки и быстрый переход в раздел События.</string>
+    <string name="dashboard_preparing_calm_title">Спокойная подготовка</string>
+    <string name="dashboard_preparing_calm_description">Завершайте чек-листы, держите документы в одном месте и не перегружайте себя лишним.</string>
+    <string name="dashboard_labor_title">Сейчас важны быстрые действия</string>
+    <string name="dashboard_labor_description">На главной оставлены только те действия, которые нужны прямо в родах: события, схватки, воды и SOS.</string>
+    <string name="dashboard_labor_water_description">Таймер вод уже активен, поэтому фокус на быстрых действиях, экстренных контактах и фиксации ключевых событий.</string>
+
+    <string name="events_title">События</string>
+    <string name="events_subtitle">Все ключевые действия и отметки родов в одном разделе</string>
+    <string name="events_stage_overline">Сценарий приложения</string>
+    <string name="events_stage_preparing_description">Подготовьте стартовые сценарии заранее и держите нужные инструменты под рукой, но без лишней тревоги.</string>
+    <string name="events_stage_labor_description">Наверх подняты все действия, которые действительно нужны во время родов: схватки, воды, журнал и выезд.</string>
+    <string name="events_stage_after_birth_description">Боевые родовые инструменты уходят на второй план, а фокус смещается на восстановление, документы и первые дни дома.</string>
+    <string name="events_main_tools_title">Быстрый доступ к инструментам</string>
+    <string name="events_main_tools_description">Откройте нужный раздел одним нажатием, без лишнего поиска.</string>
+    <string name="events_action_labor_started">Начались роды</string>
+    <string name="events_action_labor_started_desc">Нажмите, когда начались регулярные схватки, отошли воды или нужно перейти в режим родов.</string>
+    <string name="events_action_departed">Выехали в роддом</string>
+    <string name="events_action_departed_desc">Сохранить отметку времени выезда.</string>
+    <string name="events_action_arrived">Приехали в роддом</string>
+    <string name="events_action_arrived_desc">Сохранить отметку времени прибытия.</string>
+    <string name="events_action_birth">Ребенок родился</string>
+    <string name="events_logistics_title">Логистика родов</string>
+    <string name="events_logistics_description">Зафиксируйте выезд, приезд и момент рождения, чтобы не держать всё в голове.</string>
+    <string name="events_birth_summary_overline">Рождение</string>
+    <string name="events_birth_summary_title">Что уже зафиксировано</string>
+    <string name="events_birth_summary_empty">Время рождения пока не записано</string>
+    <string name="events_birth_name_value">Имя: %1$s</string>
+    <string name="events_birth_metrics_value">Вес: %1$s г • Рост: %2$s см</string>
+    <string name="events_open_birth_details">Открыть данные родов</string>
+    <string name="events_birth_sheet_title">Ребенок родился</string>
+    <string name="events_birth_sheet_description">Можно сразу добавить имя, вес и рост. Это необязательно — приложение не будет заставлять.</string>
+    <string name="events_birth_name_hint">Имя ребенка</string>
+    <string name="events_birth_confirm">Сохранить событие</string>
+    <string name="events_birth_skip">Сохранить без деталей</string>
+    <string name="events_labor_started_saved">Этап родов активирован</string>
+    <string name="events_birth_saved">Рождение зафиксировано</string>
 
     <string name="action_contraction_counter">Счетчик схваток</string>
     <string name="action_water_break_timer">Таймер после отхождения вод</string>
@@ -32,7 +91,7 @@
     <string name="action_help_mom">Помощь маме</string>
     <string name="action_labor">В родах</string>
     <string name="action_postpartum">После родов</string>
-    <string name="action_timeline">Хронология</string>
+    <string name="action_timeline">Журнал</string>
     <string name="action_trackers">Трекеры</string>
     <string name="action_settings">Настройки</string>
 
@@ -119,7 +178,7 @@
     <string name="decision_explanation">Объяснение</string>
 
     <string name="checklist_title">Чек-листы</string>
-    <string name="checklist_subtitle">Крупные пункты, явный прогресс и меньше суеты перед выездом</string>
+    <string name="checklist_subtitle">Списки по этапам, чтобы ничего не забыть до родов, в родах и после них</string>
     <string name="checklist_summary_overline">Общий статус</string>
     <string name="checklist_summary_title">Всё важное в одном месте</string>
     <string name="checklist_progress">Прогресс: %1$d/%2$d</string>
@@ -129,11 +188,14 @@
     <string name="no_items">Список пуст</string>
 
     <string name="sos_title">SOS</string>
-    <string name="sos_screen_subtitle">Минимум текста, максимум ясных действий</string>
+    <string name="sos_screen_subtitle">Короткие действия на случай тревожных симптомов</string>
     <string name="sos_immediate_title">Действуйте без промедления</string>
     <string name="sos_immediate">Немедленно вызывайте скорую помощь при опасных симптомах</string>
     <string name="sos_call_112">Позвонить 112</string>
     <string name="sos_call_maternity">Позвонить в скорую / роддом</string>
+    <string name="sos_contacts_title">Быстрые контакты</string>
+    <string name="sos_contacts_description">Здесь собраны номера, по которым можно быстро позвонить без поиска в телефонной книге.</string>
+    <string name="sos_manage_contacts">Открыть экстренные контакты</string>
     <string name="sos_signs_title">Тревожные признаки</string>
     <string name="sos_actions_title">Что делать прямо сейчас</string>
 
@@ -157,6 +219,7 @@
     <string name="birth_weight">Вес (г)</string>
     <string name="birth_height">Рост (см)</string>
     <string name="save_labor_info">Сохранить данные родов</string>
+    <string name="labor_summary_saved">Данные родов сохранены</string>
     <string name="labor_event_hint">Событие родов</string>
     <string name="labor_note_hint">Заметка</string>
     <string name="add_timeline_event">Добавить событие</string>
@@ -195,8 +258,9 @@
     <string name="sleep_start">Начало сна</string>
     <string name="sleep_end">Конец сна</string>
 
-    <string name="timeline_title">Хронология</string>
-    <string name="timeline_subtitle">Вся история родов и первых дней после них в одном месте</string>
+    <string name="timeline_title">Журнал</string>
+    <string name="journal_title">Журнал</string>
+    <string name="timeline_subtitle">Понятная история событий родов и первых дней после них</string>
     <string name="timeline_add_event">Добавить событие</string>
     <string name="timeline_empty_title">Событий ещё нет</string>
     <string name="timeline_empty_description">Добавьте первое событие, чтобы фиксировать всю историю в одном месте.</string>
@@ -209,11 +273,15 @@
     <string name="settings_title">Настройки</string>
     <string name="settings_subtitle">Личные параметры, тема и безопасное управление локальными данными</string>
     <string name="settings_profile_title">Профиль и личные данные</string>
-    <string name="settings_profile_description">Имя, ПДР и уведомления влияют на персонализацию и сценарии подсказок.</string>
+    <string name="settings_profile_description">Имя и ПДР нужны только для удобных подсказок и контекста на главной.</string>
     <string name="settings_theme">Тема</string>
     <string name="settings_theme_description">Выберите спокойный режим отображения, который удобнее днём или ночью.</string>
+    <string name="settings_stage_title">Этап приложения</string>
+    <string name="settings_stage_description">Переключайте этап вручную, когда ситуация изменилась. ПДР ничего не меняет автоматически.</string>
     <string name="settings_name">Имя папы</string>
     <string name="settings_due_date">ПДР</string>
+    <string name="settings_due_date_hint">Формат: ДД.ММ.ГГГГ</string>
+    <string name="settings_pick_due_date">Выбрать дату в календаре</string>
     <string name="settings_notifications">Уведомления</string>
     <string name="settings_reset">Сброс данных</string>
     <string name="settings_save">Сохранить настройки</string>
@@ -272,6 +340,40 @@
     <string name="timeline_type_diaper">Подгузник</string>
     <string name="timeline_type_sleep">Сон</string>
     <string name="timeline_type_note">Заметка</string>
+    <string name="emergency_contacts_title">Экстренные контакты</string>
+    <string name="emergency_contacts_subtitle">Скорая уже сохранена. Остальные контакты добавляйте только если они вам нужны.</string>
+    <string name="emergency_contact_name">Название</string>
+    <string name="emergency_contact_phone">Телефон</string>
+    <string name="emergency_contact_call">Позвонить</string>
+    <string name="emergency_contacts_add_more">Добавить еще контакт</string>
+    <string name="emergency_contacts_add_contact">Добавить: %1$s</string>
+    <string name="contact_type_ambulance">Скорая</string>
+    <string name="contact_type_maternity">Роддом</string>
+    <string name="contact_type_doctor">Врач</string>
+    <string name="contact_type_midwife">Акушерка</string>
+    <string name="contact_type_trusted">Доверенное лицо</string>
+    <string name="contact_type_partner">Жена / близкий человек</string>
+    <string name="contact_type_taxi">Такси</string>
+    <string name="help_title">Справка</string>
+    <string name="help_subtitle">Подсказки по этапам, важным действиям и дороге в роддом</string>
+    <string name="help_maternity_route_title">Роддом и маршрут</string>
+    <string name="help_maternity_route_description">Сохраните адрес роддома, чтобы в нужный момент открыть маршрут одним нажатием.</string>
+    <string name="help_maternity_address_label">Адрес роддома</string>
+    <string name="help_save_maternity_address">Сохранить адрес</string>
+    <string name="help_open_route">Построить маршрут</string>
+    <string name="help_clear_maternity_address">Очистить адрес</string>
+    <string name="help_how_app_works">Как это приложение работает</string>
+    <string name="help_how_app_works_1">Этап приложения переключается только вручную. ПДР используется как ориентир, а не как автоматический триггер.</string>
+    <string name="help_how_app_works_2">Раздел События объединяет схватки, воды, старт родов, выезд, приезд и рождение ребенка.</string>
+    <string name="help_how_app_works_3">Журнал хранит историю, а главный экран показывает только то, что сейчас действительно важно.</string>
+    <string name="about_title">О приложении</string>
+    <string name="about_subtitle">Коротко о принципах работы, офлайн-хранении и границах ответственности приложения</string>
+    <string name="about_offline_title">Оффлайн-first</string>
+    <string name="about_offline_description">Основные данные хранятся локально на устройстве и доступны без сети.</string>
+    <string name="about_privacy_title">Локальные данные</string>
+    <string name="about_privacy_description">Настройки, контакты, события и чек-листы сохраняются на устройстве и не отправляются автоматически во внешние сервисы.</string>
+    <string name="about_disclaimer_title">Важно помнить</string>
+    <string name="about_disclaimer_description">Приложение помогает ориентироваться и фиксировать события, но не заменяет врача и не является медицинским изделием.</string>
 
     <string name="nav_back">Назад</string>
 
@@ -298,7 +400,7 @@
 
     <string name="input_required">Заполните обязательные поля</string>
     <string name="invalid_number">Введите корректное число</string>
-    <string name="invalid_date">Введите дату в формате ГГГГ-ММ-ДД</string>
+    <string name="invalid_date">Введите дату в формате ДД.ММ.ГГГГ</string>
 
     <string name="labor_mark_now">Отметить сейчас</string>
     <string name="close_active_water_break">Завершить активное событие</string>

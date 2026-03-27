@@ -4,15 +4,19 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.DEFAULT_USER_ID
 import com.dadnavigator.app.domain.model.Settings
 import com.dadnavigator.app.domain.model.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import javax.inject.Inject
@@ -30,18 +34,36 @@ class SettingsDataStore @Inject constructor(
     private val themeModeKey = stringPreferencesKey("theme_mode")
     private val fatherNameKey = stringPreferencesKey("father_name")
     private val dueDateEpochDayKey = longPreferencesKey("due_date_epoch_day")
+    private val maternityHospitalAddressKey = stringPreferencesKey("maternity_hospital_address")
     private val notificationsEnabledKey = booleanPreferencesKey("notifications_enabled")
+    private val appStageKey = stringPreferencesKey("app_stage")
 
     fun observeSettings(): Flow<Settings> {
-        return context.settingsDataStore.data.map { preferences ->
-            Settings(
-                userId = preferences[userIdKey] ?: DEFAULT_USER_ID,
-                themeMode = ThemeMode.valueOf(preferences[themeModeKey] ?: ThemeMode.SYSTEM.name),
-                fatherName = preferences[fatherNameKey].orEmpty(),
-                dueDate = preferences[dueDateEpochDayKey]?.let(LocalDate::ofEpochDay),
-                notificationsEnabled = preferences[notificationsEnabledKey] ?: true
-            )
-        }
+        return context.settingsDataStore.data
+            .catch { throwable ->
+                if (throwable is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw throwable
+                }
+            }
+            .map { preferences ->
+                Settings(
+                    userId = preferences[userIdKey] ?: DEFAULT_USER_ID,
+                    themeMode = runCatching {
+                        ThemeMode.valueOf(preferences[themeModeKey] ?: ThemeMode.SYSTEM.name)
+                    }.getOrDefault(ThemeMode.SYSTEM),
+                    fatherName = preferences[fatherNameKey].orEmpty(),
+                    dueDate = preferences[dueDateEpochDayKey]?.let { epochDay ->
+                        runCatching { LocalDate.ofEpochDay(epochDay) }.getOrNull()
+                    },
+                    maternityHospitalAddress = preferences[maternityHospitalAddressKey].orEmpty(),
+                    notificationsEnabled = preferences[notificationsEnabledKey] ?: true,
+                    appStage = runCatching {
+                        AppStage.valueOf(preferences[appStageKey] ?: AppStage.PREPARING.name)
+                    }.getOrDefault(AppStage.PREPARING)
+                )
+            }
     }
 
     suspend fun saveSettings(settings: Settings) {
@@ -54,7 +76,9 @@ class SettingsDataStore @Inject constructor(
             } else {
                 preferences[dueDateEpochDayKey] = settings.dueDate.toEpochDay()
             }
+            preferences[maternityHospitalAddressKey] = settings.maternityHospitalAddress
             preferences[notificationsEnabledKey] = settings.notificationsEnabled
+            preferences[appStageKey] = settings.appStage.name
         }
     }
 

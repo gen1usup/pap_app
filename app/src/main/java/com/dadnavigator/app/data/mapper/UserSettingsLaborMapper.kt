@@ -3,6 +3,7 @@
 import com.dadnavigator.app.data.local.entity.LaborSummaryEntity
 import com.dadnavigator.app.data.local.entity.SettingsEntity
 import com.dadnavigator.app.data.local.entity.UserEntity
+import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.AppUser
 import com.dadnavigator.app.domain.model.LaborSummary
 import com.dadnavigator.app.domain.model.Settings
@@ -29,7 +30,9 @@ fun SettingsEntity.toDomain(): Settings = Settings(
     themeMode = runCatching { ThemeMode.valueOf(themeMode) }.getOrDefault(ThemeMode.SYSTEM),
     fatherName = fatherName,
     dueDate = dueDateEpochDay?.let(java.time.LocalDate::ofEpochDay),
-    notificationsEnabled = notificationsEnabled
+    maternityHospitalAddress = maternityHospitalAddress,
+    notificationsEnabled = notificationsEnabled,
+    appStage = runCatching { AppStage.valueOf(appStage) }.getOrDefault(AppStage.PREPARING)
 )
 
 fun Settings.toEntity(updatedAt: Instant = Instant.now()): SettingsEntity = SettingsEntity(
@@ -37,13 +40,16 @@ fun Settings.toEntity(updatedAt: Instant = Instant.now()): SettingsEntity = Sett
     themeMode = themeMode.name,
     fatherName = fatherName,
     dueDateEpochDay = dueDate?.toEpochDay(),
+    maternityHospitalAddress = maternityHospitalAddress,
     notificationsEnabled = notificationsEnabled,
+    appStage = appStage.name,
     updatedAt = updatedAt
 )
 
 fun LaborSummaryEntity.toDomain(): LaborSummary = LaborSummary(
     laborStartTime = laborStartTime,
     birthTime = birthTime,
+    babyName = babyName,
     birthWeightGrams = birthWeightGrams,
     birthHeightCm = birthHeightCm
 )
@@ -52,6 +58,7 @@ fun LaborSummary.toEntity(userId: String): LaborSummaryEntity = LaborSummaryEnti
     userId = userId,
     laborStartTime = laborStartTime,
     birthTime = birthTime,
+    babyName = babyName,
     birthWeightGrams = birthWeightGrams,
     birthHeightCm = birthHeightCm
 )

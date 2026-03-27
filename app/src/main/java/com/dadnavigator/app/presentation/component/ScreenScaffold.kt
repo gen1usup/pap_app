@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +37,7 @@ fun ScreenScaffold(
     title: String,
     subtitle: String? = null,
     onBack: (() -> Unit)?,
+    onMenu: (() -> Unit)? = null,
     snackbarHostState: SnackbarHostState? = null,
     floatingActionButton: (@Composable () -> Unit)? = null,
     actions: @Composable () -> Unit = {},
@@ -71,6 +73,13 @@ fun ScreenScaffold(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(id = R.string.nav_back)
+                            )
+                        }
+                    } else if (onMenu != null) {
+                        IconButton(onClick = onMenu) {
+                            Icon(
+                                imageVector = Icons.Outlined.Menu,
+                                contentDescription = stringResource(id = R.string.nav_menu)
                             )
                         }
                     }

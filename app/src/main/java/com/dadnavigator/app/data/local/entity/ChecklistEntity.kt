@@ -15,8 +15,11 @@ import java.time.Instant
 data class ChecklistEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val userId: String,
-    val name: String,
+    val title: String,
+    val stage: String,
+    val category: String,
     val isSystem: Boolean,
+    val sortOrder: Int,
     val createdAt: Instant
 )
 

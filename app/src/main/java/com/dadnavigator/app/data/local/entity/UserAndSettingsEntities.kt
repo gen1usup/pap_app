@@ -2,6 +2,7 @@
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.dadnavigator.app.domain.model.AppStage
 import java.time.Instant
 
 /**
@@ -23,7 +24,9 @@ data class SettingsEntity(
     val themeMode: String,
     val fatherName: String,
     val dueDateEpochDay: Long?,
+    val maternityHospitalAddress: String,
     val notificationsEnabled: Boolean,
+    val appStage: String,
     val updatedAt: Instant
 )
 
@@ -35,6 +38,7 @@ data class LaborSummaryEntity(
     @PrimaryKey val userId: String,
     val laborStartTime: Instant?,
     val birthTime: Instant?,
+    val babyName: String?,
     val birthWeightGrams: Int?,
     val birthHeightCm: Int?
 )

@@ -8,8 +8,11 @@ import java.time.Instant
 data class Checklist(
     val id: Long,
     val userId: String,
-    val name: String,
+    val title: String,
+    val stage: AppStage,
+    val category: String,
     val isSystem: Boolean,
+    val sortOrder: Int,
     val createdAt: Instant
 )
 

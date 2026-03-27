@@ -15,11 +15,13 @@ import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dadnavigator.app.R
@@ -43,12 +45,13 @@ fun LaborScreen(
 
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val snackbarHostState = remember { SnackbarHostState() }
-    val errorMessage = state.errorRes?.let { stringResource(id = it) }
+    val message = state.errorRes?.let { stringResource(id = it) }
+        ?: state.infoRes?.let { stringResource(id = it) }
 
-    LaunchedEffect(errorMessage) {
-        if (errorMessage != null) {
-            snackbarHostState.showSnackbar(errorMessage)
-            viewModel.dismissError()
+    LaunchedEffect(message) {
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearMessages()
         }
     }
 
@@ -98,15 +101,23 @@ fun LaborScreen(
                             )
                             OutlinedTextField(
                                 modifier = Modifier.fillMaxWidth(),
+                                value = state.babyNameInput,
+                                onValueChange = viewModel::updateBabyName,
+                                label = { Text(text = stringResource(id = R.string.events_birth_name_hint)) }
+                            )
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
                                 value = state.weightInput,
                                 onValueChange = viewModel::updateWeight,
-                                label = { Text(text = stringResource(id = R.string.birth_weight)) }
+                                label = { Text(text = stringResource(id = R.string.birth_weight)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                             )
                             OutlinedTextField(
                                 modifier = Modifier.fillMaxWidth(),
                                 value = state.heightInput,
                                 onValueChange = viewModel::updateHeight,
-                                label = { Text(text = stringResource(id = R.string.birth_height)) }
+                                label = { Text(text = stringResource(id = R.string.birth_height)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                             )
                             PrimaryButton(
                                 text = stringResource(id = R.string.save_labor_info),

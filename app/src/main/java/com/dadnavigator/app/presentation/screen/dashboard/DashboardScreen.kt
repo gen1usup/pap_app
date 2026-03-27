@@ -20,10 +20,9 @@ import androidx.compose.material.icons.outlined.Emergency
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.outlined.MonitorHeart
-import androidx.compose.material.icons.outlined.MoreTime
-import androidx.compose.material.icons.outlined.NightlightRound
+import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Timeline
+import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -37,15 +36,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dadnavigator.app.R
 import com.dadnavigator.app.core.ui.DadNavigatorTheme
 import com.dadnavigator.app.core.ui.DadTheme
+import com.dadnavigator.app.core.util.toReadableDate
 import com.dadnavigator.app.core.util.toReadableDateTime
 import com.dadnavigator.app.core.util.toReadableDuration
+import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.TimelineEvent
 import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.presentation.component.ActionCard
@@ -60,8 +59,7 @@ import com.dadnavigator.app.presentation.component.StatusCard
 import com.dadnavigator.app.presentation.component.StatusTone
 import com.dadnavigator.app.presentation.component.TimelineItem
 import com.dadnavigator.app.presentation.navigation.AppDestination
-import java.time.Duration
-import java.time.Instant
+import java.time.LocalDate
 
 private data class QuickAction(
     val route: String,
@@ -73,8 +71,8 @@ private data class QuickAction(
 @Composable
 fun DashboardScreen(
     userId: String,
-    fatherName: String,
     widthSizeClass: WindowWidthSizeClass,
+    onMenu: (() -> Unit)? = null,
     onNavigate: (String) -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
@@ -86,6 +84,8 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val haptics = LocalHapticFeedback.current
     val errorMessage = state.errorRes?.let { stringResource(id = it) }
+    val laborStartedTitle = stringResource(id = R.string.events_action_labor_started)
+    val laborStartedDescription = stringResource(id = R.string.events_action_labor_started_desc)
 
     LaunchedEffect(errorMessage) {
         if (errorMessage != null) {
@@ -95,16 +95,17 @@ fun DashboardScreen(
     }
 
     DashboardContent(
-        fatherName = fatherName,
         state = state,
         widthSizeClass = widthSizeClass,
+        onMenu = onMenu,
         snackbarHostState = snackbarHostState,
-        onStartContraction = {
+        onStartLabor = {
             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-            if (!state.hasActiveContractionSession) {
-                viewModel.startFirstContraction()
-            }
-            onNavigate(AppDestination.Contraction.route)
+            viewModel.markLaborStarted(
+                eventTitle = laborStartedTitle,
+                eventDescription = laborStartedDescription
+            )
+            onNavigate(AppDestination.Events.route)
         },
         onOpenSos = { onNavigate(AppDestination.Sos.route) },
         onNavigate = onNavigate
@@ -113,31 +114,22 @@ fun DashboardScreen(
 
 @Composable
 private fun DashboardContent(
-    fatherName: String,
     state: DashboardUiState,
     widthSizeClass: WindowWidthSizeClass,
+    onMenu: (() -> Unit)?,
     snackbarHostState: SnackbarHostState,
-    onStartContraction: () -> Unit,
+    onStartLabor: () -> Unit,
     onOpenSos: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     val spacing = DadTheme.spacing
-    val actions = listOf(
-        QuickAction(AppDestination.WaterBreak.route, R.string.action_water_break_timer, R.string.action_water_break_timer_desc, Icons.Outlined.WaterDrop),
-        QuickAction(AppDestination.Decision.route, R.string.action_when_go_hospital, R.string.action_when_go_hospital_desc, Icons.Outlined.LocalHospital),
-        QuickAction(AppDestination.Checklist.route, R.string.action_checklists, R.string.action_checklists_desc, Icons.Outlined.Checklist),
-        QuickAction(AppDestination.Timeline.route, R.string.action_timeline, R.string.action_timeline_desc, Icons.Outlined.Timeline),
-        QuickAction(AppDestination.Trackers.route, R.string.action_trackers, R.string.action_trackers_desc, Icons.Outlined.ChildCare),
-        QuickAction(AppDestination.MomSupport.route, R.string.action_help_mom, R.string.action_help_mom_desc, Icons.Outlined.FavoriteBorder),
-        QuickAction(AppDestination.Labor.route, R.string.action_labor, R.string.action_labor_desc, Icons.Outlined.MonitorHeart),
-        QuickAction(AppDestination.Postpartum.route, R.string.action_postpartum, R.string.action_postpartum_desc, Icons.Outlined.BabyChangingStation),
-        QuickAction(AppDestination.Settings.route, R.string.action_settings, R.string.action_settings_desc, Icons.Outlined.Settings)
-    )
+    val quickActions = quickActionsForStage(state.appStage)
 
     ScreenScaffold(
         title = stringResource(id = R.string.dashboard_title),
         subtitle = stringResource(id = R.string.dashboard_subtitle),
         onBack = null,
+        onMenu = onMenu,
         snackbarHostState = snackbarHostState
     ) { innerPadding ->
         ScreenBackground {
@@ -155,36 +147,57 @@ private fun DashboardContent(
             ) {
                 item {
                     StatusCard(
-                        title = if (fatherName.isBlank()) {
-                            stringResource(id = R.string.dashboard_focus_title)
-                        } else {
-                            stringResource(id = R.string.dashboard_focus_title_named, fatherName)
+                        title = stringResource(id = dashboardStageTitleRes(state.appStage)),
+                        description = dashboardStageDescription(
+                            stage = state.appStage,
+                            fatherName = state.fatherName,
+                            hasActiveContractionSession = state.hasActiveContractionSession,
+                            hasActiveWaterBreak = state.hasActiveWaterBreak
+                        ),
+                        tone = when (state.appStage) {
+                            AppStage.PREPARING -> StatusTone.Calm
+                            AppStage.LABOR -> if (state.hasActiveWaterBreak) StatusTone.Warning else StatusTone.Warning
+                            AppStage.AFTER_BIRTH -> StatusTone.Success
                         },
-                        description = stringResource(id = state.currentActionRes),
-                        tone = when {
-                            state.hasActiveWaterBreak -> StatusTone.Warning
-                            state.hasActiveContractionSession -> StatusTone.Success
-                            else -> StatusTone.Calm
+                        icon = when (state.appStage) {
+                            AppStage.PREPARING -> Icons.Outlined.Route
+                            AppStage.LABOR -> Icons.Outlined.MonitorHeart
+                            AppStage.AFTER_BIRTH -> Icons.Outlined.ChildCare
                         },
-                        icon = if (state.hasActiveWaterBreak) Icons.Outlined.WaterDrop else Icons.Outlined.MonitorHeart,
-                        headline = stringResource(id = R.string.dashboard_focus_overline)
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-                            PrimaryButton(
-                                text = stringResource(
-                                    id = if (state.hasActiveContractionSession) {
-                                        R.string.dashboard_open_contraction_cta
-                                    } else {
-                                        R.string.dashboard_start_contraction_cta
-                                    }
-                                ),
-                                onClick = onStartContraction,
-                                icon = Icons.Outlined.AccessTime
-                            )
-                            DangerButton(
-                                text = stringResource(id = R.string.dashboard_sos_cta),
-                                onClick = onOpenSos,
-                                icon = Icons.Outlined.Emergency
+                        headline = stringResource(id = R.string.dashboard_stage_overline)
+                    )
+                }
+
+                if (state.dueDate != null) {
+                    item {
+                        InfoCard(
+                            title = stringResource(id = R.string.dashboard_due_date_title),
+                            description = dueDateDescription(state.dueDate, state.daysUntilDueDate),
+                            icon = Icons.Outlined.AccessTime,
+                            overline = stringResource(id = R.string.dashboard_due_date_overline)
+                        )
+                    }
+                }
+
+                item {
+                    DashboardPrimaryCard(
+                        state = state,
+                        onStartLabor = onStartLabor,
+                        onOpenSos = onOpenSos,
+                        onNavigate = onNavigate
+                    )
+                }
+
+                if (state.showBirthDetailsCard) {
+                    item {
+                        InfoCard(
+                            title = stringResource(id = R.string.dashboard_birth_details_title),
+                            description = stringResource(id = R.string.dashboard_birth_details_description),
+                            icon = Icons.Outlined.BabyChangingStation
+                        ) {
+                            SecondaryButton(
+                                text = stringResource(id = R.string.events_open_birth_details),
+                                onClick = { onNavigate(AppDestination.Labor.route) }
                             )
                         }
                     }
@@ -201,22 +214,34 @@ private fun DashboardContent(
                                 state = state,
                                 onClick = { onNavigate(AppDestination.Checklist.route) }
                             )
-                            DashboardWaterCard(
+                            StageSupportCard(
                                 modifier = Modifier.weight(1f),
                                 state = state,
-                                onClick = { onNavigate(AppDestination.WaterBreak.route) }
+                                onNavigate = onNavigate
                             )
                         }
                     } else {
+                        val checklistFirst = state.appStage == AppStage.PREPARING
                         Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
-                            DashboardChecklistCard(
-                                state = state,
-                                onClick = { onNavigate(AppDestination.Checklist.route) }
-                            )
-                            DashboardWaterCard(
-                                state = state,
-                                onClick = { onNavigate(AppDestination.WaterBreak.route) }
-                            )
+                            if (checklistFirst) {
+                                DashboardChecklistCard(
+                                    state = state,
+                                    onClick = { onNavigate(AppDestination.Checklist.route) }
+                                )
+                                StageSupportCard(
+                                    state = state,
+                                    onNavigate = onNavigate
+                                )
+                            } else {
+                                StageSupportCard(
+                                    state = state,
+                                    onNavigate = onNavigate
+                                )
+                                DashboardChecklistCard(
+                                    state = state,
+                                    onClick = { onNavigate(AppDestination.Checklist.route) }
+                                )
+                            }
                         }
                     }
                 }
@@ -225,7 +250,8 @@ private fun DashboardContent(
                     Text(
                         text = stringResource(id = R.string.quick_actions),
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(top = spacing.xs)
+                        modifier = Modifier.padding(top = spacing.xs),
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
@@ -234,7 +260,7 @@ private fun DashboardContent(
                         horizontalArrangement = Arrangement.spacedBy(spacing.md),
                         contentPadding = PaddingValues(end = spacing.xs)
                     ) {
-                        items(actions) { action ->
+                        items(quickActions) { action ->
                             Box(modifier = Modifier.fillParentMaxWidth(0.84f)) {
                                 ActionCard(
                                     title = stringResource(id = action.titleRes),
@@ -251,7 +277,8 @@ private fun DashboardContent(
                     Text(
                         text = stringResource(id = R.string.dashboard_recent_events_title),
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(top = spacing.sm)
+                        modifier = Modifier.padding(top = spacing.sm),
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
@@ -260,10 +287,10 @@ private fun DashboardContent(
                         EmptyState(
                             title = stringResource(id = R.string.dashboard_recent_events_empty_title),
                             description = stringResource(id = R.string.dashboard_recent_events_empty_description),
-                            icon = Icons.Outlined.NightlightRound,
+                            icon = Icons.Outlined.StickyNote2,
                             action = {
                                 SecondaryButton(
-                                    text = stringResource(id = R.string.action_timeline),
+                                    text = stringResource(id = R.string.nav_journal),
                                     onClick = { onNavigate(AppDestination.Timeline.route) },
                                     fullWidth = false
                                 )
@@ -287,23 +314,116 @@ private fun DashboardContent(
 }
 
 @Composable
+private fun DashboardPrimaryCard(
+    state: DashboardUiState,
+    onStartLabor: () -> Unit,
+    onOpenSos: () -> Unit,
+    onNavigate: (String) -> Unit
+) {
+    val icon = when (state.appStage) {
+        AppStage.PREPARING -> Icons.Outlined.Route
+        AppStage.LABOR -> Icons.Outlined.MonitorHeart
+        AppStage.AFTER_BIRTH -> Icons.Outlined.ChildCare
+    }
+    InfoCard(
+        title = stringResource(id = primaryCardTitleRes(state)),
+        description = stringResource(id = primaryCardDescriptionRes(state)),
+        icon = icon,
+        overline = stringResource(id = R.string.dashboard_focus_overline)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)) {
+            when (state.appStage) {
+                AppStage.PREPARING -> {
+                    PrimaryButton(
+                        text = stringResource(id = R.string.events_action_labor_started),
+                        onClick = onStartLabor,
+                        icon = Icons.Outlined.MonitorHeart
+                    )
+                    SecondaryButton(
+                        text = stringResource(id = R.string.action_checklists),
+                        onClick = { onNavigate(AppDestination.Checklist.route) },
+                        icon = Icons.Outlined.Checklist
+                    )
+                    if (state.showContractionShortcut) {
+                        SecondaryButton(
+                            text = stringResource(id = R.string.dashboard_open_contraction_cta),
+                            onClick = { onNavigate(AppDestination.Contraction.route) },
+                            icon = Icons.Outlined.AccessTime
+                        )
+                    }
+                }
+
+                AppStage.LABOR -> {
+                    PrimaryButton(
+                        text = stringResource(id = R.string.nav_events),
+                        onClick = { onNavigate(AppDestination.Events.route) },
+                        icon = Icons.Outlined.MonitorHeart
+                    )
+                    if (state.showContractionShortcut) {
+                        SecondaryButton(
+                            text = stringResource(
+                                id = if (state.hasActiveContractionSession) {
+                                    R.string.dashboard_open_contraction_cta
+                                } else {
+                                    R.string.dashboard_start_contraction_cta
+                                }
+                            ),
+                            onClick = { onNavigate(AppDestination.Contraction.route) },
+                            icon = Icons.Outlined.AccessTime
+                        )
+                    }
+                    SecondaryButton(
+                        text = stringResource(id = R.string.dashboard_water_action),
+                        onClick = { onNavigate(AppDestination.WaterBreak.route) },
+                        icon = Icons.Outlined.WaterDrop
+                    )
+                    DangerButton(
+                        text = stringResource(id = R.string.dashboard_sos_cta),
+                        onClick = onOpenSos,
+                        icon = Icons.Outlined.Emergency
+                    )
+                }
+
+                AppStage.AFTER_BIRTH -> {
+                    PrimaryButton(
+                        text = stringResource(id = R.string.action_trackers),
+                        onClick = { onNavigate(AppDestination.Trackers.route) },
+                        icon = Icons.Outlined.ChildCare
+                    )
+                    SecondaryButton(
+                        text = stringResource(id = R.string.action_help_mom),
+                        onClick = { onNavigate(AppDestination.MomSupport.route) },
+                        icon = Icons.Outlined.FavoriteBorder
+                    )
+                    SecondaryButton(
+                        text = stringResource(id = R.string.action_checklists),
+                        onClick = { onNavigate(AppDestination.Checklist.route) },
+                        icon = Icons.Outlined.Checklist
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun DashboardChecklistCard(
     state: DashboardUiState,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val progress = if (state.checklistTotalCount == 0) 0f else {
-        state.checklistCompletedCount.toFloat() / state.checklistTotalCount.toFloat()
+    val progress = if (state.stageChecklistTotalCount == 0) 0f else {
+        state.stageChecklistCompletedCount.toFloat() / state.stageChecklistTotalCount.toFloat()
     }
     InfoCard(
         modifier = modifier,
         icon = Icons.Outlined.Checklist,
         overline = stringResource(id = R.string.dashboard_checklist_overline),
-        title = stringResource(id = R.string.dashboard_checklist_title),
+        title = stringResource(id = dashboardChecklistTitleRes(state.appStage)),
         description = stringResource(
             id = R.string.dashboard_checklist_description,
-            state.checklistCompletedCount,
-            state.checklistTotalCount
+            state.stageChecklistCompletedCount,
+            state.stageChecklistTotalCount
         )
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)) {
@@ -320,38 +440,158 @@ private fun DashboardChecklistCard(
 }
 
 @Composable
-private fun DashboardWaterCard(
+private fun StageSupportCard(
     state: DashboardUiState,
-    onClick: () -> Unit,
+    onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    StatusCard(
-        modifier = modifier,
-        title = stringResource(id = R.string.dashboard_water_title),
-        description = if (state.hasActiveWaterBreak) {
-            stringResource(
-                id = R.string.dashboard_water_active_description,
-                state.waterBreakElapsed?.toReadableDuration() ?: "--"
-            )
-        } else {
-            stringResource(id = R.string.dashboard_water_idle_description)
-        },
-        tone = if (state.hasActiveWaterBreak) StatusTone.Warning else StatusTone.Calm,
-        icon = Icons.Outlined.WaterDrop,
-        headline = stringResource(id = R.string.dashboard_water_overline)
-    ) {
-        SecondaryButton(
-            text = stringResource(id = R.string.dashboard_water_action),
-            onClick = onClick
-        )
+    when {
+        state.appStage == AppStage.LABOR && state.hasActiveWaterBreak -> {
+            InfoCard(
+                modifier = modifier,
+                icon = Icons.Outlined.WaterDrop,
+                overline = stringResource(id = R.string.dashboard_water_overline),
+                title = stringResource(id = R.string.dashboard_water_title),
+                description = if (state.hasActiveWaterBreak) {
+                    stringResource(
+                        id = R.string.dashboard_water_active_description,
+                        state.waterBreakElapsed?.toReadableDuration() ?: "--"
+                    )
+                } else {
+                    stringResource(id = R.string.dashboard_water_idle_description)
+                }
+            ) {
+                SecondaryButton(
+                    text = stringResource(id = R.string.dashboard_water_action),
+                    onClick = { onNavigate(AppDestination.WaterBreak.route) }
+                )
+            }
+        }
+
+        state.appStage == AppStage.AFTER_BIRTH -> {
+            InfoCard(
+                modifier = modifier,
+                icon = Icons.Outlined.BabyChangingStation,
+                overline = stringResource(id = R.string.dashboard_after_birth_overline),
+                title = stringResource(id = R.string.dashboard_after_birth_title),
+                description = stringResource(id = R.string.dashboard_after_birth_description)
+            ) {
+                SecondaryButton(
+                    text = stringResource(id = R.string.action_postpartum),
+                    onClick = { onNavigate(AppDestination.Postpartum.route) }
+                )
+            }
+        }
+
+        else -> {
+            InfoCard(
+                modifier = modifier,
+                icon = Icons.Outlined.LocalHospital,
+                overline = stringResource(id = R.string.dashboard_decision_overline),
+                title = stringResource(id = R.string.action_when_go_hospital),
+                description = stringResource(id = R.string.action_when_go_hospital_desc)
+            ) {
+                SecondaryButton(
+                    text = stringResource(id = R.string.decision_title),
+                    onClick = { onNavigate(AppDestination.Decision.route) }
+                )
+            }
+        }
+    }
+}
+
+private fun quickActionsForStage(stage: AppStage): List<QuickAction> = when (stage) {
+    AppStage.PREPARING -> listOf(
+        QuickAction(AppDestination.Checklist.route, R.string.action_checklists, R.string.action_checklists_desc, Icons.Outlined.Checklist),
+        QuickAction(AppDestination.Decision.route, R.string.action_when_go_hospital, R.string.action_when_go_hospital_desc, Icons.Outlined.LocalHospital),
+        QuickAction(AppDestination.Timeline.route, R.string.nav_journal, R.string.action_timeline_desc, Icons.Outlined.StickyNote2),
+        QuickAction(AppDestination.Settings.route, R.string.action_settings, R.string.action_settings_desc, Icons.Outlined.Settings)
+    )
+    AppStage.LABOR -> listOf(
+        QuickAction(AppDestination.Events.route, R.string.nav_events, R.string.events_main_tools_description, Icons.Outlined.MonitorHeart),
+        QuickAction(AppDestination.WaterBreak.route, R.string.action_water_break_timer, R.string.action_water_break_timer_desc, Icons.Outlined.WaterDrop),
+        QuickAction(AppDestination.Decision.route, R.string.action_when_go_hospital, R.string.action_when_go_hospital_desc, Icons.Outlined.LocalHospital),
+        QuickAction(AppDestination.Timeline.route, R.string.nav_journal, R.string.action_timeline_desc, Icons.Outlined.StickyNote2)
+    )
+    AppStage.AFTER_BIRTH -> listOf(
+        QuickAction(AppDestination.Trackers.route, R.string.action_trackers, R.string.action_trackers_desc, Icons.Outlined.ChildCare),
+        QuickAction(AppDestination.Postpartum.route, R.string.action_postpartum, R.string.action_postpartum_desc, Icons.Outlined.BabyChangingStation),
+        QuickAction(AppDestination.MomSupport.route, R.string.action_help_mom, R.string.action_help_mom_desc, Icons.Outlined.FavoriteBorder),
+        QuickAction(AppDestination.Timeline.route, R.string.nav_journal, R.string.action_timeline_desc, Icons.Outlined.StickyNote2)
+    )
+}
+
+private fun primaryCardTitleRes(state: DashboardUiState): Int = when (state.appStage) {
+    AppStage.PREPARING -> if ((state.daysUntilDueDate ?: Long.MAX_VALUE) <= 14L) {
+        R.string.dashboard_preparing_ready_title
+    } else {
+        R.string.dashboard_preparing_calm_title
+    }
+    AppStage.LABOR -> R.string.dashboard_labor_title
+    AppStage.AFTER_BIRTH -> R.string.dashboard_after_birth_title
+}
+
+private fun primaryCardDescriptionRes(state: DashboardUiState): Int = when (state.appStage) {
+    AppStage.PREPARING -> if ((state.daysUntilDueDate ?: Long.MAX_VALUE) <= 14L) {
+        R.string.dashboard_preparing_ready_description
+    } else {
+        R.string.dashboard_preparing_calm_description
+    }
+    AppStage.LABOR -> if (state.hasActiveWaterBreak) {
+        R.string.dashboard_labor_water_description
+    } else {
+        R.string.dashboard_labor_description
+    }
+    AppStage.AFTER_BIRTH -> R.string.dashboard_after_birth_description
+}
+
+private fun dashboardChecklistTitleRes(stage: AppStage): Int = when (stage) {
+    AppStage.PREPARING -> R.string.dashboard_checklist_title_preparing
+    AppStage.LABOR -> R.string.dashboard_checklist_title_labor
+    AppStage.AFTER_BIRTH -> R.string.dashboard_checklist_title_after_birth
+}
+
+private fun dashboardStageTitleRes(stage: AppStage): Int = when (stage) {
+    AppStage.PREPARING -> R.string.app_stage_preparing
+    AppStage.LABOR -> R.string.app_stage_labor
+    AppStage.AFTER_BIRTH -> R.string.app_stage_after_birth
+}
+
+private fun dashboardStageDescription(
+    stage: AppStage,
+    fatherName: String,
+    hasActiveContractionSession: Boolean,
+    hasActiveWaterBreak: Boolean
+): String {
+    val prefix = if (fatherName.isBlank()) "" else "$fatherName, "
+    return when (stage) {
+        AppStage.PREPARING -> prefix + "сейчас важны спокойная подготовка, понятный план и готовность к выезду."
+        AppStage.LABOR -> when {
+            hasActiveWaterBreak -> prefix + "идут роды, таймер вод уже активен. Держите под рукой события, SOS и решение про выезд."
+            hasActiveContractionSession -> prefix + "идут роды, счетчик схваток уже запущен. Фиксируйте динамику и важные события."
+            else -> prefix + "идут роды. На главной оставлены только те действия, которые нужны прямо сейчас."
+        }
+        AppStage.AFTER_BIRTH -> prefix + "приложение перестроено под первые часы и дни после рождения ребенка."
+    }
+}
+
+private fun dueDateDescription(dueDate: LocalDate, daysUntilDueDate: Long?): String {
+    val base = "ПДР: ${dueDate.toReadableDate()}"
+    return when {
+        daysUntilDueDate == null -> base
+        daysUntilDueDate > 1 -> "$base • осталось $daysUntilDueDate дней"
+        daysUntilDueDate == 1L -> "$base • остался 1 день"
+        daysUntilDueDate == 0L -> "$base • ориентир на сегодня"
+        daysUntilDueDate == -1L -> "$base • ориентир был вчера"
+        else -> "$base • прошло ${kotlin.math.abs(daysUntilDueDate)} дней"
     }
 }
 
 private fun eventTitle(event: TimelineEvent): String = when (event.type) {
     TimelineType.CONTRACTION -> "Схватка"
-    TimelineType.WATER_BREAK -> "Отхождение вод"
+    TimelineType.WATER_BREAK -> "Отошли воды"
     TimelineType.LABOR -> event.title.ifBlank { "Событие родов" }
-    TimelineType.BIRTH -> "Рождение ребенка"
+    TimelineType.BIRTH -> event.title.ifBlank { "Ребенок родился" }
     TimelineType.FEEDING -> "Кормление"
     TimelineType.DIAPER -> "Подгузник"
     TimelineType.SLEEP -> "Сон"
@@ -359,50 +599,35 @@ private fun eventTitle(event: TimelineEvent): String = when (event.type) {
 }
 
 private fun eventIcon(type: TimelineType): ImageVector = when (type) {
-    TimelineType.CONTRACTION -> Icons.Outlined.MoreTime
+    TimelineType.CONTRACTION -> Icons.Outlined.MonitorHeart
     TimelineType.WATER_BREAK -> Icons.Outlined.WaterDrop
-    TimelineType.LABOR -> Icons.Outlined.MonitorHeart
+    TimelineType.LABOR -> Icons.Outlined.LocalHospital
     TimelineType.BIRTH -> Icons.Outlined.ChildCare
     TimelineType.FEEDING -> Icons.Outlined.FavoriteBorder
     TimelineType.DIAPER -> Icons.Outlined.BabyChangingStation
-    TimelineType.SLEEP -> Icons.Outlined.NightlightRound
-    TimelineType.NOTE -> Icons.Outlined.Timeline
+    TimelineType.SLEEP -> Icons.Outlined.AccessTime
+    TimelineType.NOTE -> Icons.Outlined.StickyNote2
 }
 
-@Preview(showBackground = true, widthDp = 412)
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true, widthDp = 412)
 @Composable
 private fun DashboardPreview() {
     DadNavigatorTheme(dynamicColor = false) {
         DashboardContent(
-            fatherName = "Алексей",
             state = DashboardUiState(
+                fatherName = "Алексей",
+                appStage = AppStage.LABOR,
+                dueDate = LocalDate.now().plusDays(3),
+                daysUntilDueDate = 3,
                 hasActiveContractionSession = true,
-                checklistCompletedCount = 7,
-                checklistTotalCount = 12,
-                recentEvents = listOf(
-                    TimelineEvent(
-                        id = 1,
-                        userId = "u",
-                        type = TimelineType.CONTRACTION,
-                        timestamp = Instant.now(),
-                        title = "",
-                        description = ""
-                    ),
-                    TimelineEvent(
-                        id = 2,
-                        userId = "u",
-                        type = TimelineType.WATER_BREAK,
-                        timestamp = Instant.now(),
-                        title = "",
-                        description = "Прозрачные"
-                    )
-                ),
-                currentActionRes = R.string.now_action_contraction,
-                waterBreakElapsed = Duration.ofMinutes(42)
+                stageChecklistCompletedCount = 4,
+                stageChecklistTotalCount = 9,
+                showContractionShortcut = true
             ),
             widthSizeClass = WindowWidthSizeClass.Compact,
+            onMenu = {},
             snackbarHostState = remember { SnackbarHostState() },
-            onStartContraction = {},
+            onStartLabor = {},
             onOpenSos = {},
             onNavigate = {}
         )

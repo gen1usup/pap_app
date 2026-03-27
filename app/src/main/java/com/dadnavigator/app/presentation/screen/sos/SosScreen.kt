@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.Emergency
 import androidx.compose.material.icons.outlined.MedicalServices
+import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -25,21 +25,35 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dadnavigator.app.R
 import com.dadnavigator.app.core.ui.DadNavigatorTheme
 import com.dadnavigator.app.core.ui.DadTheme
+import com.dadnavigator.app.domain.model.EmergencyContactType
 import com.dadnavigator.app.presentation.component.DangerButton
+import com.dadnavigator.app.presentation.component.InfoCard
 import com.dadnavigator.app.presentation.component.InfoSectionCard
+import com.dadnavigator.app.presentation.component.PrimaryButton
 import com.dadnavigator.app.presentation.component.ScreenScaffold
 import com.dadnavigator.app.presentation.component.SecondaryButton
 
 @Composable
-fun SosScreen(onBack: () -> Unit) {
+fun SosScreen(
+    onBack: () -> Unit,
+    onOpenContacts: () -> Unit,
+    viewModel: SosViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
+    val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val criticalScenarios = stringArrayResource(id = R.array.sos_critical_scenarios).toList()
     val actions = stringArrayResource(id = R.array.sos_actions).toList()
+    val quickContacts = state.contacts.filter { it.phone.isNotBlank() }
+    val maternityPhone = state.contacts
+        .firstOrNull { it.type == EmergencyContactType.MATERNITY_HOSPITAL }
+        ?.phone
+        .orEmpty()
+        .ifBlank { "103" }
 
     ScreenScaffold(
         title = stringResource(id = R.string.sos_title),
@@ -92,10 +106,7 @@ fun SosScreen(onBack: () -> Unit) {
             item {
                 DangerButton(
                     text = stringResource(id = R.string.sos_call_112),
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
-                        context.startActivity(intent)
-                    },
+                    onClick = { dial(context, "112") },
                     icon = Icons.Outlined.Call
                 )
             }
@@ -103,12 +114,39 @@ fun SosScreen(onBack: () -> Unit) {
             item {
                 SecondaryButton(
                     text = stringResource(id = R.string.sos_call_maternity),
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:103"))
-                        context.startActivity(intent)
-                    },
+                    onClick = { dial(context, maternityPhone) },
                     icon = Icons.Outlined.MedicalServices
                 )
+            }
+
+            item {
+                InfoCard(
+                    title = stringResource(id = R.string.sos_contacts_title),
+                    description = stringResource(id = R.string.sos_contacts_description),
+                    icon = Icons.Outlined.Phone
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)) {
+                        if (quickContacts.isEmpty()) {
+                            SecondaryButton(
+                                text = stringResource(id = R.string.sos_manage_contacts),
+                                onClick = onOpenContacts,
+                                icon = Icons.Outlined.Phone
+                            )
+                        } else {
+                            quickContacts.take(4).forEach { contact ->
+                                PrimaryButton(
+                                    text = contact.title,
+                                    onClick = { dial(context, contact.phone) },
+                                    icon = Icons.Outlined.Call
+                                )
+                            }
+                            SecondaryButton(
+                                text = stringResource(id = R.string.sos_manage_contacts),
+                                onClick = onOpenContacts
+                            )
+                        }
+                    }
+                }
             }
 
             item {
@@ -144,10 +182,18 @@ fun SosScreen(onBack: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true)
+private fun dial(context: android.content.Context, phone: String) {
+    if (phone.isBlank()) return
+    context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
 @Composable
 private fun SosPreview() {
     DadNavigatorTheme(dynamicColor = false) {
-        SosScreen(onBack = {})
+        SosScreen(
+            onBack = {},
+            onOpenContacts = {}
+        )
     }
 }

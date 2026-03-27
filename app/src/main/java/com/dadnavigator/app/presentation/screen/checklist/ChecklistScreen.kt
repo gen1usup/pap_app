@@ -2,6 +2,7 @@ package com.dadnavigator.app.presentation.screen.checklist
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.outlined.AddTask
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -23,14 +25,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dadnavigator.app.R
-import com.dadnavigator.app.core.ui.DadNavigatorTheme
 import com.dadnavigator.app.core.ui.DadTheme
-import com.dadnavigator.app.domain.model.Checklist
-import com.dadnavigator.app.domain.model.ChecklistItem as DomainChecklistItem
+import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.ChecklistWithItems
 import com.dadnavigator.app.presentation.component.ChecklistItem
 import com.dadnavigator.app.presentation.component.EmptyState
@@ -38,12 +37,12 @@ import com.dadnavigator.app.presentation.component.InfoCard
 import com.dadnavigator.app.presentation.component.PrimaryButton
 import com.dadnavigator.app.presentation.component.ScreenBackground
 import com.dadnavigator.app.presentation.component.ScreenScaffold
-import java.time.Instant
 
 @Composable
 fun ChecklistScreen(
     userId: String,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
+    onMenu: (() -> Unit)? = null,
     viewModel: ChecklistViewModel = hiltViewModel()
 ) {
     LaunchedEffect(userId) {
@@ -65,17 +64,22 @@ fun ChecklistScreen(
         state = state,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
+        onMenu = onMenu,
+        onStageSelected = viewModel::selectStage,
         onDraftChanged = viewModel::updateDraft,
         onAddItem = viewModel::addItem,
         onCheckedChanged = viewModel::setItemChecked
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ChecklistContent(
     state: ChecklistUiState,
     snackbarHostState: SnackbarHostState,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
+    onMenu: (() -> Unit)?,
+    onStageSelected: (AppStage) -> Unit,
     onDraftChanged: (Long, String) -> Unit,
     onAddItem: (Long) -> Unit,
     onCheckedChanged: (Long, Boolean) -> Unit
@@ -89,6 +93,7 @@ private fun ChecklistContent(
         title = stringResource(id = R.string.checklist_title),
         subtitle = stringResource(id = R.string.checklist_subtitle),
         onBack = onBack,
+        onMenu = onMenu,
         snackbarHostState = snackbarHostState
     ) { innerPadding ->
         ScreenBackground {
@@ -96,27 +101,38 @@ private fun ChecklistContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentPadding = PaddingValues(
-                    horizontal = spacing.md,
-                    vertical = spacing.sm
-                ),
+                contentPadding = PaddingValues(horizontal = spacing.md, vertical = spacing.sm),
                 verticalArrangement = Arrangement.spacedBy(spacing.md)
             ) {
                 item {
                     InfoCard(
-                        title = stringResource(id = R.string.checklist_summary_title),
+                        title = stringResource(id = stageLabelRes(state.selectedStage)),
                         description = stringResource(
-                            id = R.string.dashboard_checklist_description,
+                            id = R.string.checklist_progress,
                             completed,
                             total
                         ),
                         icon = Icons.Outlined.Checklist,
                         overline = stringResource(id = R.string.checklist_summary_overline)
                     ) {
-                        LinearProgressIndicator(
-                            modifier = Modifier.fillMaxWidth(),
-                            progress = { progress }
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+                            androidx.compose.foundation.layout.FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                                verticalArrangement = Arrangement.spacedBy(spacing.sm)
+                            ) {
+                                AppStage.entries.forEach { stage ->
+                                    FilterChip(
+                                        selected = state.selectedStage == stage,
+                                        onClick = { onStageSelected(stage) },
+                                        label = { Text(text = stringResource(id = stageLabelRes(stage))) }
+                                    )
+                                }
+                            }
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth(),
+                                progress = { progress }
+                            )
+                        }
                     }
                 }
 
@@ -129,14 +145,24 @@ private fun ChecklistContent(
                         )
                     }
                 } else {
-                    items(state.checklists) { checklistWithItems ->
-                        ChecklistGroupCard(
-                            checklist = checklistWithItems,
-                            draft = state.drafts[checklistWithItems.checklist.id].orEmpty(),
-                            onDraftChanged = { onDraftChanged(checklistWithItems.checklist.id, it) },
-                            onAddItem = { onAddItem(checklistWithItems.checklist.id) },
-                            onCheckedChanged = onCheckedChanged
-                        )
+                    val grouped = state.checklists.groupBy { it.checklist.category }
+                    grouped.forEach { (category, checklists) ->
+                        item {
+                            Text(
+                                text = category,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        items(checklists, key = { it.checklist.id }) { checklistWithItems ->
+                            ChecklistGroupCard(
+                                checklist = checklistWithItems,
+                                draft = state.drafts[checklistWithItems.checklist.id].orEmpty(),
+                                onDraftChanged = { onDraftChanged(checklistWithItems.checklist.id, it) },
+                                onAddItem = { onAddItem(checklistWithItems.checklist.id) },
+                                onCheckedChanged = onCheckedChanged
+                            )
+                        }
                     }
                 }
             }
@@ -168,7 +194,7 @@ private fun ChecklistGroupCard(
             verticalArrangement = Arrangement.spacedBy(spacing.md)
         ) {
             Text(
-                text = checklist.checklist.name,
+                text = checklist.checklist.title,
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
@@ -205,27 +231,8 @@ private fun ChecklistGroupCard(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun ChecklistPreview() {
-    DadNavigatorTheme(dynamicColor = false) {
-        ChecklistContent(
-            state = ChecklistUiState(
-                checklists = listOf(
-                    ChecklistWithItems(
-                        checklist = Checklist(1, "u", "В роддом", true, Instant.now()),
-                        items = listOf(
-                            DomainChecklistItem(1, 1, "u", "Документы", true, Instant.now()),
-                            DomainChecklistItem(2, 1, "u", "Зарядка и кабель", false, Instant.now())
-                        )
-                    )
-                )
-            ),
-            snackbarHostState = remember { SnackbarHostState() },
-            onBack = {},
-            onDraftChanged = { _, _ -> },
-            onAddItem = {},
-            onCheckedChanged = { _, _ -> }
-        )
-    }
+private fun stageLabelRes(stage: AppStage): Int = when (stage) {
+    AppStage.PREPARING -> R.string.app_stage_preparing
+    AppStage.LABOR -> R.string.app_stage_labor
+    AppStage.AFTER_BIRTH -> R.string.app_stage_after_birth
 }

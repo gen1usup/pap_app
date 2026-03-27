@@ -2,6 +2,7 @@
 
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -25,4 +26,12 @@ fun Duration.toReadableDuration(): String {
 fun Instant.toReadableDateTime(zoneId: ZoneId = ZoneId.systemDefault()): String {
     val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
     return formatter.format(atZone(zoneId))
+}
+
+/**
+ * Formats local dates for settings and dashboard.
+ */
+fun LocalDate.toReadableDate(): String {
+    val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+    return formatter.format(this)
 }

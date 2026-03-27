@@ -1,14 +1,11 @@
 ﻿package com.dadnavigator.app.data.repository
 
-import android.content.Context
-import com.dadnavigator.app.R
 import com.dadnavigator.app.data.local.dao.ChecklistDao
 import com.dadnavigator.app.data.local.entity.ChecklistEntity
 import com.dadnavigator.app.data.local.entity.ChecklistItemEntity
 import com.dadnavigator.app.data.mapper.toDomain
 import com.dadnavigator.app.domain.model.ChecklistWithItems
 import com.dadnavigator.app.domain.repository.ChecklistRepository
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.Instant
@@ -18,8 +15,7 @@ import javax.inject.Inject
  * Room-backed implementation for checklist feature with default seeded content.
  */
 class ChecklistRepositoryImpl @Inject constructor(
-    private val checklistDao: ChecklistDao,
-    @ApplicationContext private val context: Context
+    private val checklistDao: ChecklistDao
 ) : ChecklistRepository {
 
     override fun observeChecklists(userId: String): Flow<List<ChecklistWithItems>> {
@@ -31,24 +27,19 @@ class ChecklistRepositoryImpl @Inject constructor(
     override suspend fun seedDefaultChecklistsIfNeeded(userId: String) {
         if (checklistDao.countChecklists(userId) > 0) return
 
-        val names = context.resources.getStringArray(R.array.checklist_names)
-        val itemArrays = listOf(
-            R.array.checklist_bag_items,
-            R.array.checklist_documents_items,
-            R.array.checklist_before_departure_items,
-            R.array.checklist_postpartum_items
-        )
-
-        names.forEachIndexed { index, name ->
+        defaultChecklistTemplates.forEach { template ->
             val checklistId = checklistDao.insertChecklist(
                 ChecklistEntity(
                     userId = userId,
-                    name = name,
+                    title = template.title,
+                    stage = template.stage.name,
+                    category = template.category,
                     isSystem = true,
+                    sortOrder = template.sortOrder,
                     createdAt = Instant.now()
                 )
             )
-            val items = context.resources.getStringArray(itemArrays[index]).map { itemText ->
+            val items = template.items.map { itemText ->
                 ChecklistItemEntity(
                     checklistId = checklistId,
                     userId = userId,

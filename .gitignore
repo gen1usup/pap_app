@@ -6,10 +6,12 @@
 local.properties
 android-sdk/
 .android/
+.android-sdk-home/
 
 # Gradle
 .gradle/
 .gradle-home/
+.gradle-user-home/
 build/
 **/build/
 **/.kotlin/

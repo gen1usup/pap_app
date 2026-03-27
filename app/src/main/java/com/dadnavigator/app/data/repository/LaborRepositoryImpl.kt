@@ -21,6 +21,7 @@ class LaborRepositoryImpl @Inject constructor(
             entity?.toDomain() ?: LaborSummary(
                 laborStartTime = null,
                 birthTime = null,
+                babyName = null,
                 birthWeightGrams = null,
                 birthHeightCm = null
             )

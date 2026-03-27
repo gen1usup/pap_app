@@ -21,7 +21,7 @@ interface ChecklistDao {
         """
         SELECT * FROM checklists
         WHERE userId = :userId
-        ORDER BY createdAt ASC
+        ORDER BY sortOrder ASC, createdAt ASC
         """
     )
     fun observeChecklists(userId: String): Flow<List<ChecklistWithItemsRelation>>

@@ -43,8 +43,9 @@ class MainActivity : ComponentActivity() {
             ) {
                 AppNavHost(
                     userId = appState.userId,
-                    fatherName = appState.fatherName,
-                    widthSizeClass = windowSizeClass.widthSizeClass
+                    widthSizeClass = windowSizeClass.widthSizeClass,
+                    appStage = appState.appStage,
+                    onUpdateAppStage = appViewModel::updateAppStage
                 )
             }
         }

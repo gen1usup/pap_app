@@ -3,14 +3,17 @@
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dadnavigator.app.R
+import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.usecase.checklist.AddChecklistItemUseCase
 import com.dadnavigator.app.domain.usecase.checklist.ObserveChecklistsUseCase
 import com.dadnavigator.app.domain.usecase.checklist.SeedDefaultChecklistsUseCase
 import com.dadnavigator.app.domain.usecase.checklist.ToggleChecklistItemUseCase
+import com.dadnavigator.app.domain.usecase.settings.ObserveSettingsUseCase
 import com.dadnavigator.app.di.IoDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -22,8 +25,10 @@ import kotlinx.coroutines.launch
 /**
  * ViewModel for checklist management.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ChecklistViewModel @Inject constructor(
+    private val observeSettingsUseCase: ObserveSettingsUseCase,
     private val observeChecklistsUseCase: ObserveChecklistsUseCase,
     private val seedDefaultChecklistsUseCase: SeedDefaultChecklistsUseCase,
     private val addChecklistItemUseCase: AddChecklistItemUseCase,
@@ -32,17 +37,23 @@ class ChecklistViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val userIdState = MutableStateFlow("")
+    private val selectedStageState = MutableStateFlow<AppStage?>(null)
     private val draftsState = MutableStateFlow<Map<Long, String>>(emptyMap())
     private val errorState = MutableStateFlow<Int?>(null)
 
     val uiState = userIdState.flatMapLatest { userId ->
         combine(
+            observeSettingsUseCase(),
             observeChecklistsUseCase(userId),
+            selectedStageState,
             draftsState,
             errorState
-        ) { checklists, drafts, errorRes ->
+        ) { settings, checklists, selectedStage, drafts, errorRes ->
+            val effectiveStage = selectedStage ?: settings.appStage
             ChecklistUiState(
-                checklists = checklists,
+                checklists = checklists.filter { it.checklist.stage == effectiveStage },
+                selectedStage = effectiveStage,
+                currentStage = settings.appStage,
                 drafts = drafts,
                 errorRes = errorRes
             )
@@ -67,6 +78,10 @@ class ChecklistViewModel @Inject constructor(
 
     fun updateDraft(checklistId: Long, value: String) {
         draftsState.update { current -> current + (checklistId to value) }
+    }
+
+    fun selectStage(stage: AppStage) {
+        selectedStageState.value = stage
     }
 
     fun addItem(checklistId: Long) {

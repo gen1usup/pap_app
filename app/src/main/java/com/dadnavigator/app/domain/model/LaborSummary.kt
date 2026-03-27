@@ -8,6 +8,7 @@ import java.time.Instant
 data class LaborSummary(
     val laborStartTime: Instant?,
     val birthTime: Instant?,
+    val babyName: String?,
     val birthWeightGrams: Int?,
     val birthHeightCm: Int?
 )

@@ -55,7 +55,8 @@ import java.time.Instant
 @Composable
 fun TimelineScreen(
     userId: String,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
+    onMenu: (() -> Unit)? = null,
     viewModel: TimelineViewModel = hiltViewModel()
 ) {
     LaunchedEffect(userId) {
@@ -78,6 +79,7 @@ fun TimelineScreen(
         state = state,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
+        onMenu = onMenu,
         onFilterSelected = viewModel::setFilter,
         onShowAddSheet = viewModel::showAddSheet,
         onHideAddSheet = viewModel::hideAddSheet,
@@ -93,7 +95,8 @@ fun TimelineScreen(
 private fun TimelineContent(
     state: TimelineUiState,
     snackbarHostState: SnackbarHostState,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
+    onMenu: (() -> Unit)?,
     onFilterSelected: (TimelineFilter) -> Unit,
     onShowAddSheet: () -> Unit,
     onHideAddSheet: () -> Unit,
@@ -108,6 +111,7 @@ private fun TimelineContent(
         title = stringResource(id = R.string.timeline_title),
         subtitle = stringResource(id = R.string.timeline_subtitle),
         onBack = onBack,
+        onMenu = onMenu,
         snackbarHostState = snackbarHostState,
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -276,6 +280,7 @@ private fun TimelinePreview() {
             ),
             snackbarHostState = remember { SnackbarHostState() },
             onBack = {},
+            onMenu = {},
             onFilterSelected = {},
             onShowAddSheet = {},
             onHideAddSheet = {},

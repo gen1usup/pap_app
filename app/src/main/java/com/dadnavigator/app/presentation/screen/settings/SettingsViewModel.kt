@@ -3,6 +3,7 @@
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dadnavigator.app.R
+import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.Settings
 import com.dadnavigator.app.domain.model.ThemeMode
 import com.dadnavigator.app.domain.usecase.settings.ObserveSettingsUseCase
@@ -12,6 +13,8 @@ import com.dadnavigator.app.di.IoDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
+import java.time.format.DateTimeFormatter
+import java.time.format.ResolverStyle
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +34,10 @@ class SettingsViewModel @Inject constructor(
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
+    private val dueDateFormatter: DateTimeFormatter = DateTimeFormatter
+        .ofPattern("dd.MM.uuuu")
+        .withResolverStyle(ResolverStyle.STRICT)
+
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
@@ -42,12 +49,14 @@ class SettingsViewModel @Inject constructor(
                         userId = settings.userId,
                         fatherName = if (it.fatherName.isBlank()) settings.fatherName else it.fatherName,
                         dueDateInput = if (it.dueDateInput.isBlank()) {
-                            settings.dueDate?.toString().orEmpty()
+                            settings.dueDate?.format(dueDateFormatter).orEmpty()
                         } else {
                             it.dueDateInput
                         },
+                        maternityHospitalAddress = settings.maternityHospitalAddress,
                         notificationsEnabled = settings.notificationsEnabled,
-                        themeMode = settings.themeMode
+                        themeMode = settings.themeMode,
+                        appStage = settings.appStage
                     )
                 }
             }
@@ -59,11 +68,15 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updateDueDate(value: String) {
-        _uiState.update { it.copy(dueDateInput = value) }
+        _uiState.update { it.copy(dueDateInput = value, dueDateErrorRes = null) }
     }
 
     fun updateNotifications(value: Boolean) {
         _uiState.update { it.copy(notificationsEnabled = value) }
+    }
+
+    fun updateAppStage(value: AppStage) {
+        _uiState.update { it.copy(appStage = value) }
     }
 
     fun updateThemeMode(value: ThemeMode) {
@@ -85,15 +98,28 @@ class SettingsViewModel @Inject constructor(
                         themeMode = current.themeMode,
                         fatherName = current.fatherName.trim(),
                         dueDate = dueDate,
-                        notificationsEnabled = current.notificationsEnabled
+                        maternityHospitalAddress = current.maternityHospitalAddress,
+                        notificationsEnabled = current.notificationsEnabled,
+                        appStage = current.appStage
                     )
                 )
-                _uiState.update { it.copy(infoRes = R.string.saved, errorRes = null) }
-            }.onFailure { error ->
                 _uiState.update {
                     it.copy(
-                        errorRes = if (error is IllegalArgumentException) R.string.invalid_date else R.string.error_generic
+                        infoRes = R.string.saved,
+                        errorRes = null,
+                        dueDateErrorRes = null
                     )
+                }
+            }.onFailure { error ->
+                if (error is IllegalArgumentException) {
+                    _uiState.update {
+                        it.copy(
+                            dueDateErrorRes = R.string.invalid_date,
+                            errorRes = null
+                        )
+                    }
+                } else {
+                    _uiState.update { it.copy(errorRes = R.string.error_generic) }
                 }
             }
         }
@@ -128,7 +154,7 @@ class SettingsViewModel @Inject constructor(
 
     private fun parseDate(value: String): LocalDate {
         return try {
-            LocalDate.parse(value)
+            LocalDate.parse(value.trim(), dueDateFormatter)
         } catch (_: DateTimeParseException) {
             throw IllegalArgumentException("Invalid date")
         }

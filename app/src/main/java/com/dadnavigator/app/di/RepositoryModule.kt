@@ -2,6 +2,7 @@
 
 import com.dadnavigator.app.data.repository.ChecklistRepositoryImpl
 import com.dadnavigator.app.data.repository.ContractionRepositoryImpl
+import com.dadnavigator.app.data.repository.EmergencyContactRepositoryImpl
 import com.dadnavigator.app.data.repository.LaborRepositoryImpl
 import com.dadnavigator.app.data.repository.SettingsRepositoryImpl
 import com.dadnavigator.app.data.repository.TimelineRepositoryImpl
@@ -10,6 +11,7 @@ import com.dadnavigator.app.data.repository.UserRepositoryImpl
 import com.dadnavigator.app.data.repository.WaterBreakRepositoryImpl
 import com.dadnavigator.app.domain.repository.ChecklistRepository
 import com.dadnavigator.app.domain.repository.ContractionRepository
+import com.dadnavigator.app.domain.repository.EmergencyContactRepository
 import com.dadnavigator.app.domain.repository.LaborRepository
 import com.dadnavigator.app.domain.repository.SettingsRepository
 import com.dadnavigator.app.domain.repository.TimelineRepository
@@ -48,6 +50,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindTrackerRepository(impl: TrackerRepositoryImpl): TrackerRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEmergencyContactRepository(impl: EmergencyContactRepositoryImpl): EmergencyContactRepository
 
     @Binds
     @Singleton

@@ -19,11 +19,13 @@ class NavigationUiTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun opensContractionScreenFromDashboard() {
+    fun opensContractionScreenFromEventsTab() {
         val context = composeRule.activity
+        val eventsTab = context.getString(com.dadnavigator.app.R.string.nav_events)
         val actionText = context.getString(com.dadnavigator.app.R.string.action_contraction_counter)
         val titleText = context.getString(com.dadnavigator.app.R.string.contraction_title)
 
+        composeRule.onNodeWithText(eventsTab).performClick()
         composeRule.onNodeWithText(actionText).performClick()
         composeRule.onNodeWithText(titleText).assertIsDisplayed()
     }

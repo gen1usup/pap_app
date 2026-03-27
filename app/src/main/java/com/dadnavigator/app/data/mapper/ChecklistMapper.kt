@@ -3,6 +3,7 @@
 import com.dadnavigator.app.data.local.entity.ChecklistEntity
 import com.dadnavigator.app.data.local.entity.ChecklistItemEntity
 import com.dadnavigator.app.data.local.entity.ChecklistWithItemsRelation
+import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.Checklist
 import com.dadnavigator.app.domain.model.ChecklistItem
 import com.dadnavigator.app.domain.model.ChecklistWithItems
@@ -18,16 +19,22 @@ fun ChecklistWithItemsRelation.toDomain(): ChecklistWithItems = ChecklistWithIte
 fun ChecklistEntity.toDomain(): Checklist = Checklist(
     id = id,
     userId = userId,
-    name = name,
+    title = title,
+    stage = runCatching { AppStage.valueOf(stage) }.getOrDefault(AppStage.PREPARING),
+    category = category,
     isSystem = isSystem,
+    sortOrder = sortOrder,
     createdAt = createdAt
 )
 
 fun Checklist.toEntity(): ChecklistEntity = ChecklistEntity(
     id = id,
     userId = userId,
-    name = name,
+    title = title,
+    stage = stage.name,
+    category = category,
     isSystem = isSystem,
+    sortOrder = sortOrder,
     createdAt = createdAt
 )
 

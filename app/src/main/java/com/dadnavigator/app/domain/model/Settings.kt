@@ -10,5 +10,7 @@ data class Settings(
     val themeMode: ThemeMode,
     val fatherName: String,
     val dueDate: LocalDate?,
-    val notificationsEnabled: Boolean
+    val maternityHospitalAddress: String,
+    val notificationsEnabled: Boolean,
+    val appStage: AppStage
 )

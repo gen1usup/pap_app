@@ -3,8 +3,10 @@
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dadnavigator.app.R
+import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.LaborSummary
 import com.dadnavigator.app.domain.model.TimelineType
+import com.dadnavigator.app.domain.usecase.settings.UpdateAppStageUseCase
 import com.dadnavigator.app.domain.usecase.timeline.AddTimelineEventUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveLaborSummaryUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveTimelineUseCase
@@ -14,6 +16,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -23,19 +26,22 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel for labor phase events and summary.
+ * ViewModel for labor phase events, summary fields and manual stage-aligned logging.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class LaborViewModel @Inject constructor(
     private val observeLaborSummaryUseCase: ObserveLaborSummaryUseCase,
     private val saveLaborSummaryUseCase: SaveLaborSummaryUseCase,
     private val observeTimelineUseCase: ObserveTimelineUseCase,
     private val addTimelineEventUseCase: AddTimelineEventUseCase,
+    private val updateAppStageUseCase: UpdateAppStageUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     private val userIdState = MutableStateFlow("")
     private val formState = MutableStateFlow(LaborFormState())
+    private val infoState = MutableStateFlow<Int?>(null)
     private val errorState = MutableStateFlow<Int?>(null)
 
     val uiState = userIdState.flatMapLatest { userId ->
@@ -43,15 +49,18 @@ class LaborViewModel @Inject constructor(
             observeLaborSummaryUseCase(userId),
             observeTimelineUseCase(userId),
             formState,
+            infoState,
             errorState
-        ) { summary, timeline, form, errorRes ->
+        ) { summary, timeline, form, infoRes, errorRes ->
             LaborUiState(
                 summary = summary,
                 laborEvents = timeline.filter { it.type == TimelineType.LABOR || it.type == TimelineType.BIRTH },
-                weightInput = form.weightInput,
-                heightInput = form.heightInput,
+                babyNameInput = form.babyNameInput.ifBlank { summary.babyName.orEmpty() },
+                weightInput = form.weightInput.ifBlank { summary.birthWeightGrams?.toString().orEmpty() },
+                heightInput = form.heightInput.ifBlank { summary.birthHeightCm?.toString().orEmpty() },
                 customEventTitle = form.customEventTitle,
                 customEventNote = form.customEventNote,
+                infoRes = infoRes,
                 errorRes = errorRes
             )
         }
@@ -77,6 +86,10 @@ class LaborViewModel @Inject constructor(
 
     fun updateWeight(value: String) {
         formState.update { it.copy(weightInput = value) }
+    }
+
+    fun updateBabyName(value: String) {
+        formState.update { it.copy(babyNameInput = value) }
     }
 
     fun updateHeight(value: String) {
@@ -113,20 +126,36 @@ class LaborViewModel @Inject constructor(
                 val summary = LaborSummary(
                     laborStartTime = form.laborStartTime ?: currentSummary.laborStartTime,
                     birthTime = form.birthTime ?: currentSummary.birthTime,
+                    babyName = form.babyNameInput.trim().ifBlank { currentSummary.babyName.orEmpty() }.ifBlank { null },
                     birthWeightGrams = weight ?: currentSummary.birthWeightGrams,
                     birthHeightCm = height ?: currentSummary.birthHeightCm
                 )
                 saveLaborSummaryUseCase(userId, summary)
 
+                if (currentSummary.laborStartTime == null && summary.laborStartTime != null) {
+                    addTimelineEventUseCase(
+                        userId = userId,
+                        timestamp = summary.laborStartTime,
+                        title = "Начались роды",
+                        description = "Время начала родов зафиксировано вручную",
+                        type = TimelineType.LABOR
+                    )
+                }
                 if (currentSummary.birthTime == null && summary.birthTime != null) {
                     addTimelineEventUseCase(
                         userId = userId,
                         timestamp = summary.birthTime,
-                        title = "",
-                        description = "",
+                        title = "Ребенок родился",
+                        description = buildBirthDescription(summary),
                         type = TimelineType.BIRTH
                     )
                 }
+
+                when {
+                    summary.birthTime != null -> updateAppStageUseCase(AppStage.AFTER_BIRTH)
+                    summary.laborStartTime != null -> updateAppStageUseCase(AppStage.LABOR)
+                }
+                infoState.value = R.string.labor_summary_saved
             }.onFailure {
                 errorState.value = R.string.error_generic
             }
@@ -151,13 +180,15 @@ class LaborViewModel @Inject constructor(
                     type = TimelineType.LABOR
                 )
                 formState.update { it.copy(customEventTitle = "", customEventNote = "") }
+                infoState.value = R.string.timeline_event_saved
             }.onFailure {
                 errorState.value = R.string.error_generic
             }
         }
     }
 
-    fun dismissError() {
+    fun clearMessages() {
+        infoState.value = null
         errorState.value = null
     }
 }
@@ -165,8 +196,30 @@ class LaborViewModel @Inject constructor(
 private data class LaborFormState(
     val laborStartTime: Instant? = null,
     val birthTime: Instant? = null,
+    val babyNameInput: String = "",
     val weightInput: String = "",
     val heightInput: String = "",
     val customEventTitle: String = "",
     val customEventNote: String = ""
 )
+
+private fun buildBirthDescription(summary: LaborSummary): String {
+    return buildString {
+        summary.babyName?.takeIf { it.isNotBlank() }?.let { babyName ->
+            append("Имя: ")
+            append(babyName)
+        }
+        summary.birthWeightGrams?.let { weight ->
+            if (isNotBlank()) append(" • ")
+            append("Вес: ")
+            append(weight)
+            append(" г")
+        }
+        summary.birthHeightCm?.let { height ->
+            if (isNotBlank()) append(" • ")
+            append("Рост: ")
+            append(height)
+            append(" см")
+        }
+    }
+}
