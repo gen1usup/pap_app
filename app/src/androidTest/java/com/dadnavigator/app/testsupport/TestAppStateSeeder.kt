@@ -41,7 +41,7 @@ class TestAppStateSeeder(
 
     fun seedContractionScenario(
         scenario: ContractionScenario,
-        appStage: AppStage = AppStage.LABOR,
+        appStage: AppStage = AppStage.CONTRACTIONS,
         userId: String = DEFAULT_USER_ID
     ) = runBlocking {
         val database = Room.databaseBuilder(context, AppDatabase::class.java, DATABASE_NAME)
@@ -110,6 +110,73 @@ class TestAppStateSeeder(
                     )
                 )
             }
+        } finally {
+            database.close()
+        }
+    }
+
+    fun seedStage(
+        appStage: AppStage,
+        userId: String = DEFAULT_USER_ID
+    ) = runBlocking {
+        val database = Room.databaseBuilder(context, AppDatabase::class.java, DATABASE_NAME)
+            .allowMainThreadQueries()
+            .build()
+
+        try {
+            database.clearAllTables()
+
+            val now = Instant.now()
+            val settings = Settings(
+                userId = userId,
+                themeMode = ThemeMode.SYSTEM,
+                fatherName = "",
+                dueDate = null,
+                maternityHospitalAddress = "",
+                notificationsEnabled = true,
+                appStage = appStage
+            )
+            SettingsDataStore(context).saveSettings(settings)
+
+            database.userDao().upsertUser(
+                UserEntity(
+                    id = userId,
+                    displayName = "",
+                    createdAt = Instant.EPOCH
+                )
+            )
+            database.settingsDao().upsertSettings(
+                SettingsEntity(
+                    userId = userId,
+                    themeMode = ThemeMode.SYSTEM.name,
+                    fatherName = "",
+                    dueDateEpochDay = null,
+                    maternityHospitalAddress = "",
+                    notificationsEnabled = true,
+                    appStage = appStage.name,
+                    updatedAt = now
+                )
+            )
+            database.laborDao().upsertLaborSummary(
+                LaborSummaryEntity(
+                    userId = userId,
+                    laborStartTime = when (appStage) {
+                        AppStage.CONTRACTIONS,
+                        AppStage.AT_HOSPITAL,
+                        AppStage.AT_HOME -> now.minusSeconds(90 * 60)
+                        AppStage.PREPARING -> null
+                    },
+                    birthTime = when (appStage) {
+                        AppStage.AT_HOSPITAL,
+                        AppStage.AT_HOME -> now.minusSeconds(45 * 60)
+                        AppStage.PREPARING,
+                        AppStage.CONTRACTIONS -> null
+                    },
+                    babyName = null,
+                    birthWeightGrams = null,
+                    birthHeightCm = null
+                )
+            )
         } finally {
             database.close()
         }

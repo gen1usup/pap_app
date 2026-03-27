@@ -10,6 +10,7 @@ import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.domain.repository.LaborRepository
 import com.dadnavigator.app.domain.repository.SettingsRepository
 import com.dadnavigator.app.domain.repository.TimelineRepository
+import com.dadnavigator.app.domain.service.StageTransitionManager
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
@@ -26,12 +27,19 @@ import org.junit.Test
  */
 class LaborLifecycleUseCasesTest {
 
+    private val stageTransitionManager = StageTransitionManager()
+
     @Test
     fun `mark labor started switches app stage and creates first labor event`() = runTest {
         val settingsRepository = FakeSettingsRepository()
         val laborRepository = FakeLaborRepository()
         val timelineRepository = FakeTimelineRepository()
-        val useCase = MarkLaborStartedUseCase(settingsRepository, laborRepository, timelineRepository)
+        val useCase = MarkLaborStartedUseCase(
+            settingsRepository,
+            laborRepository,
+            timelineRepository,
+            stageTransitionManager
+        )
         val timestamp = Instant.parse("2026-03-27T08:15:00Z")
 
         useCase(
@@ -41,7 +49,7 @@ class LaborLifecycleUseCasesTest {
             timestamp = timestamp
         )
 
-        assertEquals(AppStage.LABOR, settingsRepository.current.appStage)
+        assertEquals(AppStage.CONTRACTIONS, settingsRepository.current.appStage)
         assertEquals(timestamp, laborRepository.current.laborStartTime)
         assertEquals(1, timelineRepository.events.size)
         assertEquals(TimelineType.LABOR, timelineRepository.events.single().type)
@@ -62,7 +70,12 @@ class LaborLifecycleUseCasesTest {
             )
         )
         val timelineRepository = FakeTimelineRepository()
-        val useCase = MarkLaborStartedUseCase(settingsRepository, laborRepository, timelineRepository)
+        val useCase = MarkLaborStartedUseCase(
+            settingsRepository,
+            laborRepository,
+            timelineRepository,
+            stageTransitionManager
+        )
 
         useCase(
             userId = DEFAULT_USER_ID,
@@ -71,17 +84,22 @@ class LaborLifecycleUseCasesTest {
             timestamp = Instant.parse("2026-03-27T08:15:00Z")
         )
 
-        assertEquals(AppStage.LABOR, settingsRepository.current.appStage)
+        assertEquals(AppStage.CONTRACTIONS, settingsRepository.current.appStage)
         assertEquals(existingStart, laborRepository.current.laborStartTime)
         assertTrue("A duplicate labor event should not be created", timelineRepository.events.isEmpty())
     }
 
     @Test
     fun `mark birth switches stage saves details and creates first birth event`() = runTest {
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.LABOR)
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.CONTRACTIONS)
         val laborRepository = FakeLaborRepository()
         val timelineRepository = FakeTimelineRepository()
-        val useCase = MarkBirthUseCase(settingsRepository, laborRepository, timelineRepository)
+        val useCase = MarkBirthUseCase(
+            settingsRepository,
+            laborRepository,
+            timelineRepository,
+            stageTransitionManager
+        )
         val timestamp = Instant.parse("2026-03-27T10:45:00Z")
 
         useCase(
@@ -94,7 +112,7 @@ class LaborLifecycleUseCasesTest {
             birthHeightCm = 52
         )
 
-        assertEquals(AppStage.AFTER_BIRTH, settingsRepository.current.appStage)
+        assertEquals(AppStage.AT_HOSPITAL, settingsRepository.current.appStage)
         assertEquals(timestamp, laborRepository.current.birthTime)
         assertEquals("Миша", laborRepository.current.babyName)
         assertEquals(3450, laborRepository.current.birthWeightGrams)
@@ -106,7 +124,7 @@ class LaborLifecycleUseCasesTest {
     @Test
     fun `mark birth preserves existing birth data and avoids duplicate event`() = runTest {
         val existingBirth = Instant.parse("2026-03-27T10:10:00Z")
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.LABOR)
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.CONTRACTIONS)
         val laborRepository = FakeLaborRepository(
             LaborSummary(
                 laborStartTime = Instant.parse("2026-03-27T08:00:00Z"),
@@ -117,7 +135,12 @@ class LaborLifecycleUseCasesTest {
             )
         )
         val timelineRepository = FakeTimelineRepository()
-        val useCase = MarkBirthUseCase(settingsRepository, laborRepository, timelineRepository)
+        val useCase = MarkBirthUseCase(
+            settingsRepository,
+            laborRepository,
+            timelineRepository,
+            stageTransitionManager
+        )
 
         useCase(
             userId = DEFAULT_USER_ID,
@@ -129,7 +152,7 @@ class LaborLifecycleUseCasesTest {
             birthHeightCm = null
         )
 
-        assertEquals(AppStage.AFTER_BIRTH, settingsRepository.current.appStage)
+        assertEquals(AppStage.AT_HOSPITAL, settingsRepository.current.appStage)
         assertEquals(existingBirth, laborRepository.current.birthTime)
         assertEquals("Анна", laborRepository.current.babyName)
         assertEquals(3300, laborRepository.current.birthWeightGrams)
@@ -139,10 +162,15 @@ class LaborLifecycleUseCasesTest {
 
     @Test
     fun `mark birth ignores blank optional baby name`() = runTest {
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.LABOR)
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.CONTRACTIONS)
         val laborRepository = FakeLaborRepository()
         val timelineRepository = FakeTimelineRepository()
-        val useCase = MarkBirthUseCase(settingsRepository, laborRepository, timelineRepository)
+        val useCase = MarkBirthUseCase(
+            settingsRepository,
+            laborRepository,
+            timelineRepository,
+            stageTransitionManager
+        )
 
         useCase(
             userId = DEFAULT_USER_ID,

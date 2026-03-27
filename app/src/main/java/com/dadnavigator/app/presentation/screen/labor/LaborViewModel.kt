@@ -152,8 +152,8 @@ class LaborViewModel @Inject constructor(
                 }
 
                 when {
-                    summary.birthTime != null -> updateAppStageUseCase(AppStage.AFTER_BIRTH)
-                    summary.laborStartTime != null -> updateAppStageUseCase(AppStage.LABOR)
+                    summary.birthTime != null -> updateAppStageUseCase(AppStage.AT_HOSPITAL)
+                    summary.laborStartTime != null -> updateAppStageUseCase(AppStage.CONTRACTIONS)
                 }
                 infoState.value = R.string.labor_summary_saved
             }.onFailure {

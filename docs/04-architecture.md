@@ -2,108 +2,91 @@
 
 ## Общая схема
 
-Проект построен по схеме:
+Проект построен по слоям:
 
-- `presentation` — Compose UI, navigation, screen state;
-- `domain` — модели, use cases, repository interfaces;
-- `data` — Room, DataStore, repository implementations, mappers;
-- `di` — Hilt-модули.
+- `presentation` — Compose UI, экранные состояния, navigation shell;
+- `domain` — модели, сервисы, use case, интерфейсы репозиториев;
+- `data` — Room, DataStore, entity, mapper, repository implementation;
+- `di` — Hilt modules и wiring зависимостей.
 
-## Структура слоев
+## Текущее состояние миграции
 
-### Presentation
+Проект эволюционно переводится из screen-centric presentation в более feature-first организацию.
 
-Основные каталоги:
+Сейчас фактическая структура смешанная:
 
-- `presentation/navigation`
-- `presentation/screen/*`
-- `presentation/component`
+- основные экраны по-прежнему живут в `presentation/screen/*`;
+- navigation shell уже разнесен на отдельные файлы в `presentation/navigation`;
+- stage-oriented экран вынесен в `presentation/feature/stages`;
+- reusable UI элементы лежат в `presentation/component`.
 
-Ответственность:
+Это осознанный промежуточный шаг: поведение сохраняется, а giant-file точки уже разрезаются на независимые части.
 
-- composable-экраны;
-- сборка экранных состояний;
-- обработка пользовательских действий;
-- навигация между разделами;
-- показ snackbar, bottom sheet, диалогов.
+## Navigation shell
 
-### Domain
+### Основные файлы
 
-Основные каталоги:
+- [AppNavHost.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppNavHost.kt)
+- [AppNavGraph.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppNavGraph.kt)
+- [AppDestination.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppDestination.kt)
+- [BottomNavigationConfig.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/BottomNavigationConfig.kt)
+- [DrawerNavigationConfig.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/DrawerNavigationConfig.kt)
+- [AppDrawerContent.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppDrawerContent.kt)
 
-- `domain/model`
-- `domain/repository`
-- `domain/usecase/*`
+### Текущий shell
 
-Ответственность:
-
-- бизнес-модели;
-- интерфейсы репозиториев;
-- отдельные сценарии изменения и чтения данных.
-
-### Data
-
-Основные каталоги:
-
-- `data/local`
-- `data/repository`
-- `data/mapper`
-
-Ответственность:
-
-- локальное хранение;
-- миграции Room;
-- преобразование entity <-> domain;
-- реализация repository interface.
-
-## Навигация
-
-### Top-level навигация
-
-`AppNavHost` управляет shell приложения.
-
-Top-level destinations:
+Bottom navigation:
 
 - `dashboard`
 - `events`
 - `checklist`
+
+Secondary destination через top bar:
+
 - `journal`
 
-Для них используется единая логика перехода с `restoreState`, `saveState` и `launchSingleTop`, чтобы bottom navigation и карточки на главной работали консистентно.
+Drawer:
 
-### Secondary destinations
+- группа `Этапы`;
+- группа `Сервис`.
 
-- `contraction`
-- `water_break`
-- `decision`
-- `sos`
-- `emergency_contacts`
-- `mom_support`
-- `labor`
-- `postpartum`
-- `trackers`
-- `help`
-- `about`
-- `settings`
+## App-level state
 
-## Состояние приложения
+Главный app-level state собирается в [AppViewModel.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppViewModel.kt).
 
-Ключевой app-level state:
+Ключевые поля:
 
-- `Settings`
-- `AppStage`
-- `ThemeMode`
+- `userId`
+- `themeMode`
+- `dueDate`
+- `appStage`
 
-Источники:
+Источник правды:
 
-- `DataStore` — источник правды для настроек;
-- `Room` — локальная база для событий и зеркала части настроек.
+- `DataStore` для живых настроек;
+- Room snapshot таблица `settings` для локальной согласованности и миграций.
 
-## ViewModel-подход
+## Domain orchestration
 
-Каждый экран или крупный сценарий использует свой `ViewModel`.
+Новая stage/context логика вынесена в сервисы:
 
-Примеры:
+- [StageManager.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/StageManager.kt)
+- [StageTransitionManager.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/StageTransitionManager.kt)
+- [HomeContentBuilder.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/HomeContentBuilder.kt)
+- [EventsProvider.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/EventsProvider.kt)
+
+Назначение:
+
+- `StageManager` считает derived-info по ПДР и этапу;
+- `StageTransitionManager` централизует допустимые смены этапов;
+- `HomeContentBuilder` определяет, что именно нужно показать на главной;
+- `EventsProvider` собирает секции и действия экрана `События` в зависимости от этапа.
+
+Это позволяет держать бизнес-правила вне composable и уменьшает дублирование в ViewModel.
+
+## Presentation
+
+Ключевые ViewModel:
 
 - `DashboardViewModel`
 - `EventsViewModel`
@@ -111,58 +94,54 @@ Top-level destinations:
 - `ContractionViewModel`
 - `WaterBreakViewModel`
 - `LaborViewModel`
+- `TimelineViewModel`
 - `SettingsViewModel`
-- `SosViewModel`
-- `HelpViewModel`
 
 Типовой паттерн:
 
-1. `ViewModel` подписывается на `Flow`.
+1. `ViewModel` наблюдает `Flow` из use case.
 2. Собирает `UiState` через `combine`.
-3. Вызывает `use case` для действий.
-4. UI только отображает состояние и отправляет intent.
+3. Делегирует действия в use case / service.
+4. Composable только отображает state и отправляет intent.
 
-## Dependency Injection
-
-Используется `Hilt`.
-
-Основные модули:
-
-- `RepositoryModule`
-- `DatabaseModule`
-- другие Hilt bindings по мере необходимости
-
-## Подход к данным
-
-### Room
-
-Хранит:
-
-- сессии и схватки;
-- события отхождения вод;
-- журнал;
-- чек-листы;
-- трекеры;
-- контакты;
-- labor summary;
-- snapshot-настройки;
-- профиль пользователя.
+## Persistence
 
 ### DataStore
 
-Хранит:
+Используется для пользовательских настроек и текущего этапа.
 
-- `userId`
-- `themeMode`
-- `fatherName`
-- `dueDate`
-- `maternityHospitalAddress`
-- `notificationsEnabled`
-- `appStage`
+### Room
 
-## Принципы проекта
+Используется для:
 
-- Не класть бизнес-логику в composable.
-- Не дублировать доменную логику между экранами.
-- Не завязывать UX на сеть.
-- Сохранять эволюционную доработку поверх текущей кодовой базы, а не переписывать все с нуля.
+- сессий и истории схваток;
+- событий вод;
+- timeline / journal;
+- checklist данных;
+- трекеров;
+- labor summary;
+- контактов;
+- snapshot настроек.
+
+## Совместимость данных
+
+Старая 3-stage модель не ломается при чтении:
+
+- `LABOR -> CONTRACTIONS`
+- `AFTER_BIRTH -> AT_HOME`
+
+Это реализовано в [AppStage.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/model/AppStage.kt) и используется mapper/data-store слоем.
+
+## Тестовый контур
+
+Unit tests живут в `app/src/test/java`.
+
+Instrumented/UI tests живут в `app/src/androidTest/java` и проверяют:
+
+- shell navigation;
+- stage screen;
+- home behavior;
+- stage-aware сценарии `Событий`;
+- журнал;
+- валидацию настроек;
+- сценарии аналитики схваток.

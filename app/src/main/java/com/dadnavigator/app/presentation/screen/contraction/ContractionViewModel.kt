@@ -4,14 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dadnavigator.app.R
 import com.dadnavigator.app.domain.model.Contraction
-import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.domain.usecase.contraction.CalculateContractionStatsUseCase
 import com.dadnavigator.app.domain.usecase.contraction.FinishContractionSessionUseCase
-import com.dadnavigator.app.domain.usecase.contraction.FinishContractionUseCase
 import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUseCase
 import com.dadnavigator.app.domain.usecase.contraction.StartContractionSessionUseCase
-import com.dadnavigator.app.domain.usecase.contraction.StartContractionUseCase
-import com.dadnavigator.app.domain.usecase.timeline.AddTimelineEventUseCase
+import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionUseCase
 import com.dadnavigator.app.di.IoDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Duration
@@ -36,10 +33,8 @@ class ContractionViewModel @Inject constructor(
     private val observeContractionStateUseCase: ObserveContractionStateUseCase,
     private val startContractionSessionUseCase: StartContractionSessionUseCase,
     private val finishContractionSessionUseCase: FinishContractionSessionUseCase,
-    private val startContractionUseCase: StartContractionUseCase,
-    private val finishContractionUseCase: FinishContractionUseCase,
+    private val toggleContractionUseCase: ToggleContractionUseCase,
     private val calculateContractionStatsUseCase: CalculateContractionStatsUseCase,
-    private val addTimelineEventUseCase: AddTimelineEventUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -117,20 +112,11 @@ class ContractionViewModel @Inject constructor(
 
         viewModelScope.launch(ioDispatcher) {
             runCatching {
-                val sessionId = currentState.sessionId ?: startContractionSessionUseCase(userId)
-                val activeContractionId = currentState.activeContractionId
-                if (activeContractionId == null) {
-                    startContractionUseCase(sessionId = sessionId, userId = userId)
-                } else {
-                    finishContractionUseCase(activeContractionId)
-                    addTimelineEventUseCase(
-                        userId = userId,
-                        timestamp = Instant.now(),
-                        title = "",
-                        description = "",
-                        type = TimelineType.CONTRACTION
-                    )
-                }
+                toggleContractionUseCase(
+                    userId = userId,
+                    sessionId = currentState.sessionId,
+                    activeContractionId = currentState.activeContractionId
+                )
             }.onFailure {
                 errorState.value = R.string.error_generic
             }

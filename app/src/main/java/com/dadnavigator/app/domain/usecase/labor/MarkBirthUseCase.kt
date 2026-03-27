@@ -5,6 +5,7 @@ import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.domain.repository.LaborRepository
 import com.dadnavigator.app.domain.repository.SettingsRepository
 import com.dadnavigator.app.domain.repository.TimelineRepository
+import com.dadnavigator.app.domain.service.StageTransitionManager
 import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
@@ -15,7 +16,8 @@ import kotlinx.coroutines.flow.first
 class MarkBirthUseCase @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val laborRepository: LaborRepository,
-    private val timelineRepository: TimelineRepository
+    private val timelineRepository: TimelineRepository,
+    private val stageTransitionManager: StageTransitionManager
 ) {
     suspend operator fun invoke(
         userId: String,
@@ -27,7 +29,7 @@ class MarkBirthUseCase @Inject constructor(
         birthHeightCm: Int? = null
     ) {
         val settings = settingsRepository.observeSettings().first()
-        settingsRepository.saveSettings(settings.copy(appStage = AppStage.AFTER_BIRTH))
+        settingsRepository.saveSettings(settings.copy(appStage = stageTransitionManager.babyBorn()))
 
         val currentSummary = laborRepository.observeLaborSummary(userId).first()
         val updatedSummary = currentSummary.copy(

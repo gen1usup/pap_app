@@ -1,191 +1,41 @@
-# Локальная база данных и хранение
+﻿# Структура локального хранения
 
-## Общая схема
+## Общая модель
 
-Приложение использует два локальных механизма хранения:
+Приложение использует два локальных источника:
 
-- `Room` — событийные и справочные данные;
-- `DataStore` — app-level настройки и сценарный контекст.
+- `Room` — основная оффлайн-база событий и доменных записей;
+- `DataStore` — текущие пользовательские настройки и app-level state.
 
-Текущая версия `Room` базы: `4`.
+## Room
 
-## Room: список таблиц
+### База
 
-### 1. `contraction_sessions`
+- файл базы: `dad_navigator.db`
+- текущая версия схемы: `4`
+- база описана в [AppDatabase.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/data/local/AppDatabase.kt)
 
-Назначение:
+### Таблицы
 
-- хранит сессии наблюдения за схватками.
-
-Основные поля:
-
-- `id`
-- `userId`
-- `startedAt`
-- `endedAt`
-
-Связи:
-
-- одна сессия -> много записей в `contractions`.
-
-### 2. `contractions`
+#### `users`
 
 Назначение:
 
-- хранит отдельные схватки внутри сессии.
+- базовый локальный профиль пользователя.
 
-Основные поля:
-
-- `id`
-- `sessionId`
-- `userId`
-- `startedAt`
-- `endedAt`
-
-Связи:
-
-- `sessionId` -> `contraction_sessions.id`
-
-### 3. `water_break_events`
-
-Назначение:
-
-- хранит факты отхождения вод и историю закрытия события.
-
-Основные поля:
+Ключевые поля:
 
 - `id`
-- `userId`
-- `happenedAt`
-- `color`
-- `notes`
-- `closedAt`
-
-### 4. `timeline_events`
-
-Назначение:
-
-- единая хронология для родов и послеродовых записей.
-
-Основные поля:
-
-- `id`
-- `userId`
-- `type`
-- `timestamp`
-- `title`
-- `description`
-
-Типы событий соответствуют `TimelineType`:
-
-- `CONTRACTION`
-- `WATER_BREAK`
-- `LABOR`
-- `BIRTH`
-- `FEEDING`
-- `DIAPER`
-- `SLEEP`
-- `NOTE`
-
-### 5. `checklists`
-
-Назначение:
-
-- хранит контейнеры чек-листов.
-
-Основные поля:
-
-- `id`
-- `userId`
-- `title`
-- `stage`
-- `category`
-- `isSystem`
-- `sortOrder`
+- `displayName`
 - `createdAt`
 
-### 6. `checklist_items`
+#### `settings`
 
 Назначение:
 
-- хранит пункты чек-листов.
+- snapshot настроек для локальной согласованности и миграций.
 
-Основные поля:
-
-- `id`
-- `checklistId`
-- `userId`
-- `text`
-- `isChecked`
-- `createdAt`
-
-Связи:
-
-- `checklistId` -> `checklists.id`
-
-### 7. `feeding_logs`
-
-Назначение:
-
-- записи по кормлению.
-
-Основные поля:
-
-- `id`
-- `userId`
-- `timestamp`
-- `durationMinutes`
-- `type`
-
-### 8. `diaper_logs`
-
-Назначение:
-
-- записи по подгузникам.
-
-Основные поля:
-
-- `id`
-- `userId`
-- `timestamp`
-- `type`
-- `notes`
-
-### 9. `sleep_logs`
-
-Назначение:
-
-- записи по сну ребенка.
-
-Основные поля:
-
-- `id`
-- `userId`
-- `startTime`
-- `endTime`
-- `notes`
-
-### 10. `notes`
-
-Назначение:
-
-- произвольные заметки.
-
-Основные поля:
-
-- `id`
-- `userId`
-- `timestamp`
-- `text`
-- `category`
-
-### 11. `settings`
-
-Назначение:
-
-- snapshot настроек для Room-слоя и возможного будущего sync.
-
-Основные поля:
+Ключевые поля:
 
 - `userId`
 - `themeMode`
@@ -196,87 +46,108 @@
 - `appStage`
 - `updatedAt`
 
-### 12. `users`
+#### `labor_summary`
 
 Назначение:
 
-- локальный профиль пользователя.
+- агрегированные данные о родах и ребенке.
 
-Основные поля:
+Ключевые поля:
 
-- `id`
-- `displayName`
-- `createdAt`
-
-### 13. `labor_summary`
-
-Назначение:
-
-- ключевые агрегированные данные о родах.
-
-Основные поля:
-
-- `userId`
 - `laborStartTime`
 - `birthTime`
 - `babyName`
 - `birthWeightGrams`
 - `birthHeightCm`
 
-### 14. `emergency_contacts`
+#### `contraction_sessions`
 
 Назначение:
 
-- быстрые экстренные контакты.
+- одна пользовательская сессия отслеживания схваток.
 
-Основные поля:
+#### `contractions`
 
-- `type`
+Назначение:
+
+- отдельные схватки внутри сессии.
+
+#### `water_break_events`
+
+Назначение:
+
+- события отхождения вод и их состояние.
+
+#### `timeline_events`
+
+Назначение:
+
+- единый журнал важных событий и ручных записей.
+
+#### `checklists`
+
+Назначение:
+
+- заголовки и metadata чек-листов.
+
+Ключевые поля включают:
+
+- `stage`
+- `category`
 - `title`
-- `phone`
-- `sortOrder`
+- признак системного списка
 
-## Индексы и производительность
+#### `checklist_items`
 
-Индексы используются на:
+Назначение:
 
-- `userId` для большинства пользовательских таблиц;
-- `timestamp` / `startTime` для журналов и трекеров;
-- `sessionId` для схваток;
-- `checklistId` для пунктов чек-листа.
+- пункты чек-листа и их состояние.
 
-Это позволяет быстро строить:
+#### `feeding_logs`, `diaper_logs`, `sleep_logs`, `notes`
 
-- историю;
-- последние события;
-- активные сессии;
-- stage-aware списки чек-листов.
+Назначение:
 
-## DataStore: структура настроек
+- данные послеродовых трекеров.
 
-DataStore хранит ключи:
+#### `emergency_contacts`
 
-- `user_id`
-- `theme_mode`
-- `father_name`
-- `due_date_epoch_day`
-- `maternity_hospital_address`
-- `notifications_enabled`
-- `app_stage`
+Назначение:
 
-## Источник правды
+- локальные контакты для звонков и экстренных сценариев.
 
-Для настроек источником правды считается `DataStore`.
+## DataStore
 
-`Room.settings` используется как локальный snapshot и подготовка к будущим сценариям синхронизации, но экранные настройки читаются через `SettingsDataStore`.
+DataStore хранит текущие значения настроек пользователя.
 
-## Миграции
+Ключевые значения:
 
-Текущие миграции определены в `DatabaseModule`.
+- `userId`
+- `themeMode`
+- `fatherName`
+- `dueDate`
+- `maternityHospitalAddress`
+- `notificationsEnabled`
+- `appStage`
 
-Важные моменты:
+## Совместимость этапов
 
-- миграции пересоздают таблицу `settings`, чтобы сохранять консистентную схему;
-- миграции учитывают предыдущие версии `checklists`;
-- схема `labor_summary` расширялась полем `babyName`;
-- база эволюционирует без намеренной потери пользовательских данных там, где это возможно.
+При чтении строкового значения этапа используется совместимость со старой моделью:
+
+- `PREPARING -> PREPARING`
+- `LABOR -> CONTRACTIONS`
+- `AFTER_BIRTH -> AT_HOME`
+- `AT_HOSPITAL -> AT_HOSPITAL`
+- `AT_HOME -> AT_HOME`
+
+## Почему используется и Room, и DataStore
+
+`DataStore` нужен для простого и реактивного хранения настроек.
+
+`Room` нужен для:
+
+- событийной истории;
+- сложных выборок;
+- отношений сущностей;
+- стабильного оффлайн-first сценария.
+
+Такой split позволяет не смешивать длинную историю и lightweight настройки в одном механизме.

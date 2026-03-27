@@ -37,12 +37,14 @@ import com.dadnavigator.app.presentation.component.InfoCard
 import com.dadnavigator.app.presentation.component.PrimaryButton
 import com.dadnavigator.app.presentation.component.ScreenBackground
 import com.dadnavigator.app.presentation.component.ScreenScaffold
+import com.dadnavigator.app.presentation.component.TimelineActionButton
 
 @Composable
 fun ChecklistScreen(
     userId: String,
     onBack: (() -> Unit)?,
     onMenu: (() -> Unit)? = null,
+    onOpenTimeline: (() -> Unit)? = null,
     viewModel: ChecklistViewModel = hiltViewModel()
 ) {
     LaunchedEffect(userId) {
@@ -65,6 +67,7 @@ fun ChecklistScreen(
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onMenu = onMenu,
+        onOpenTimeline = onOpenTimeline,
         onStageSelected = viewModel::selectStage,
         onDraftChanged = viewModel::updateDraft,
         onAddItem = viewModel::addItem,
@@ -79,6 +82,7 @@ private fun ChecklistContent(
     snackbarHostState: SnackbarHostState,
     onBack: (() -> Unit)?,
     onMenu: (() -> Unit)?,
+    onOpenTimeline: (() -> Unit)?,
     onStageSelected: (AppStage) -> Unit,
     onDraftChanged: (Long, String) -> Unit,
     onAddItem: (Long) -> Unit,
@@ -94,7 +98,12 @@ private fun ChecklistContent(
         subtitle = stringResource(id = R.string.checklist_subtitle),
         onBack = onBack,
         onMenu = onMenu,
-        snackbarHostState = snackbarHostState
+        snackbarHostState = snackbarHostState,
+        actions = {
+            if (onOpenTimeline != null) {
+                TimelineActionButton(onClick = onOpenTimeline)
+            }
+        }
     ) { innerPadding ->
         ScreenBackground {
             LazyColumn(
@@ -233,6 +242,7 @@ private fun ChecklistGroupCard(
 
 private fun stageLabelRes(stage: AppStage): Int = when (stage) {
     AppStage.PREPARING -> R.string.app_stage_preparing
-    AppStage.LABOR -> R.string.app_stage_labor
-    AppStage.AFTER_BIRTH -> R.string.app_stage_after_birth
+    AppStage.CONTRACTIONS -> R.string.app_stage_contractions
+    AppStage.AT_HOSPITAL -> R.string.app_stage_at_hospital
+    AppStage.AT_HOME -> R.string.app_stage_at_home
 }

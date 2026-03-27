@@ -59,9 +59,7 @@ class SettingsDataStore @Inject constructor(
                     },
                     maternityHospitalAddress = preferences[maternityHospitalAddressKey].orEmpty(),
                     notificationsEnabled = preferences[notificationsEnabledKey] ?: true,
-                    appStage = runCatching {
-                        AppStage.valueOf(preferences[appStageKey] ?: AppStage.PREPARING.name)
-                    }.getOrDefault(AppStage.PREPARING)
+                    appStage = AppStage.fromStorage(preferences[appStageKey])
                 )
             }
     }

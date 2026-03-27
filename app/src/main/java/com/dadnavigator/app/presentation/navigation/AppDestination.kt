@@ -26,4 +26,9 @@ sealed class AppDestination(
     data object Help : AppDestination("help", R.string.help_title)
     data object About : AppDestination("about", R.string.about_title)
     data object Settings : AppDestination("settings", R.string.settings_title)
+    data object StageDetails : AppDestination("stage/{stage}", R.string.drawer_stages_group) {
+        const val stageArgument = "stage"
+
+        fun routeFor(stage: com.dadnavigator.app.domain.model.AppStage): String = "stage/${stage.name}"
+    }
 }

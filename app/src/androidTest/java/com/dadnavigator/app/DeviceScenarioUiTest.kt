@@ -11,6 +11,7 @@ import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.UiScrollable
 import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
+import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.testsupport.TestAppStateSeeder
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -41,7 +42,10 @@ class DeviceScenarioUiTest {
     fun resetAndLaunchApp() {
         device.pressHome()
         seeder.clearAllData()
+        launchApp()
+    }
 
+    private fun launchApp() {
         val launchIntent = targetContext.packageManager.getLaunchIntentForPackage(targetPackage)?.apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
         }
@@ -56,7 +60,7 @@ class DeviceScenarioUiTest {
 
     @Test
     fun homeToChecklistsAndBackViaBottomNavigationWorks() {
-        clickText(targetContext.getString(R.string.action_checklists), maxTop = 2_000)
+        clickText(targetContext.getString(R.string.nav_checklists), minTop = 2_000)
 
         assertTrue(waitForText(targetContext.getString(R.string.nav_checklists)))
         assertTrue(waitForText(targetContext.resources.getStringArray(R.array.checklist_names)[1]))
@@ -68,18 +72,21 @@ class DeviceScenarioUiTest {
     }
 
     @Test
-    fun drawerStageSwitchChangesHomeBlocksAndHidesContractionAfterBirth() {
+    fun drawerStageEntriesOpenStageScreen() {
         openDrawer()
-        clickText(targetContext.getString(R.string.app_stage_labor), maxTop = 700)
+        clickText(targetContext.getString(R.string.app_stage_contractions))
 
-        assertTrue(waitForText(targetContext.getString(R.string.dashboard_labor_title)))
-        assertTrue(waitForText(targetContext.getString(R.string.dashboard_water_action)))
+        assertTrue(waitForText(targetContext.getString(R.string.stage_screen_contractions_title)))
+        assertTrue(waitForText(targetContext.getString(R.string.stage_screen_activate)))
+    }
 
-        openDrawer()
-        clickText(targetContext.getString(R.string.app_stage_after_birth), maxTop = 700)
+    @Test
+    fun homeChangesForHospitalStageAndHidesContractionShortcut() {
+        device.pressHome()
+        seeder.seedStage(AppStage.AT_HOSPITAL)
+        launchApp()
 
-        assertTrue(waitForText(targetContext.getString(R.string.action_trackers)))
-        assertTrue(waitForText(targetContext.getString(R.string.dashboard_after_birth_title)))
+        assertTrue(waitForText(targetContext.getString(R.string.dashboard_at_hospital_title)))
         assertFalse(
             "Contraction counter shortcut should not stay on after-birth home",
             hasVisibleText(targetContext.getString(R.string.action_contraction_counter))
@@ -97,8 +104,35 @@ class DeviceScenarioUiTest {
     }
 
     @Test
+    fun eventsHospitalStageShowsArrivalHomeAndHidesLaborTools() {
+        device.pressHome()
+        seeder.seedStage(AppStage.AT_HOSPITAL)
+        launchApp()
+
+        clickText(targetContext.getString(R.string.nav_events), minTop = 2_000)
+        scrollUntilVisible(targetContext.getString(R.string.events_action_arrived_home))
+
+        assertTrue(waitForText(targetContext.getString(R.string.events_action_arrived_home)))
+        assertTrue(waitForText(targetContext.getString(R.string.events_action_support)))
+        assertFalse(hasVisibleText(targetContext.getString(R.string.action_contraction_counter)))
+    }
+
+    @Test
+    fun eventsAtHomeStageShowsTrackersAndHidesLaborStart() {
+        device.pressHome()
+        seeder.seedStage(AppStage.AT_HOME)
+        launchApp()
+
+        clickText(targetContext.getString(R.string.nav_events), minTop = 2_000)
+
+        assertTrue(waitForText(targetContext.getString(R.string.events_action_feeding)))
+        assertTrue(waitForText(targetContext.getString(R.string.events_action_sleep)))
+        assertTrue(waitForText(targetContext.getString(R.string.events_action_diaper)))
+        assertFalse(hasVisibleText(targetContext.getString(R.string.events_action_labor_started)))
+    }
+
     fun journalBlankLaborEventShowsValidationMessageAndKeepsEmptyState() {
-        clickText(targetContext.getString(R.string.nav_journal), minTop = 2_000)
+        clickContentDescription(targetContext.getString(R.string.nav_journal))
 
         assertTrue(waitForText(targetContext.getString(R.string.timeline_empty_title)))
         clickText(targetContext.getString(R.string.timeline_add_event))
@@ -162,6 +196,15 @@ class DeviceScenarioUiTest {
             device.waitForIdle()
         }
         throw AssertionError("Could not find clickable text '$text'")
+    }
+
+    private fun clickContentDescription(description: String) {
+        val candidate = device.wait(
+            Until.findObject(By.desc(description)),
+            timeoutMs
+        )
+        requireNotNull(candidate) { "Could not find clickable object with description '$description'" }
+        candidate.click()
     }
 
     private fun setEditTextByIndex(index: Int, value: String) {

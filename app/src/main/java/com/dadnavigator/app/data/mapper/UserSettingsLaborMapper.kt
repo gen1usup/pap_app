@@ -32,7 +32,7 @@ fun SettingsEntity.toDomain(): Settings = Settings(
     dueDate = dueDateEpochDay?.let(java.time.LocalDate::ofEpochDay),
     maternityHospitalAddress = maternityHospitalAddress,
     notificationsEnabled = notificationsEnabled,
-    appStage = runCatching { AppStage.valueOf(appStage) }.getOrDefault(AppStage.PREPARING)
+    appStage = AppStage.fromStorage(appStage)
 )
 
 fun Settings.toEntity(updatedAt: Instant = Instant.now()): SettingsEntity = SettingsEntity(

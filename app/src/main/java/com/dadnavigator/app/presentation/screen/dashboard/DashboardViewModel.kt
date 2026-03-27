@@ -8,9 +8,11 @@ import com.dadnavigator.app.domain.model.DEFAULT_USER_ID
 import com.dadnavigator.app.domain.model.LaborSummary
 import com.dadnavigator.app.domain.model.Settings
 import com.dadnavigator.app.domain.model.TimelineEvent
+import com.dadnavigator.app.domain.service.HomeContentBuilder
 import com.dadnavigator.app.domain.usecase.checklist.ObserveChecklistsUseCase
 import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedUseCase
+import com.dadnavigator.app.domain.service.StageManager
 import com.dadnavigator.app.domain.usecase.settings.ObserveSettingsUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveLaborSummaryUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveTimelineUseCase
@@ -20,7 +22,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,6 +47,8 @@ class DashboardViewModel @Inject constructor(
     private val observeTimelineUseCase: ObserveTimelineUseCase,
     private val observeLaborSummaryUseCase: ObserveLaborSummaryUseCase,
     private val markLaborStartedUseCase: MarkLaborStartedUseCase,
+    private val homeContentBuilder: HomeContentBuilder,
+    private val stageManager: StageManager,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -89,19 +92,23 @@ class DashboardViewModel @Inject constructor(
                 ticker
             ) { base, waterBreakEvent, laborSummary, now ->
                 val settings = base.settings
-                val daysUntilDueDate = settings.dueDate?.let { ChronoUnit.DAYS.between(LocalDate.now(), it) }
-                val showContractionShortcut = when (settings.appStage) {
-                    AppStage.PREPARING -> {
-                        base.hasActiveContractionSession || (daysUntilDueDate != null && daysUntilDueDate <= 21)
-                    }
-                    AppStage.LABOR -> true
-                    AppStage.AFTER_BIRTH -> false
-                }
+                val stageInfo = stageManager.buildStageInfo(
+                    settings = settings,
+                    laborSummary = laborSummary,
+                    today = LocalDate.now()
+                )
+                val homeContent = homeContentBuilder.build(
+                    settings = settings,
+                    stageInfo = stageInfo,
+                    laborSummary = laborSummary,
+                    hasActiveContractionSession = base.hasActiveContractionSession,
+                    hasActiveWaterBreak = base.isWaterBreakActive
+                )
                 DashboardUiState(
                     fatherName = settings.fatherName,
                     appStage = settings.appStage,
                     dueDate = settings.dueDate,
-                    daysUntilDueDate = daysUntilDueDate,
+                    daysUntilDueDate = stageInfo.daysUntilDueDate,
                     hasActiveContractionSession = base.hasActiveContractionSession,
                     hasActiveWaterBreak = base.isWaterBreakActive,
                     waterBreakElapsed = waterBreakEvent?.elapsed(now),
@@ -109,12 +116,11 @@ class DashboardViewModel @Inject constructor(
                     stageChecklistCompletedCount = base.stageChecklistCompleted,
                     stageChecklistTotalCount = base.stageChecklistTotal,
                     recentEvents = base.recentEvents,
-                    showContractionShortcut = showContractionShortcut,
-                    showWaterBreakShortcut = settings.appStage == AppStage.LABOR || waterBreakEvent?.isActive == true,
-                    showBirthDetailsCard = settings.appStage == AppStage.AFTER_BIRTH &&
-                        (laborSummary.babyName.isNullOrBlank() ||
-                            laborSummary.birthWeightGrams == null ||
-                            laborSummary.birthHeightCm == null),
+                    showDueDateReminder = homeContent.showDueDateReminder,
+                    showContractionShortcut = homeContent.showContractionShortcut,
+                    showWaterBreakShortcut = homeContent.showWaterBreakShortcut,
+                    showBirthDetailsCard = homeContent.showBirthDetailsCard,
+                    checklistFirst = homeContent.checklistFirst,
                     errorRes = null
                 )
             }.combine(errorState) { partial, errorRes ->
@@ -173,9 +179,11 @@ data class DashboardUiState(
     val stageChecklistCompletedCount: Int = 0,
     val stageChecklistTotalCount: Int = 0,
     val recentEvents: List<TimelineEvent> = emptyList(),
+    val showDueDateReminder: Boolean = true,
     val showContractionShortcut: Boolean = false,
     val showWaterBreakShortcut: Boolean = false,
     val showBirthDetailsCard: Boolean = false,
+    val checklistFirst: Boolean = true,
     val errorRes: Int? = null
 )
 

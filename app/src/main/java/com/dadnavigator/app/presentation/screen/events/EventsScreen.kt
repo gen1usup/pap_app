@@ -1,5 +1,6 @@
 package com.dadnavigator.app.presentation.screen.events
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,8 +14,11 @@ import androidx.compose.material.icons.outlined.BabyChangingStation
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.outlined.MonitorHeart
+import androidx.compose.material.icons.outlined.NightlightRound
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,6 +40,9 @@ import com.dadnavigator.app.R
 import com.dadnavigator.app.core.ui.DadTheme
 import com.dadnavigator.app.core.util.toReadableDateTime
 import com.dadnavigator.app.domain.model.AppStage
+import com.dadnavigator.app.domain.service.EventAction
+import com.dadnavigator.app.domain.service.EventsSection
+import com.dadnavigator.app.domain.service.EventsSectionType
 import com.dadnavigator.app.presentation.component.InfoCard
 import com.dadnavigator.app.presentation.component.PrimaryButton
 import com.dadnavigator.app.presentation.component.ScreenBackground
@@ -42,6 +50,7 @@ import com.dadnavigator.app.presentation.component.ScreenScaffold
 import com.dadnavigator.app.presentation.component.SecondaryButton
 import com.dadnavigator.app.presentation.component.StatusCard
 import com.dadnavigator.app.presentation.component.StatusTone
+import com.dadnavigator.app.presentation.component.TimelineActionButton
 
 @Composable
 fun EventsScreen(
@@ -52,6 +61,7 @@ fun EventsScreen(
     onOpenLaborDetails: () -> Unit,
     onBack: (() -> Unit)? = null,
     onMenu: (() -> Unit)? = null,
+    onOpenTimeline: (() -> Unit)? = null,
     viewModel: EventsViewModel = hiltViewModel()
 ) {
     LaunchedEffect(userId) {
@@ -69,6 +79,8 @@ fun EventsScreen(
     val arrivedTitle = stringResource(id = R.string.events_action_arrived)
     val arrivedDescription = stringResource(id = R.string.events_action_arrived_desc)
     val birthTitle = stringResource(id = R.string.events_action_birth)
+    val homeTitle = stringResource(id = R.string.events_action_arrived_home)
+    val homeDescription = stringResource(id = R.string.events_action_arrived_home_desc)
 
     LaunchedEffect(message) {
         if (message != null) {
@@ -82,43 +94,61 @@ fun EventsScreen(
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onMenu = onMenu,
-        onOpenContraction = onOpenContraction,
-        onOpenWaterBreak = onOpenWaterBreak,
-        onOpenDecision = onOpenDecision,
-        onOpenLaborDetails = onOpenLaborDetails,
-        onMarkLaborStarted = {
-            viewModel.markLaborStarted(
-                eventTitle = laborStartedTitle,
-                eventDescription = laborStartedDescription
-            )
+        onOpenTimeline = onOpenTimeline,
+        onAction = { action ->
+            when (action) {
+                EventAction.OpenContractionTimer -> onOpenContraction()
+                EventAction.OpenWaterBreakTimer -> onOpenWaterBreak()
+                EventAction.OpenDecisionHelp -> onOpenDecision()
+                EventAction.OpenBirthDetails -> onOpenLaborDetails()
+                EventAction.MarkLaborStarted -> viewModel.markLaborStarted(
+                    eventTitle = laborStartedTitle,
+                    eventDescription = laborStartedDescription
+                )
+                EventAction.StartContraction,
+                EventAction.StopContraction -> viewModel.toggleContraction()
+                EventAction.MarkLeftHome -> viewModel.addJourneyEvent(
+                    title = departedTitle,
+                    description = departedDescription
+                )
+                EventAction.MarkArrivedHospital -> viewModel.addJourneyEvent(
+                    title = arrivedTitle,
+                    description = arrivedDescription
+                )
+                EventAction.ShowBirthSheet -> viewModel.showBirthSheet(state.laborSummary)
+                EventAction.MarkArrivedHome -> viewModel.markArrivedHome(
+                    eventTitle = homeTitle,
+                    eventDescription = homeDescription
+                )
+                EventAction.RecordBagReady,
+                EventAction.RecordTestDrive,
+                EventAction.RecordPreparationNote,
+                EventAction.RecordLaborNote,
+                EventAction.RecordHospitalNote,
+                EventAction.RecordSupportAction,
+                EventAction.RecordPhotoNote,
+                EventAction.RecordFeeding,
+                EventAction.RecordSleep,
+                EventAction.RecordDiaper,
+                EventAction.RecordTemperature,
+                EventAction.RecordWeight,
+                EventAction.RecordHomeNote -> viewModel.showQuickRecordSheet(action)
+            }
         },
-        onMarkDeparture = {
-            viewModel.addJourneyEvent(
-                title = departedTitle,
-                description = departedDescription
-            )
-        },
-        onMarkArrival = {
-            viewModel.addJourneyEvent(
-                title = arrivedTitle,
-                description = arrivedDescription
-            )
-        },
-        onShowBirthSheet = { viewModel.showBirthSheet(state.laborSummary) },
         onHideBirthSheet = viewModel::hideBirthSheet,
         onBabyNameChanged = viewModel::updateBabyName,
         onWeightChanged = viewModel::updateWeight,
         onHeightChanged = viewModel::updateHeight,
         onConfirmBirth = {
-            viewModel.markBirth(
-                eventTitle = birthTitle
-            )
+            viewModel.markBirth(eventTitle = birthTitle)
         },
         onSkipBirth = {
-            viewModel.markBirthWithoutDetails(
-                eventTitle = birthTitle
-            )
-        }
+            viewModel.markBirthWithoutDetails(eventTitle = birthTitle)
+        },
+        onHideQuickRecordSheet = viewModel::hideQuickRecordSheet,
+        onQuickRecordTitleChanged = viewModel::updateQuickRecordTitle,
+        onQuickRecordDescriptionChanged = viewModel::updateQuickRecordDescription,
+        onSaveQuickRecord = viewModel::saveQuickRecord
     )
 }
 
@@ -129,20 +159,18 @@ private fun EventsContent(
     snackbarHostState: SnackbarHostState,
     onBack: (() -> Unit)?,
     onMenu: (() -> Unit)?,
-    onOpenContraction: () -> Unit,
-    onOpenWaterBreak: () -> Unit,
-    onOpenDecision: () -> Unit,
-    onOpenLaborDetails: () -> Unit,
-    onMarkLaborStarted: () -> Unit,
-    onMarkDeparture: () -> Unit,
-    onMarkArrival: () -> Unit,
-    onShowBirthSheet: () -> Unit,
+    onOpenTimeline: (() -> Unit)?,
+    onAction: (EventAction) -> Unit,
     onHideBirthSheet: () -> Unit,
     onBabyNameChanged: (String) -> Unit,
     onWeightChanged: (String) -> Unit,
     onHeightChanged: (String) -> Unit,
     onConfirmBirth: () -> Unit,
-    onSkipBirth: () -> Unit
+    onSkipBirth: () -> Unit,
+    onHideQuickRecordSheet: () -> Unit,
+    onQuickRecordTitleChanged: (String) -> Unit,
+    onQuickRecordDescriptionChanged: (String) -> Unit,
+    onSaveQuickRecord: () -> Unit
 ) {
     val spacing = DadTheme.spacing
 
@@ -151,7 +179,12 @@ private fun EventsContent(
         subtitle = stringResource(id = R.string.events_subtitle),
         onBack = onBack,
         onMenu = onMenu,
-        snackbarHostState = snackbarHostState
+        snackbarHostState = snackbarHostState,
+        actions = {
+            if (onOpenTimeline != null) {
+                TimelineActionButton(onClick = onOpenTimeline)
+            }
+        }
     ) { innerPadding ->
         ScreenBackground {
             LazyColumn(
@@ -164,116 +197,44 @@ private fun EventsContent(
                 item {
                     StatusCard(
                         title = stringResource(id = stageTitleRes(state.appStage)),
-                        description = stringResource(
-                            id = when (state.appStage) {
-                                AppStage.PREPARING -> R.string.events_stage_preparing_description
-                                AppStage.LABOR -> R.string.events_stage_labor_description
-                                AppStage.AFTER_BIRTH -> R.string.events_stage_after_birth_description
-                            }
-                        ),
-                        tone = when (state.appStage) {
-                            AppStage.PREPARING -> StatusTone.Calm
-                            AppStage.LABOR -> StatusTone.Warning
-                            AppStage.AFTER_BIRTH -> StatusTone.Success
-                        },
-                        icon = when (state.appStage) {
-                            AppStage.PREPARING -> Icons.Outlined.CheckCircle
-                            AppStage.LABOR -> Icons.Outlined.MonitorHeart
-                            AppStage.AFTER_BIRTH -> Icons.Outlined.ChildCare
-                        },
+                        description = stringResource(id = stageDescriptionRes(state.appStage)),
+                        tone = stageTone(state.appStage),
+                        icon = stageIcon(state.appStage),
                         headline = stringResource(id = R.string.events_stage_overline)
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-                            if (state.hasActiveContractionSession && state.appStage != AppStage.AFTER_BIRTH) {
-                                SecondaryButton(
-                                    text = stringResource(id = R.string.dashboard_open_contraction_cta),
-                                    onClick = onOpenContraction,
-                                    icon = Icons.Outlined.AccessTime
+                        Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                            if (state.isContractionRunning) {
+                                Text(
+                                    text = stringResource(id = R.string.events_status_contraction_running),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            } else if (state.appStage == AppStage.CONTRACTIONS) {
+                                Text(
+                                    text = stringResource(id = R.string.events_status_contraction_waiting),
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                             if (state.hasActiveWaterBreak) {
-                                SecondaryButton(
-                                    text = stringResource(id = R.string.dashboard_water_action),
-                                    onClick = onOpenWaterBreak,
-                                    icon = Icons.Outlined.WaterDrop
+                                Text(
+                                    text = stringResource(id = R.string.events_status_water_break_running),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
                     }
                 }
 
-                item {
-                    InfoCard(
-                        title = stringResource(id = R.string.events_main_tools_title),
-                        description = stringResource(id = R.string.events_main_tools_description),
-                        icon = Icons.Outlined.LocalHospital
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-                            if (state.appStage != AppStage.AFTER_BIRTH) {
-                                PrimaryButton(
-                                    text = stringResource(id = R.string.action_contraction_counter),
-                                    onClick = onOpenContraction,
-                                    icon = Icons.Outlined.MonitorHeart
-                                )
-                            }
-                            SecondaryButton(
-                                text = stringResource(id = R.string.action_water_break_timer),
-                                onClick = onOpenWaterBreak,
-                                icon = Icons.Outlined.WaterDrop
-                            )
-                            SecondaryButton(
-                                text = stringResource(id = R.string.action_when_go_hospital),
-                                onClick = onOpenDecision,
-                                icon = Icons.Outlined.LocalHospital
-                            )
-                        }
-                    }
-                }
-
-                if (state.appStage == AppStage.PREPARING) {
+                state.content.sections.forEach { section ->
                     item {
-                        InfoCard(
-                            title = stringResource(id = R.string.events_action_labor_started),
-                            description = stringResource(id = R.string.events_action_labor_started_desc),
-                            icon = Icons.Outlined.MonitorHeart
-                        ) {
-                            PrimaryButton(
-                                text = stringResource(id = R.string.events_action_labor_started),
-                                onClick = onMarkLaborStarted
-                            )
-                        }
+                        EventsSectionCard(
+                            section = section,
+                            onAction = onAction
+                        )
                     }
                 }
 
-                if (state.appStage == AppStage.LABOR) {
-                    item {
-                        InfoCard(
-                            title = stringResource(id = R.string.events_logistics_title),
-                            description = stringResource(id = R.string.events_logistics_description),
-                            icon = Icons.Outlined.DirectionsCar
-                        ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-                                SecondaryButton(
-                                    text = stringResource(id = R.string.events_action_departed),
-                                    onClick = onMarkDeparture,
-                                    icon = Icons.Outlined.DirectionsCar
-                                )
-                                SecondaryButton(
-                                    text = stringResource(id = R.string.events_action_arrived),
-                                    onClick = onMarkArrival,
-                                    icon = Icons.Outlined.LocalHospital
-                                )
-                                PrimaryButton(
-                                    text = stringResource(id = R.string.events_action_birth),
-                                    onClick = onShowBirthSheet,
-                                    icon = Icons.Outlined.ChildCare
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (state.appStage == AppStage.AFTER_BIRTH || state.laborSummary.birthTime != null) {
+                if (state.content.showBirthSummary) {
                     item {
                         InfoCard(
                             title = stringResource(id = R.string.events_birth_summary_title),
@@ -307,7 +268,7 @@ private fun EventsContent(
                                 }
                                 SecondaryButton(
                                     text = stringResource(id = R.string.events_open_birth_details),
-                                    onClick = onOpenLaborDetails
+                                    onClick = { onAction(EventAction.OpenBirthDetails) }
                                 )
                             }
                         }
@@ -368,10 +329,268 @@ private fun EventsContent(
             }
         }
     }
+
+    val quickRecordAction = state.activeQuickRecordAction
+    if (state.showQuickRecordSheet && quickRecordAction != null) {
+        ModalBottomSheet(
+            onDismissRequest = onHideQuickRecordSheet,
+            shape = DadTheme.shapes.sheet
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = spacing.md, vertical = spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(spacing.md)
+            ) {
+                Text(
+                    text = stringResource(id = quickRecordSheetTitleRes(quickRecordAction)),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Text(
+                    text = stringResource(id = quickRecordSheetDescriptionRes(quickRecordAction)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (quickRecordTitleEditable(quickRecordAction)) {
+                    OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth(),
+                        value = state.quickRecordTitleInput,
+                        onValueChange = onQuickRecordTitleChanged,
+                        label = { Text(text = stringResource(id = R.string.timeline_title_field)) }
+                    )
+                }
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = state.quickRecordDescriptionInput,
+                    onValueChange = onQuickRecordDescriptionChanged,
+                    minLines = 3,
+                    label = { Text(text = stringResource(id = R.string.events_quick_record_note_label)) }
+                )
+                PrimaryButton(
+                    text = stringResource(id = R.string.save_event),
+                    onClick = onSaveQuickRecord
+                )
+                SecondaryButton(
+                    text = stringResource(id = R.string.cancel),
+                    onClick = onHideQuickRecordSheet
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EventsSectionCard(
+    section: EventsSection,
+    onAction: (EventAction) -> Unit
+) {
+    val spacing = DadTheme.spacing
+    val metadata = sectionMetadata(section.type)
+
+    InfoCard(
+        title = stringResource(id = metadata.titleRes),
+        description = stringResource(id = metadata.descriptionRes),
+        icon = metadata.icon
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            section.actions.forEach { action ->
+                if (actionIsPrimary(action)) {
+                    PrimaryButton(
+                        text = stringResource(id = actionLabelRes(action)),
+                        onClick = { onAction(action) },
+                        icon = actionIcon(action)
+                    )
+                } else {
+                    SecondaryButton(
+                        text = stringResource(id = actionLabelRes(action)),
+                        onClick = { onAction(action) },
+                        icon = actionIcon(action)
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class SectionMetadata(
+    @StringRes val titleRes: Int,
+    @StringRes val descriptionRes: Int,
+    val icon: ImageVector
+)
+
+private fun sectionMetadata(type: EventsSectionType): SectionMetadata = when (type) {
+    EventsSectionType.PreparationTools -> SectionMetadata(
+        titleRes = R.string.events_section_preparation_tools_title,
+        descriptionRes = R.string.events_section_preparation_tools_description,
+        icon = Icons.Outlined.CheckCircle
+    )
+    EventsSectionType.ReadinessWindow -> SectionMetadata(
+        titleRes = R.string.events_section_readiness_title,
+        descriptionRes = R.string.events_section_readiness_description,
+        icon = Icons.Outlined.LocalHospital
+    )
+    EventsSectionType.PreparationRecords -> SectionMetadata(
+        titleRes = R.string.events_section_preparation_records_title,
+        descriptionRes = R.string.events_section_preparation_records_description,
+        icon = Icons.Outlined.EditNote
+    )
+    EventsSectionType.LiveLaborActions -> SectionMetadata(
+        titleRes = R.string.events_section_live_labor_title,
+        descriptionRes = R.string.events_section_live_labor_description,
+        icon = Icons.Outlined.MonitorHeart
+    )
+    EventsSectionType.LaborLogistics -> SectionMetadata(
+        titleRes = R.string.events_section_logistics_title,
+        descriptionRes = R.string.events_section_logistics_description,
+        icon = Icons.Outlined.DirectionsCar
+    )
+    EventsSectionType.HospitalActions -> SectionMetadata(
+        titleRes = R.string.events_section_hospital_title,
+        descriptionRes = R.string.events_section_hospital_description,
+        icon = Icons.Outlined.BabyChangingStation
+    )
+    EventsSectionType.HomeTrackers -> SectionMetadata(
+        titleRes = R.string.events_section_home_trackers_title,
+        descriptionRes = R.string.events_section_home_trackers_description,
+        icon = Icons.Outlined.ChildCare
+    )
+    EventsSectionType.HomeNotes -> SectionMetadata(
+        titleRes = R.string.events_section_home_notes_title,
+        descriptionRes = R.string.events_section_home_notes_description,
+        icon = Icons.Outlined.EditNote
+    )
+}
+
+private fun actionIsPrimary(action: EventAction): Boolean = when (action) {
+    EventAction.MarkLaborStarted,
+    EventAction.StartContraction,
+    EventAction.StopContraction,
+    EventAction.ShowBirthSheet,
+    EventAction.MarkArrivedHome,
+    EventAction.RecordFeeding -> true
+    else -> false
+}
+
+private fun actionLabelRes(action: EventAction): Int = when (action) {
+    EventAction.OpenContractionTimer -> R.string.action_contraction_counter
+    EventAction.OpenWaterBreakTimer -> R.string.action_water_break_timer
+    EventAction.OpenDecisionHelp -> R.string.action_when_go_hospital
+    EventAction.OpenBirthDetails -> R.string.events_open_birth_details
+    EventAction.MarkLaborStarted -> R.string.events_action_labor_started
+    EventAction.StartContraction -> R.string.start_contraction
+    EventAction.StopContraction -> R.string.stop_contraction
+    EventAction.MarkLeftHome -> R.string.events_action_departed
+    EventAction.MarkArrivedHospital -> R.string.events_action_arrived
+    EventAction.ShowBirthSheet -> R.string.events_action_birth
+    EventAction.MarkArrivedHome -> R.string.events_action_arrived_home
+    EventAction.RecordBagReady -> R.string.events_action_bag_ready
+    EventAction.RecordTestDrive -> R.string.events_action_test_drive
+    EventAction.RecordPreparationNote -> R.string.events_action_note
+    EventAction.RecordLaborNote -> R.string.events_action_note
+    EventAction.RecordHospitalNote -> R.string.events_action_note
+    EventAction.RecordSupportAction -> R.string.events_action_support
+    EventAction.RecordPhotoNote -> R.string.events_action_photo
+    EventAction.RecordFeeding -> R.string.events_action_feeding
+    EventAction.RecordSleep -> R.string.events_action_sleep
+    EventAction.RecordDiaper -> R.string.events_action_diaper
+    EventAction.RecordTemperature -> R.string.events_action_temperature
+    EventAction.RecordWeight -> R.string.events_action_weight
+    EventAction.RecordHomeNote -> R.string.events_action_note
+}
+
+private fun actionIcon(action: EventAction): ImageVector = when (action) {
+    EventAction.OpenContractionTimer,
+    EventAction.StartContraction,
+    EventAction.StopContraction,
+    EventAction.MarkLaborStarted -> Icons.Outlined.MonitorHeart
+    EventAction.OpenWaterBreakTimer -> Icons.Outlined.WaterDrop
+    EventAction.OpenDecisionHelp,
+    EventAction.MarkArrivedHospital -> Icons.Outlined.LocalHospital
+    EventAction.OpenBirthDetails,
+    EventAction.ShowBirthSheet,
+    EventAction.RecordDiaper -> Icons.Outlined.BabyChangingStation
+    EventAction.MarkLeftHome,
+    EventAction.MarkArrivedHome,
+    EventAction.RecordTestDrive -> Icons.Outlined.DirectionsCar
+    EventAction.RecordBagReady -> Icons.Outlined.CheckCircle
+    EventAction.RecordPreparationNote,
+    EventAction.RecordLaborNote,
+    EventAction.RecordHospitalNote,
+    EventAction.RecordTemperature,
+    EventAction.RecordWeight,
+    EventAction.RecordHomeNote -> Icons.Outlined.EditNote
+    EventAction.RecordSupportAction,
+    EventAction.RecordFeeding -> Icons.Outlined.FavoriteBorder
+    EventAction.RecordPhotoNote -> Icons.Outlined.EditNote
+    EventAction.RecordSleep -> Icons.Outlined.NightlightRound
 }
 
 private fun stageTitleRes(stage: AppStage): Int = when (stage) {
     AppStage.PREPARING -> R.string.app_stage_preparing
-    AppStage.LABOR -> R.string.app_stage_labor
-    AppStage.AFTER_BIRTH -> R.string.app_stage_after_birth
+    AppStage.CONTRACTIONS -> R.string.app_stage_contractions
+    AppStage.AT_HOSPITAL -> R.string.app_stage_at_hospital
+    AppStage.AT_HOME -> R.string.app_stage_at_home
+}
+
+private fun stageDescriptionRes(stage: AppStage): Int = when (stage) {
+    AppStage.PREPARING -> R.string.events_stage_preparing_description
+    AppStage.CONTRACTIONS -> R.string.events_stage_contractions_description
+    AppStage.AT_HOSPITAL -> R.string.events_stage_at_hospital_description
+    AppStage.AT_HOME -> R.string.events_stage_at_home_description
+}
+
+private fun stageTone(stage: AppStage): StatusTone = when (stage) {
+    AppStage.PREPARING -> StatusTone.Calm
+    AppStage.CONTRACTIONS -> StatusTone.Warning
+    AppStage.AT_HOSPITAL,
+    AppStage.AT_HOME -> StatusTone.Success
+}
+
+private fun stageIcon(stage: AppStage): ImageVector = when (stage) {
+    AppStage.PREPARING -> Icons.Outlined.CheckCircle
+    AppStage.CONTRACTIONS -> Icons.Outlined.MonitorHeart
+    AppStage.AT_HOSPITAL -> Icons.Outlined.LocalHospital
+    AppStage.AT_HOME -> Icons.Outlined.ChildCare
+}
+
+private fun quickRecordTitleEditable(action: EventAction): Boolean = when (action) {
+    EventAction.RecordPreparationNote,
+    EventAction.RecordLaborNote,
+    EventAction.RecordHospitalNote,
+    EventAction.RecordHomeNote -> true
+    else -> false
+}
+
+private fun quickRecordSheetTitleRes(action: EventAction): Int = when (action) {
+    EventAction.RecordBagReady -> R.string.events_quick_record_bag_title
+    EventAction.RecordTestDrive -> R.string.events_quick_record_test_drive_title
+    EventAction.RecordPreparationNote -> R.string.events_quick_record_note_title
+    EventAction.RecordLaborNote -> R.string.events_quick_record_note_title
+    EventAction.RecordHospitalNote -> R.string.events_quick_record_note_title
+    EventAction.RecordSupportAction -> R.string.events_quick_record_support_title
+    EventAction.RecordPhotoNote -> R.string.events_quick_record_photo_title
+    EventAction.RecordFeeding -> R.string.events_quick_record_feeding_title
+    EventAction.RecordSleep -> R.string.events_quick_record_sleep_title
+    EventAction.RecordDiaper -> R.string.events_quick_record_diaper_title
+    EventAction.RecordTemperature -> R.string.events_quick_record_temperature_title
+    EventAction.RecordWeight -> R.string.events_quick_record_weight_title
+    EventAction.RecordHomeNote -> R.string.events_quick_record_note_title
+    else -> R.string.events_quick_record_note_title
+}
+
+private fun quickRecordSheetDescriptionRes(action: EventAction): Int = when (action) {
+    EventAction.RecordBagReady -> R.string.events_quick_record_bag_description
+    EventAction.RecordTestDrive -> R.string.events_quick_record_test_drive_description
+    EventAction.RecordPreparationNote,
+    EventAction.RecordLaborNote,
+    EventAction.RecordHospitalNote,
+    EventAction.RecordHomeNote -> R.string.events_quick_record_note_description
+    EventAction.RecordSupportAction -> R.string.events_quick_record_support_description
+    EventAction.RecordPhotoNote -> R.string.events_quick_record_photo_description
+    EventAction.RecordFeeding -> R.string.events_quick_record_feeding_description
+    EventAction.RecordSleep -> R.string.events_quick_record_sleep_description
+    EventAction.RecordDiaper -> R.string.events_quick_record_diaper_description
+    EventAction.RecordTemperature -> R.string.events_quick_record_temperature_description
+    EventAction.RecordWeight -> R.string.events_quick_record_weight_description
+    else -> R.string.events_quick_record_note_description
 }
