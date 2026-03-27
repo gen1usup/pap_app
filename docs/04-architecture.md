@@ -1,30 +1,28 @@
-# Архитектура проекта
+﻿# Архитектура проекта
 
 ## Общая схема
 
 Проект построен по слоям:
 
-- `presentation` — Compose UI, экранные состояния, navigation shell;
-- `domain` — модели, сервисы, use case, интерфейсы репозиториев;
-- `data` — Room, DataStore, entity, mapper, repository implementation;
-- `di` — Hilt modules и wiring зависимостей.
+- `presentation` — Compose UI, screen/view state, navigation shell
+- `domain` — модели, сервисы оркестрации, use case, контракты репозиториев
+- `data` — Room, DataStore, entity, mapper, repository implementation
+- `di` — Hilt modules
 
-## Текущее состояние миграции
+## Presentation
 
-Проект эволюционно переводится из screen-centric presentation в более feature-first организацию.
+Текущая структура эволюционно движется от screen-centric к feature-first, но без разрушения рабочего приложения.
 
-Сейчас фактическая структура смешанная:
+Ключевые зоны:
 
-- основные экраны по-прежнему живут в `presentation/screen/*`;
-- navigation shell уже разнесен на отдельные файлы в `presentation/navigation`;
-- stage-oriented экран вынесен в `presentation/feature/stages`;
-- reusable UI элементы лежат в `presentation/component`.
+- `presentation/navigation` — shell, drawer, bottom navigation, nav graph
+- `presentation/screen/*` — основные экраны
+- `presentation/feature/stages` — отдельный stage screen
+- `presentation/component` — reusable UI-компоненты
 
-Это осознанный промежуточный шаг: поведение сохраняется, а giant-file точки уже разрезаются на независимые части.
+### Navigation shell
 
-## Navigation shell
-
-### Основные файлы
+Основные файлы:
 
 - [AppNavHost.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppNavHost.kt)
 - [AppNavGraph.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppNavGraph.kt)
@@ -32,8 +30,6 @@
 - [BottomNavigationConfig.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/BottomNavigationConfig.kt)
 - [DrawerNavigationConfig.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/DrawerNavigationConfig.kt)
 - [AppDrawerContent.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppDrawerContent.kt)
-
-### Текущий shell
 
 Bottom navigation:
 
@@ -45,11 +41,6 @@ Secondary destination через top bar:
 
 - `journal`
 
-Drawer:
-
-- группа `Этапы`;
-- группа `Сервис`.
-
 ## App-level state
 
 Главный app-level state собирается в [AppViewModel.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppViewModel.kt).
@@ -60,88 +51,139 @@ Drawer:
 - `themeMode`
 - `dueDate`
 - `appStage`
+- `birthRecorded`
 
-Источник правды:
+Источники правды:
 
-- `DataStore` для живых настроек;
-- Room snapshot таблица `settings` для локальной согласованности и миграций.
+- `DataStore` для живых пользовательских настроек
+- Room snapshot для устойчивых миграций и связанного оффлайн-поведения
 
 ## Domain orchestration
 
-Новая stage/context логика вынесена в сервисы:
+Ключевая логика вынесена из composable в сервисы:
 
 - [StageManager.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/StageManager.kt)
 - [StageTransitionManager.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/StageTransitionManager.kt)
 - [HomeContentBuilder.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/HomeContentBuilder.kt)
 - [EventsProvider.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/EventsProvider.kt)
 
-Назначение:
+Роли:
 
-- `StageManager` считает derived-info по ПДР и этапу;
-- `StageTransitionManager` централизует допустимые смены этапов;
-- `HomeContentBuilder` определяет, что именно нужно показать на главной;
-- `EventsProvider` собирает секции и действия экрана `События` в зависимости от этапа.
+- `StageManager` вычисляет derived-info по ПДР и текущему этапу
+- `StageTransitionManager` содержит правила допустимых переходов и доменные guard’ы
+- `HomeContentBuilder` определяет, какие секции `Главной` показывать в текущем состоянии
+- `EventsProvider` собирает секции и действия экрана `События`
 
-Это позволяет держать бизнес-правила вне composable и уменьшает дублирование в ViewModel.
+## Stage model
 
-## Presentation
+Актуальная модель:
 
-Ключевые ViewModel:
+- `PREPARING`
+- `CONTRACTIONS`
+- `AT_HOSPITAL`
+- `AT_HOME`
 
-- `DashboardViewModel`
-- `EventsViewModel`
-- `ChecklistViewModel`
-- `ContractionViewModel`
-- `WaterBreakViewModel`
-- `LaborViewModel`
-- `TimelineViewModel`
-- `SettingsViewModel`
+Совместимость со старыми данными:
 
-Типовой паттерн:
+- `LABOR -> CONTRACTIONS`
+- `AFTER_BIRTH -> AT_HOME`
 
-1. `ViewModel` наблюдает `Flow` из use case.
-2. Собирает `UiState` через `combine`.
-3. Делегирует действия в use case / service.
-4. Composable только отображает state и отправляет intent.
+Дополнительно действуют guard’ы:
+
+- после сохранения рождения нельзя вручную вернуться в `PREPARING` или `CONTRACTIONS`
+- `Начались роды` блокируется после сохранения рождения
+- `Приехали домой` разрешено только после рождения и только из `AT_HOSPITAL`
 
 ## Persistence
 
 ### DataStore
 
-Используется для пользовательских настроек и текущего этапа.
+Используется для:
+
+- темы
+- ПДР
+- app stage
+- других пользовательских настроек
 
 ### Room
 
 Используется для:
 
-- сессий и истории схваток;
-- событий вод;
-- timeline / journal;
-- checklist данных;
-- трекеров;
-- labor summary;
-- контактов;
-- snapshot настроек.
+- сессий и истории схваток
+- событий по водам
+- timeline / journal
+- чек-листов и их пунктов
+- labor summary
+- контактов
+- трекеров
 
-## Совместимость данных
+Актуальные миграции:
 
-Старая 3-stage модель не ломается при чтении:
+- legacy `1 -> 3`
+- legacy `2 -> 3`
+- `3 -> 4`
+- `4 -> 5`
+- `5 -> 6`
+- прямой safe-path `4 -> 6`
 
-- `LABOR -> CONTRACTIONS`
-- `AFTER_BIRTH -> AT_HOME`
+Последняя миграция переводит контакты на динамическую user-managed модель и сохраняет совместимость старых данных.
 
-Это реализовано в [AppStage.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/model/AppStage.kt) и используется mapper/data-store слоем.
+## Contacts architecture
 
-## Тестовый контур
+Контакты больше не завязаны на фиксированные слоты экрана.
 
-Unit tests живут в `app/src/test/java`.
+Актуальная модель:
 
-Instrumented/UI tests живут в `app/src/androidTest/java` и проверяют:
+- `EmergencyContactType`
+- `EmergencyContact`
+- `EmergencyContactRepository`
 
-- shell navigation;
-- stage screen;
-- home behavior;
-- stage-aware сценарии `Событий`;
-- журнал;
-- валидацию настроек;
-- сценарии аналитики схваток.
+Поддерживаются роли:
+
+- `EMERGENCY`
+- `WIFE`
+- `DOCTOR`
+- `HOSPITAL`
+- `TAXI`
+- `RELATIVE`
+- `CUSTOM`
+
+`Home`, `SOS` и экран контактов используют одну и ту же контактную модель.
+
+## Checklist architecture
+
+Чек-листы состоят из:
+
+- корневого списка `Checklist`
+- пунктов `ChecklistItem`
+- агрегата `ChecklistWithItems`
+
+Поддерживаются:
+
+- системные списки
+- пользовательские списки
+
+В item-модели уже предусмотрены расширяемые поля:
+
+- `note`
+- `quantity`
+- `priority`
+- `metadataJson`
+
+## Testing
+
+Unit tests:
+
+- stage rules
+- home builder
+- labor lifecycle guards
+- checklist use cases
+- contractions analytics
+
+Instrumented tests:
+
+- shell navigation
+- stage-aware home/events flows
+- help / SOS
+- settings validation
+- contraction analytics on seeded data

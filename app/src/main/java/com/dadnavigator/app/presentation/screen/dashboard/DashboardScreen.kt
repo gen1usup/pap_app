@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -34,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -41,13 +43,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dadnavigator.app.R
 import com.dadnavigator.app.core.ui.DadNavigatorTheme
 import com.dadnavigator.app.core.ui.DadTheme
+import com.dadnavigator.app.core.util.openDialer
+import com.dadnavigator.app.core.util.openRoute
 import com.dadnavigator.app.core.util.toReadableDate
 import com.dadnavigator.app.core.util.toReadableDateTime
 import com.dadnavigator.app.core.util.toReadableDuration
 import com.dadnavigator.app.domain.model.AppStage
+import com.dadnavigator.app.domain.model.RecommendationLevel
 import com.dadnavigator.app.domain.model.TimelineEvent
 import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.presentation.component.ActionCard
+import com.dadnavigator.app.presentation.component.recommendationHeadlineRes
+import com.dadnavigator.app.presentation.component.recommendationTextRes
+import com.dadnavigator.app.presentation.component.recommendationTone
 import com.dadnavigator.app.presentation.component.DangerButton
 import com.dadnavigator.app.presentation.component.EmptyState
 import com.dadnavigator.app.presentation.component.InfoCard
@@ -85,13 +93,14 @@ fun DashboardScreen(
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val snackbarHostState = remember { SnackbarHostState() }
     val haptics = LocalHapticFeedback.current
-    val errorMessage = state.errorRes?.let { stringResource(id = it) }
+    val message = state.errorRes?.let { stringResource(id = it) }
+        ?: state.infoRes?.let { stringResource(id = it) }
     val laborStartedTitle = stringResource(id = R.string.events_action_labor_started)
     val laborStartedDescription = stringResource(id = R.string.events_action_labor_started_desc)
 
-    LaunchedEffect(errorMessage) {
-        if (errorMessage != null) {
-            snackbarHostState.showSnackbar(errorMessage)
+    LaunchedEffect(message) {
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
             viewModel.dismissError()
         }
     }
@@ -110,6 +119,10 @@ fun DashboardScreen(
             )
             onNavigate(AppDestination.Events.route)
         },
+        onToggleContraction = {
+            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+            viewModel.toggleContraction()
+        },
         onOpenSos = { onNavigate(AppDestination.Sos.route) },
         onNavigate = onNavigate
     )
@@ -123,11 +136,13 @@ private fun DashboardContent(
     onOpenTimeline: (() -> Unit)?,
     snackbarHostState: SnackbarHostState,
     onStartLabor: () -> Unit,
+    onToggleContraction: () -> Unit,
     onOpenSos: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     val spacing = DadTheme.spacing
     val quickActions = quickActionsForStage(state.appStage)
+    val context = LocalContext.current
 
     ScreenScaffold(
         title = stringResource(id = R.string.dashboard_title),
@@ -207,12 +222,21 @@ private fun DashboardContent(
                 }
 
                 item {
-                    DashboardPrimaryCard(
-                        state = state,
-                        onStartLabor = onStartLabor,
-                        onOpenSos = onOpenSos,
-                        onNavigate = onNavigate
-                    )
+                    if (state.showLiveContractionBlock) {
+                        DashboardContractionLiveCard(
+                            state = state,
+                            onToggleContraction = onToggleContraction,
+                            onOpenDetails = { onNavigate(AppDestination.Contraction.route) },
+                            onOpenSos = onOpenSos
+                        )
+                    } else {
+                        DashboardPrimaryCard(
+                            state = state,
+                            onStartLabor = onStartLabor,
+                            onOpenSos = onOpenSos,
+                            onNavigate = onNavigate
+                        )
+                    }
                 }
 
                 if (state.showBirthDetailsCard) {
@@ -230,70 +254,113 @@ private fun DashboardContent(
                     }
                 }
 
-                item {
-                    if (widthSizeClass == WindowWidthSizeClass.Expanded) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(spacing.md)
-                        ) {
-                            DashboardChecklistCard(
-                                modifier = Modifier.weight(1f),
-                                state = state,
-                                onClick = { onNavigate(AppDestination.Checklist.route) }
-                            )
+                if (state.showLaborQuickActions) {
+                    if (state.showWaterBreakShortcut) {
+                        item {
                             StageSupportCard(
-                                modifier = Modifier.weight(1f),
                                 state = state,
                                 onNavigate = onNavigate
                             )
                         }
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
-                            if (state.checklistFirst) {
+                    }
+
+                    item {
+                        LaborQuickActionsCard(
+                            state = state,
+                            onOpenContacts = { onNavigate(AppDestination.EmergencyContacts.route) },
+                            onOpenRoute = {
+                                openRoute(
+                                    context = context,
+                                    address = state.hospitalAddress
+                                )
+                            },
+                            onCallHospital = {
+                                openDialer(
+                                    context = context,
+                                    phone = state.hospitalPhone
+                                )
+                            },
+                            onCallDoctor = {
+                                openDialer(
+                                    context = context,
+                                    phone = state.doctorPhone
+                                )
+                            }
+                        )
+                    }
+
+                    item {
+                        DashboardChecklistCard(
+                            state = state,
+                            onClick = { onNavigate(AppDestination.Checklist.route) }
+                        )
+                    }
+                } else {
+                    item {
+                        if (widthSizeClass == WindowWidthSizeClass.Expanded) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(spacing.md)
+                            ) {
                                 DashboardChecklistCard(
+                                    modifier = Modifier.weight(1f),
                                     state = state,
                                     onClick = { onNavigate(AppDestination.Checklist.route) }
                                 )
                                 StageSupportCard(
+                                    modifier = Modifier.weight(1f),
                                     state = state,
                                     onNavigate = onNavigate
                                 )
-                            } else {
-                                StageSupportCard(
-                                    state = state,
-                                    onNavigate = onNavigate
-                                )
-                                DashboardChecklistCard(
-                                    state = state,
-                                    onClick = { onNavigate(AppDestination.Checklist.route) }
-                                )
+                            }
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+                                if (state.checklistFirst) {
+                                    DashboardChecklistCard(
+                                        state = state,
+                                        onClick = { onNavigate(AppDestination.Checklist.route) }
+                                    )
+                                    StageSupportCard(
+                                        state = state,
+                                        onNavigate = onNavigate
+                                    )
+                                } else {
+                                    StageSupportCard(
+                                        state = state,
+                                        onNavigate = onNavigate
+                                    )
+                                    DashboardChecklistCard(
+                                        state = state,
+                                        onClick = { onNavigate(AppDestination.Checklist.route) }
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                item {
-                    Text(
-                        text = stringResource(id = R.string.quick_actions),
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(top = spacing.xs),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
+                    item {
+                        Text(
+                            text = stringResource(id = R.string.quick_actions),
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(top = spacing.xs),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
 
-                item {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(spacing.md),
-                        contentPadding = PaddingValues(end = spacing.xs)
-                    ) {
-                        items(quickActions) { action ->
-                            Box(modifier = Modifier.fillParentMaxWidth(0.84f)) {
-                                ActionCard(
-                                    title = stringResource(id = action.titleRes),
-                                    description = stringResource(id = action.descriptionRes),
-                                    icon = action.icon,
-                                    onClick = { onNavigate(action.route) }
-                                )
+                    item {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(spacing.md),
+                            contentPadding = PaddingValues(end = spacing.xs)
+                        ) {
+                            items(quickActions) { action ->
+                                Box(modifier = Modifier.fillParentMaxWidth(0.84f)) {
+                                    ActionCard(
+                                        title = stringResource(id = action.titleRes),
+                                        description = stringResource(id = action.descriptionRes),
+                                        icon = action.icon,
+                                        onClick = { onNavigate(action.route) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -337,6 +404,150 @@ private fun DashboardContent(
             }
         }
     }
+}
+
+@Composable
+private fun DashboardContractionLiveCard(
+    state: DashboardUiState,
+    onToggleContraction: () -> Unit,
+    onOpenDetails: () -> Unit,
+    onOpenSos: () -> Unit
+) {
+    InfoCard(
+        title = stringResource(id = recommendationHeadlineRes(state.contractionStats.recommendationLevel)),
+        description = stringResource(id = recommendationTextRes(state.contractionStats.recommendationLevel)),
+        icon = Icons.Outlined.MonitorHeart,
+        overline = stringResource(id = R.string.dashboard_live_contractions_overline)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)) {
+            Text(
+                text = stringResource(
+                    id = if (state.isContractionRunning) {
+                        R.string.dashboard_live_contraction_running
+                    } else {
+                        R.string.dashboard_live_contraction_waiting
+                    }
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)
+            ) {
+                DashboardMetricCard(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(id = R.string.dashboard_live_contraction_status_label),
+                    value = if (state.isContractionRunning) {
+                        state.currentContractionDuration.toReadableDuration()
+                    } else {
+                        stringResource(id = R.string.status_inactive)
+                    }
+                )
+                DashboardMetricCard(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(id = R.string.dashboard_live_contraction_interval_label),
+                    value = state.currentInterval?.toReadableDuration()
+                        ?: stringResource(id = R.string.unknown)
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)
+            ) {
+                DashboardMetricCard(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(id = R.string.stat_count_short),
+                    value = state.contractionStats.count.toString()
+                )
+                DashboardMetricCard(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(id = R.string.dashboard_live_contraction_recommendation_label),
+                    value = stringResource(id = recommendationShortLabelRes(state.contractionStats.recommendationLevel))
+                )
+            }
+            PrimaryButton(
+                text = stringResource(
+                    id = if (state.isContractionRunning) {
+                        R.string.stop_contraction
+                    } else {
+                        R.string.start_contraction
+                    }
+                ),
+                onClick = onToggleContraction,
+                icon = Icons.Outlined.MonitorHeart
+            )
+            SecondaryButton(
+                text = stringResource(id = R.string.dashboard_open_contraction_cta),
+                onClick = onOpenDetails,
+                icon = Icons.Outlined.AccessTime
+            )
+            SecondaryButton(
+                text = stringResource(id = R.string.dashboard_sos_cta),
+                onClick = onOpenSos,
+                icon = Icons.Outlined.Emergency
+            )
+        }
+    }
+}
+
+@Composable
+private fun LaborQuickActionsCard(
+    state: DashboardUiState,
+    onOpenContacts: () -> Unit,
+    onOpenRoute: () -> Unit,
+    onCallHospital: () -> Unit,
+    onCallDoctor: () -> Unit
+) {
+    InfoCard(
+        title = stringResource(id = R.string.dashboard_labor_quick_actions_title),
+        description = stringResource(id = R.string.dashboard_labor_quick_actions_description),
+        icon = Icons.Outlined.Route,
+        overline = stringResource(id = R.string.dashboard_labor_quick_actions_overline)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)) {
+            SecondaryButton(
+                text = stringResource(id = R.string.dashboard_open_contacts_action),
+                onClick = onOpenContacts,
+                icon = Icons.Outlined.LocalHospital
+            )
+            if (state.hospitalAddress.isNotBlank()) {
+                SecondaryButton(
+                    text = stringResource(id = R.string.dashboard_open_route_action),
+                    onClick = onOpenRoute,
+                    icon = Icons.Outlined.Route
+                )
+            }
+            if (state.hospitalPhone.isNotBlank()) {
+                SecondaryButton(
+                    text = stringResource(id = R.string.dashboard_call_hospital_action),
+                    onClick = onCallHospital,
+                    icon = Icons.Outlined.LocalHospital
+                )
+            }
+            if (state.doctorPhone.isNotBlank()) {
+                SecondaryButton(
+                    text = stringResource(id = R.string.dashboard_call_doctor_action),
+                    onClick = onCallDoctor,
+                    icon = Icons.Outlined.FavoriteBorder
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardMetricCard(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    InfoCard(
+        modifier = modifier,
+        title = value,
+        description = label,
+        icon = Icons.Outlined.AccessTime
+    )
 }
 
 @Composable
@@ -491,7 +702,7 @@ private fun StageSupportCard(
     modifier: Modifier = Modifier
 ) {
     when {
-        state.appStage == AppStage.CONTRACTIONS && state.hasActiveWaterBreak -> {
+        state.showWaterBreakShortcut -> {
             InfoCard(
                 modifier = modifier,
                 icon = Icons.Outlined.WaterDrop,
@@ -637,8 +848,8 @@ private fun dashboardStageDescription(
     return when (stage) {
         AppStage.PREPARING -> prefix + "сейчас важны спокойная подготовка, понятный план и готовность к выезду."
         AppStage.CONTRACTIONS -> when {
-            hasActiveWaterBreak -> prefix + "идут роды, таймер вод уже активен. Держите под рукой события, SOS и решение про выезд."
-            hasActiveContractionSession -> prefix + "идут роды, счетчик схваток уже запущен. Фиксируйте динамику и важные события."
+            hasActiveWaterBreak -> prefix + "идут роды, и таймер вод уже активен. Держите под рукой события, контакты и решение про выезд."
+            hasActiveContractionSession -> prefix + "идут роды, и счетчик схваток уже работает. Фиксируйте динамику и важные события."
             else -> prefix + "идут роды. На главной оставлены только те действия, которые нужны прямо сейчас."
         }
         AppStage.AT_HOSPITAL -> prefix + "ребенок уже родился, поэтому на главной остались данные родов, журнал и ближайшие шаги в роддоме."
@@ -663,10 +874,21 @@ private fun eventTitle(event: TimelineEvent): String = when (event.type) {
     TimelineType.WATER_BREAK -> "Отошли воды"
     TimelineType.LABOR -> event.title.ifBlank { "Событие родов" }
     TimelineType.BIRTH -> event.title.ifBlank { "Ребенок родился" }
+    TimelineType.PREPARATION_NOTE,
+    TimelineType.LABOR_NOTE,
+    TimelineType.HOSPITAL_NOTE,
+    TimelineType.HOME_NOTE -> if (event.title.isBlank()) "Заметка" else event.title
     TimelineType.FEEDING -> "Кормление"
     TimelineType.DIAPER -> "Подгузник"
     TimelineType.SLEEP -> "Сон"
     TimelineType.NOTE -> if (event.title.isBlank()) "Заметка" else event.title
+}
+
+private fun recommendationShortLabelRes(level: RecommendationLevel): Int = when (level) {
+    RecommendationLevel.MONITOR -> R.string.contraction_stage_monitor
+    RecommendationLevel.PREPARE -> R.string.contraction_stage_prepare
+    RecommendationLevel.GO_TO_HOSPITAL -> R.string.contraction_stage_go
+    RecommendationLevel.EMERGENCY -> R.string.contraction_stage_emergency
 }
 
 private fun eventIcon(type: TimelineType): ImageVector = when (type) {
@@ -674,6 +896,10 @@ private fun eventIcon(type: TimelineType): ImageVector = when (type) {
     TimelineType.WATER_BREAK -> Icons.Outlined.WaterDrop
     TimelineType.LABOR -> Icons.Outlined.LocalHospital
     TimelineType.BIRTH -> Icons.Outlined.ChildCare
+    TimelineType.PREPARATION_NOTE,
+    TimelineType.LABOR_NOTE,
+    TimelineType.HOSPITAL_NOTE,
+    TimelineType.HOME_NOTE -> Icons.Outlined.StickyNote2
     TimelineType.FEEDING -> Icons.Outlined.FavoriteBorder
     TimelineType.DIAPER -> Icons.Outlined.BabyChangingStation
     TimelineType.SLEEP -> Icons.Outlined.AccessTime
@@ -691,6 +917,8 @@ private fun DashboardPreview() {
                 dueDate = LocalDate.now().plusDays(3),
                 daysUntilDueDate = 3,
                 hasActiveContractionSession = true,
+                showLiveContractionBlock = true,
+                showLaborQuickActions = true,
                 stageChecklistCompletedCount = 4,
                 stageChecklistTotalCount = 9,
                 showContractionShortcut = true
@@ -700,6 +928,7 @@ private fun DashboardPreview() {
             onOpenTimeline = {},
             snackbarHostState = remember { SnackbarHostState() },
             onStartLabor = {},
+            onToggleContraction = {},
             onOpenSos = {},
             onNavigate = {}
         )

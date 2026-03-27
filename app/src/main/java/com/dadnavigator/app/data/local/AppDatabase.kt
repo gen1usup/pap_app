@@ -48,7 +48,7 @@ import com.dadnavigator.app.data.local.entity.WaterBreakEventEntity
         LaborSummaryEntity::class,
         EmergencyContactEntity::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(RoomConverters::class)

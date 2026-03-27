@@ -1,4 +1,4 @@
-package com.dadnavigator.app.domain.usecase.labor
+﻿package com.dadnavigator.app.domain.usecase.labor
 
 import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.DEFAULT_USER_ID
@@ -11,6 +11,7 @@ import com.dadnavigator.app.domain.repository.LaborRepository
 import com.dadnavigator.app.domain.repository.SettingsRepository
 import com.dadnavigator.app.domain.repository.TimelineRepository
 import com.dadnavigator.app.domain.service.StageTransitionManager
+import com.dadnavigator.app.domain.usecase.timeline.AddTimelineEventUseCase
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
@@ -42,13 +43,14 @@ class LaborLifecycleUseCasesTest {
         )
         val timestamp = Instant.parse("2026-03-27T08:15:00Z")
 
-        useCase(
+        val result = useCase(
             userId = DEFAULT_USER_ID,
             eventTitle = "Начались роды",
             eventDescription = "Схватки стали регулярными",
             timestamp = timestamp
         )
 
+        assertEquals(MarkLaborStartedResult.Started, result)
         assertEquals(AppStage.CONTRACTIONS, settingsRepository.current.appStage)
         assertEquals(timestamp, laborRepository.current.laborStartTime)
         assertEquals(1, timelineRepository.events.size)
@@ -77,16 +79,50 @@ class LaborLifecycleUseCasesTest {
             stageTransitionManager
         )
 
-        useCase(
+        val result = useCase(
             userId = DEFAULT_USER_ID,
             eventTitle = "Начались роды",
             eventDescription = "Повторная попытка",
             timestamp = Instant.parse("2026-03-27T08:15:00Z")
         )
 
+        assertEquals(MarkLaborStartedResult.AlreadyStarted, result)
         assertEquals(AppStage.CONTRACTIONS, settingsRepository.current.appStage)
         assertEquals(existingStart, laborRepository.current.laborStartTime)
         assertTrue("A duplicate labor event should not be created", timelineRepository.events.isEmpty())
+    }
+
+    @Test
+    fun `mark labor started is blocked after birth`() = runTest {
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.AT_HOSPITAL)
+        val laborRepository = FakeLaborRepository(
+            LaborSummary(
+                laborStartTime = null,
+                birthTime = Instant.parse("2026-03-27T10:10:00Z"),
+                babyName = null,
+                birthWeightGrams = null,
+                birthHeightCm = null
+            )
+        )
+        val timelineRepository = FakeTimelineRepository()
+        val useCase = MarkLaborStartedUseCase(
+            settingsRepository,
+            laborRepository,
+            timelineRepository,
+            stageTransitionManager
+        )
+
+        val result = useCase(
+            userId = DEFAULT_USER_ID,
+            eventTitle = "Начались роды",
+            eventDescription = "Нельзя после рождения",
+            timestamp = Instant.parse("2026-03-27T11:15:00Z")
+        )
+
+        assertEquals(MarkLaborStartedResult.BlockedAfterBirth, result)
+        assertEquals(AppStage.AT_HOSPITAL, settingsRepository.current.appStage)
+        assertNull(laborRepository.current.laborStartTime)
+        assertTrue(timelineRepository.events.isEmpty())
     }
 
     @Test
@@ -182,6 +218,60 @@ class LaborLifecycleUseCasesTest {
         )
 
         assertNull(laborRepository.current.babyName)
+        assertEquals(1, timelineRepository.events.size)
+    }
+
+    @Test
+    fun `mark arrived home requires birth and hospital stage`() = runTest {
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.CONTRACTIONS)
+        val laborRepository = FakeLaborRepository()
+        val timelineRepository = FakeTimelineRepository()
+        val useCase = MarkArrivedHomeUseCase(
+            settingsRepository = settingsRepository,
+            laborRepository = laborRepository,
+            stageTransitionManager = stageTransitionManager,
+            addTimelineEventUseCase = AddTimelineEventUseCase(timelineRepository)
+        )
+
+        val result = useCase(
+            userId = DEFAULT_USER_ID,
+            eventTitle = "Приехали домой",
+            eventDescription = ""
+        )
+
+        assertEquals(MarkArrivedHomeResult.BirthNotRecorded, result)
+        assertEquals(AppStage.CONTRACTIONS, settingsRepository.current.appStage)
+        assertTrue(timelineRepository.events.isEmpty())
+    }
+
+    @Test
+    fun `mark arrived home switches stage only from hospital flow`() = runTest {
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.AT_HOSPITAL)
+        val laborRepository = FakeLaborRepository(
+            LaborSummary(
+                laborStartTime = Instant.parse("2026-03-27T08:00:00Z"),
+                birthTime = Instant.parse("2026-03-27T10:10:00Z"),
+                babyName = null,
+                birthWeightGrams = null,
+                birthHeightCm = null
+            )
+        )
+        val timelineRepository = FakeTimelineRepository()
+        val useCase = MarkArrivedHomeUseCase(
+            settingsRepository = settingsRepository,
+            laborRepository = laborRepository,
+            stageTransitionManager = stageTransitionManager,
+            addTimelineEventUseCase = AddTimelineEventUseCase(timelineRepository)
+        )
+
+        val result = useCase(
+            userId = DEFAULT_USER_ID,
+            eventTitle = "Приехали домой",
+            eventDescription = "Домой после выписки"
+        )
+
+        assertEquals(MarkArrivedHomeResult.Marked, result)
+        assertEquals(AppStage.AT_HOME, settingsRepository.current.appStage)
         assertEquals(1, timelineRepository.events.size)
     }
 }

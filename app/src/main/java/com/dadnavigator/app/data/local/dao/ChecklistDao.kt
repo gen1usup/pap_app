@@ -35,8 +35,32 @@ interface ChecklistDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItem(entity: ChecklistItemEntity)
 
+    @Query(
+        """
+        UPDATE checklists
+        SET title = :title
+        WHERE id = :checklistId AND userId = :userId AND isSystem = 0
+        """
+    )
+    suspend fun renameChecklist(userId: String, checklistId: Long, title: String)
+
     @Query("UPDATE checklist_items SET isChecked = :checked WHERE id = :itemId AND userId = :userId")
     suspend fun setItemChecked(userId: String, itemId: Long, checked: Boolean)
+
+    @Query("DELETE FROM checklist_items WHERE id = :itemId AND userId = :userId")
+    suspend fun deleteItem(userId: String, itemId: Long)
+
+    @Query("DELETE FROM checklist_items WHERE checklistId = :checklistId AND userId = :userId")
+    suspend fun deleteItemsByChecklist(userId: String, checklistId: Long)
+
+    @Query("DELETE FROM checklists WHERE id = :checklistId AND userId = :userId AND isSystem = 0")
+    suspend fun deleteCustomChecklist(userId: String, checklistId: Long)
+
+    @Transaction
+    suspend fun deleteCustomChecklistWithItems(userId: String, checklistId: Long) {
+        deleteItemsByChecklist(userId, checklistId)
+        deleteCustomChecklist(userId, checklistId)
+    }
 
     @Query("SELECT COUNT(*) FROM checklists WHERE userId = :userId")
     suspend fun countChecklists(userId: String): Int

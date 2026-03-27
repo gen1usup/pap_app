@@ -33,11 +33,16 @@ import com.dadnavigator.app.presentation.navigation.stageLabelRes
 fun StageDetailsScreen(
     stage: AppStage,
     currentStage: AppStage,
+    birthRecorded: Boolean,
     onBack: () -> Unit,
     onActivate: (AppStage) -> Unit
 ) {
     val spacing = DadTheme.spacing
     val isCurrentStage = stage == currentStage
+    val activationAllowed = !birthRecorded || stage !in setOf(
+        AppStage.PREPARING,
+        AppStage.CONTRACTIONS
+    )
 
     ScreenScaffold(
         title = stringResource(id = stageLabelRes(stage)),
@@ -71,6 +76,12 @@ fun StageDetailsScreen(
                                 onClick = {},
                                 enabled = false
                             )
+                        } else if (!activationAllowed) {
+                            SecondaryButton(
+                                text = stringResource(id = R.string.stage_screen_locked_after_birth),
+                                onClick = {},
+                                enabled = false
+                            )
                         } else {
                             PrimaryButton(
                                 text = stringResource(id = R.string.stage_screen_activate),
@@ -91,7 +102,13 @@ fun StageDetailsScreen(
 
                 item {
                     Text(
-                        text = stringResource(id = R.string.stage_screen_hint),
+                        text = stringResource(
+                            id = if (activationAllowed) {
+                                R.string.stage_screen_hint
+                            } else {
+                                R.string.stage_screen_birth_locked_hint
+                            }
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

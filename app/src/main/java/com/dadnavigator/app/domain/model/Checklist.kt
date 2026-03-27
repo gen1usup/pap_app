@@ -24,6 +24,10 @@ data class ChecklistItem(
     val checklistId: Long,
     val userId: String,
     val text: String,
+    val note: String?,
+    val quantity: String?,
+    val priority: Int?,
+    val metadataJson: String?,
     val isChecked: Boolean,
     val createdAt: Instant
 )

@@ -63,7 +63,7 @@ class DeviceScenarioUiTest {
         clickText(targetContext.getString(R.string.nav_checklists), minTop = 2_000)
 
         assertTrue(waitForText(targetContext.getString(R.string.nav_checklists)))
-        assertTrue(waitForText(targetContext.resources.getStringArray(R.array.checklist_names)[1]))
+        assertTrue(waitForText(targetContext.getString(R.string.checklist_create_title)))
 
         clickText(targetContext.getString(R.string.nav_home), minTop = 2_000)
 
@@ -149,8 +149,8 @@ class DeviceScenarioUiTest {
         openDrawer()
         clickText(targetContext.getString(R.string.help_title))
 
-        assertTrue(waitForText(targetContext.getString(R.string.help_maternity_route_title)))
-        assertTrue(waitForText(targetContext.getString(R.string.help_maternity_address_label)))
+        assertTrue(waitForText(targetContext.getString(R.string.help_contacts_route_title)))
+        assertTrue(waitForText(targetContext.getString(R.string.help_open_contacts)))
 
         device.pressBack()
         assertTrue(waitForText(targetContext.getString(R.string.dashboard_title)))

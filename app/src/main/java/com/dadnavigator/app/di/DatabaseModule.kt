@@ -52,6 +52,25 @@ object DatabaseModule {
         }
     }
 
+    private val migration4To5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            ensureChecklistItemsHaveExtendedFields(db)
+        }
+    }
+
+    private val migration5To6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            migrateEmergencyContactsToDynamicModel(db)
+        }
+    }
+
+    private val migration4To6 = object : Migration(4, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            ensureChecklistItemsHaveExtendedFields(db)
+            migrateEmergencyContactsToDynamicModel(db)
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
@@ -62,7 +81,10 @@ object DatabaseModule {
         ).addMigrations(
             migration1To3,
             migration2To3,
-            migration3To4
+            migration3To4,
+            migration4To5,
+            migration5To6,
+            migration4To6
         ).build()
     }
 
@@ -242,6 +264,89 @@ object DatabaseModule {
             )
             """.trimIndent()
         )
+    }
+
+    private fun migrateEmergencyContactsToDynamicModel(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS emergency_contacts_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                address TEXT NOT NULL,
+                sortOrder INTEGER NOT NULL,
+                isDefault INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+
+        val hasSettingsAddress = db.hasColumn("settings", "maternityHospitalAddress")
+        val settingsAddressExpression = if (hasSettingsAddress) {
+            "COALESCE((SELECT maternityHospitalAddress FROM settings LIMIT 1), '')"
+        } else {
+            "''"
+        }
+
+        db.execSQL(
+            """
+            INSERT INTO emergency_contacts_new (
+                type,
+                title,
+                phone,
+                address,
+                sortOrder,
+                isDefault
+            )
+            SELECT
+                CASE type
+                    WHEN 'AMBULANCE' THEN 'EMERGENCY'
+                    WHEN 'MATERNITY_HOSPITAL' THEN 'HOSPITAL'
+                    WHEN 'PARTNER' THEN 'WIFE'
+                    WHEN 'DOCTOR' THEN 'DOCTOR'
+                    WHEN 'TAXI' THEN 'TAXI'
+                    WHEN 'MIDWIFE' THEN 'RELATIVE'
+                    WHEN 'TRUSTED_PERSON' THEN 'RELATIVE'
+                    ELSE 'CUSTOM'
+                END,
+                COALESCE(title, ''),
+                COALESCE(phone, ''),
+                CASE
+                    WHEN type = 'MATERNITY_HOSPITAL' THEN $settingsAddressExpression
+                    ELSE ''
+                END,
+                COALESCE(sortOrder, 0),
+                CASE
+                    WHEN type = 'AMBULANCE' THEN 1
+                    ELSE 0
+                END
+            FROM emergency_contacts
+            """.trimIndent()
+        )
+
+        db.execSQL("DROP TABLE emergency_contacts")
+        db.execSQL("ALTER TABLE emergency_contacts_new RENAME TO emergency_contacts")
+        db.execSQL(
+            """
+            CREATE INDEX IF NOT EXISTS index_emergency_contacts_sortOrder
+            ON emergency_contacts(sortOrder)
+            """.trimIndent()
+        )
+    }
+
+    private fun ensureChecklistItemsHaveExtendedFields(db: SupportSQLiteDatabase) {
+        if (!db.hasColumn("checklist_items", "note")) {
+            db.execSQL("ALTER TABLE checklist_items ADD COLUMN note TEXT")
+        }
+        if (!db.hasColumn("checklist_items", "quantity")) {
+            db.execSQL("ALTER TABLE checklist_items ADD COLUMN quantity TEXT")
+        }
+        if (!db.hasColumn("checklist_items", "priority")) {
+            db.execSQL("ALTER TABLE checklist_items ADD COLUMN priority INTEGER")
+        }
+        if (!db.hasColumn("checklist_items", "metadataJson")) {
+            db.execSQL("ALTER TABLE checklist_items ADD COLUMN metadataJson TEXT")
+        }
     }
 
     private fun SupportSQLiteDatabase.hasColumn(

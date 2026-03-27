@@ -33,6 +33,7 @@ internal fun AppNavGraph(
     userId: String,
     widthSizeClass: WindowWidthSizeClass,
     appStage: AppStage,
+    birthRecorded: Boolean,
     onUpdateAppStage: (AppStage) -> Unit,
     onOpenDrawer: () -> Unit,
     onNavigateWithinShell: (String) -> Unit,
@@ -109,7 +110,10 @@ internal fun AppNavGraph(
             TrackersScreen(userId = userId, onBack = { navController.popBackStack() })
         }
         composable(AppDestination.Help.route) {
-            HelpScreen(onBack = { navController.popBackStack() })
+            HelpScreen(
+                onBack = { navController.popBackStack() },
+                onOpenContacts = { navController.navigate(AppDestination.EmergencyContacts.route) }
+            )
         }
         composable(AppDestination.About.route) {
             AboutScreen(onBack = { navController.popBackStack() })
@@ -130,6 +134,7 @@ internal fun AppNavGraph(
             StageDetailsScreen(
                 stage = stage,
                 currentStage = appStage,
+                birthRecorded = birthRecorded,
                 onBack = { navController.popBackStack() },
                 onActivate = {
                     onUpdateAppStage(it)

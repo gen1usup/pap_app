@@ -25,8 +25,11 @@ class EventsProvider @Inject constructor() {
                 isContractionRunning = isContractionRunning,
                 hasActiveWaterBreak = hasActiveWaterBreak
             )
-            AppStage.AT_HOSPITAL -> buildHospitalSections(laborSummary)
-            AppStage.AT_HOME -> buildAtHomeSections()
+            AppStage.AT_HOSPITAL -> buildHospitalSections(
+                laborSummary = laborSummary,
+                hasActiveWaterBreak = hasActiveWaterBreak
+            )
+            AppStage.AT_HOME -> buildAtHomeSections(hasActiveWaterBreak)
         }
 
         return EventsContent(
@@ -107,7 +110,10 @@ class EventsProvider @Inject constructor() {
         )
     }
 
-    private fun buildHospitalSections(laborSummary: LaborSummary): List<EventsSection> {
+    private fun buildHospitalSections(
+        laborSummary: LaborSummary,
+        hasActiveWaterBreak: Boolean
+    ): List<EventsSection> {
         val firstAction = if (laborSummary.birthTime == null) {
             EventAction.ShowBirthSheet
         } else {
@@ -117,26 +123,32 @@ class EventsProvider @Inject constructor() {
         return listOf(
             EventsSection(
                 type = EventsSectionType.HospitalActions,
-                actions = listOf(
-                    firstAction,
-                    EventAction.RecordHospitalNote,
-                    EventAction.RecordSupportAction,
-                    EventAction.RecordPhotoNote,
-                    EventAction.MarkArrivedHome
-                )
+                actions = buildList {
+                    add(firstAction)
+                    if (hasActiveWaterBreak) {
+                        add(EventAction.OpenWaterBreakTimer)
+                    }
+                    add(EventAction.RecordHospitalNote)
+                    add(EventAction.RecordSupportAction)
+                    add(EventAction.RecordPhotoNote)
+                    add(EventAction.MarkArrivedHome)
+                }
             )
         )
     }
 
-    private fun buildAtHomeSections(): List<EventsSection> {
+    private fun buildAtHomeSections(hasActiveWaterBreak: Boolean): List<EventsSection> {
         return listOf(
             EventsSection(
                 type = EventsSectionType.HomeTrackers,
-                actions = listOf(
-                    EventAction.RecordFeeding,
-                    EventAction.RecordSleep,
-                    EventAction.RecordDiaper
-                )
+                actions = buildList {
+                    if (hasActiveWaterBreak) {
+                        add(EventAction.OpenWaterBreakTimer)
+                    }
+                    add(EventAction.RecordFeeding)
+                    add(EventAction.RecordSleep)
+                    add(EventAction.RecordDiaper)
+                }
             ),
             EventsSection(
                 type = EventsSectionType.HomeNotes,

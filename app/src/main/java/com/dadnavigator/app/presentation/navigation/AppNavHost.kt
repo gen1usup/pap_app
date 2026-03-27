@@ -32,6 +32,7 @@ fun AppNavHost(
     userId: String,
     widthSizeClass: WindowWidthSizeClass,
     appStage: AppStage,
+    birthRecorded: Boolean,
     onUpdateAppStage: (AppStage) -> Unit
 ) {
     val navController = rememberNavController()
@@ -64,6 +65,7 @@ fun AppNavHost(
             AppDrawerContent(
                 currentRoute = currentRoute,
                 currentStage = appStage,
+                birthRecorded = birthRecorded,
                 onStageSelected = { stage ->
                     navigateWithinShell(AppDestination.StageDetails.routeFor(stage))
                     scope.launch { drawerState.close() }
@@ -102,6 +104,7 @@ fun AppNavHost(
                 userId = userId,
                 widthSizeClass = widthSizeClass,
                 appStage = appStage,
+                birthRecorded = birthRecorded,
                 onUpdateAppStage = onUpdateAppStage,
                 onOpenDrawer = { scope.launch { drawerState.open() } },
                 onNavigateWithinShell = ::navigateWithinShell,

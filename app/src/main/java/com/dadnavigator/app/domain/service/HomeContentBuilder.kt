@@ -27,12 +27,16 @@ class HomeContentBuilder @Inject constructor() {
             AppStage.AT_HOSPITAL,
             AppStage.AT_HOME -> false
         },
+        showLiveContractionBlock = settings.appStage == AppStage.CONTRACTIONS &&
+            laborSummary.birthTime == null,
         showWaterBreakShortcut = settings.appStage == AppStage.CONTRACTIONS || hasActiveWaterBreak,
         showBirthDetailsCard = settings.appStage == AppStage.AT_HOSPITAL &&
             (laborSummary.babyName.isNullOrBlank() ||
                 laborSummary.birthWeightGrams == null ||
                 laborSummary.birthHeightCm == null),
-        checklistFirst = settings.appStage == AppStage.PREPARING
+        checklistFirst = settings.appStage == AppStage.PREPARING,
+        showLaborQuickActions = settings.appStage == AppStage.CONTRACTIONS &&
+            laborSummary.birthTime == null
     )
 }
 
@@ -40,7 +44,9 @@ data class HomeContent(
     val showDueDateReminder: Boolean,
     val showDueDateCard: Boolean,
     val showContractionShortcut: Boolean,
+    val showLiveContractionBlock: Boolean,
     val showWaterBreakShortcut: Boolean,
     val showBirthDetailsCard: Boolean,
-    val checklistFirst: Boolean
+    val checklistFirst: Boolean,
+    val showLaborQuickActions: Boolean
 )

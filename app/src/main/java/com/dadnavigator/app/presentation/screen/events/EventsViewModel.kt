@@ -15,8 +15,10 @@ import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUs
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionResult
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkArrivedHomeUseCase
+import com.dadnavigator.app.domain.usecase.labor.MarkArrivedHomeResult
 import com.dadnavigator.app.domain.usecase.labor.MarkBirthUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedUseCase
+import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedResult
 import com.dadnavigator.app.domain.usecase.settings.ObserveSettingsUseCase
 import com.dadnavigator.app.domain.usecase.timeline.AddTimelineEventUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveLaborSummaryUseCase
@@ -127,12 +129,15 @@ class EventsViewModel @Inject constructor(
 
         viewModelScope.launch(ioDispatcher) {
             runCatching {
-                markLaborStartedUseCase(
+                infoState.value = when (markLaborStartedUseCase(
                     userId = userId,
                     eventTitle = eventTitle,
                     eventDescription = eventDescription
-                )
-                infoState.value = R.string.events_labor_started_saved
+                )) {
+                    MarkLaborStartedResult.Started -> R.string.events_labor_started_saved
+                    MarkLaborStartedResult.AlreadyStarted -> R.string.events_labor_started_already_saved
+                    MarkLaborStartedResult.BlockedAfterBirth -> R.string.events_labor_start_blocked_after_birth
+                }
             }.onFailure {
                 errorState.value = R.string.error_generic
             }
@@ -187,12 +192,16 @@ class EventsViewModel @Inject constructor(
 
         viewModelScope.launch(ioDispatcher) {
             runCatching {
-                markArrivedHomeUseCase(
+                infoState.value = when (markArrivedHomeUseCase(
                     userId = userId,
                     eventTitle = eventTitle,
                     eventDescription = eventDescription
-                )
-                infoState.value = R.string.events_arrived_home_saved
+                )) {
+                    MarkArrivedHomeResult.Marked -> R.string.events_arrived_home_saved
+                    MarkArrivedHomeResult.AlreadyHome -> R.string.events_arrived_home_already_saved
+                    MarkArrivedHomeResult.BirthNotRecorded -> R.string.events_arrived_home_requires_birth
+                    MarkArrivedHomeResult.NotAtHospital -> R.string.events_arrived_home_requires_hospital
+                }
             }.onFailure {
                 errorState.value = R.string.error_generic
             }

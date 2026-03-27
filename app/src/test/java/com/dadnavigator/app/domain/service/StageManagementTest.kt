@@ -69,6 +69,27 @@ class StageManagementTest {
     }
 
     @Test
+    fun `manual stage selection blocks pre birth rollback after birth`() {
+        val summary = emptyLaborSummary().copy(
+            birthTime = Instant.parse("2026-03-27T10:00:00Z")
+        )
+
+        assertFalse(transitionManager.canSelectStage(AppStage.PREPARING, summary))
+        assertFalse(transitionManager.canSelectStage(AppStage.CONTRACTIONS, summary))
+        assertTrue(transitionManager.canSelectStage(AppStage.AT_HOSPITAL, summary))
+        assertTrue(transitionManager.canSelectStage(AppStage.AT_HOME, summary))
+
+        val decision = transitionManager.manualSelection(
+            targetStage = AppStage.CONTRACTIONS,
+            currentStage = AppStage.AT_HOSPITAL,
+            currentSummary = summary
+        )
+
+        assertTrue(decision.blockedByBirthRecord)
+        assertEquals(AppStage.AT_HOSPITAL, decision.stage)
+    }
+
+    @Test
     fun `home content shows reminder when due date is missing`() {
         val settings = baseSettings(dueDate = null, appStage = AppStage.PREPARING)
         val content = homeContentBuilder.build(

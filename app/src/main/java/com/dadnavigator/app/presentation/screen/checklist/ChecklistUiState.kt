@@ -1,6 +1,7 @@
 ﻿package com.dadnavigator.app.presentation.screen.checklist
 
 import com.dadnavigator.app.domain.model.AppStage
+import com.dadnavigator.app.domain.model.Checklist
 import com.dadnavigator.app.domain.model.ChecklistWithItems
 
 /**
@@ -10,6 +11,11 @@ data class ChecklistUiState(
     val checklists: List<ChecklistWithItems> = emptyList(),
     val selectedStage: AppStage = AppStage.PREPARING,
     val currentStage: AppStage = AppStage.PREPARING,
-    val drafts: Map<Long, String> = emptyMap(),
+    val itemDrafts: Map<Long, String> = emptyMap(),
+    val newChecklistTitle: String = "",
+    val renameTarget: Checklist? = null,
+    val renameDraft: String = "",
+    val deleteTarget: Checklist? = null,
+    val infoRes: Int? = null,
     val errorRes: Int? = null
 )

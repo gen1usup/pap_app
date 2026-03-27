@@ -43,6 +43,10 @@ fun ChecklistItemEntity.toDomain(): ChecklistItem = ChecklistItem(
     checklistId = checklistId,
     userId = userId,
     text = text,
+    note = note,
+    quantity = quantity,
+    priority = priority,
+    metadataJson = metadataJson,
     isChecked = isChecked,
     createdAt = createdAt
 )
@@ -52,6 +56,10 @@ fun ChecklistItem.toEntity(): ChecklistItemEntity = ChecklistItemEntity(
     checklistId = checklistId,
     userId = userId,
     text = text,
+    note = note,
+    quantity = quantity,
+    priority = priority,
+    metadataJson = metadataJson,
     isChecked = isChecked,
     createdAt = createdAt
 )

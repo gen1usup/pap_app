@@ -12,6 +12,7 @@ enum class TimelineFilter {
 data class TimelineUiState(
     val filter: TimelineFilter = TimelineFilter.ALL,
     val events: List<TimelineEvent> = emptyList(),
+    val expandedEventIds: Set<Long> = emptySet(),
     val showAddSheet: Boolean = false,
     val selectedType: TimelineType = TimelineType.LABOR,
     val draftTitle: String = "",

@@ -59,6 +59,19 @@
     <string name="dashboard_checklist_title_after_birth">Что важно после родов</string>
     <string name="dashboard_checklist_title_at_hospital">Что важно в роддоме</string>
     <string name="dashboard_checklist_title_at_home">Что важно дома</string>
+    <string name="dashboard_live_contractions_overline">Схватки сейчас</string>
+    <string name="dashboard_live_contraction_running">Схватка идет прямо сейчас. Следующее нажатие завершит ее и обновит интервал.</string>
+    <string name="dashboard_live_contraction_waiting">Можно начать следующую схватку прямо с главной, не переходя на другой экран.</string>
+    <string name="dashboard_live_contraction_status_label">Сейчас</string>
+    <string name="dashboard_live_contraction_interval_label">Интервал</string>
+    <string name="dashboard_live_contraction_recommendation_label">Рекомендация</string>
+    <string name="dashboard_labor_quick_actions_overline">Выезд и связь</string>
+    <string name="dashboard_labor_quick_actions_title">Нужные действия под рукой</string>
+    <string name="dashboard_labor_quick_actions_description">Контакты, маршрут и звонки собраны спокойно и без лишнего шума.</string>
+    <string name="dashboard_open_contacts_action">Открыть контакты</string>
+    <string name="dashboard_open_route_action">Построить маршрут</string>
+    <string name="dashboard_call_hospital_action">Позвонить в роддом</string>
+    <string name="dashboard_call_doctor_action">Позвонить врачу</string>
     <string name="dashboard_preparing_ready_title">Может начаться в любой момент</string>
     <string name="dashboard_preparing_ready_description">Держите под рукой понятный план, сумки и быстрый переход в раздел События.</string>
     <string name="dashboard_preparing_calm_title">Спокойная подготовка</string>
@@ -70,8 +83,10 @@
     <string name="stage_screen_subtitle">Выберите этап, который лучше всего описывает текущую ситуацию.</string>
     <string name="stage_screen_activate">Сделать текущим этапом</string>
     <string name="stage_screen_active">Этот этап уже активен</string>
+    <string name="stage_screen_locked_after_birth">Недоступно после рождения</string>
     <string name="stage_screen_visibility_title">Что изменится на главной</string>
     <string name="stage_screen_hint">Переключение этапа ничего не удаляет: история, события и чек-листы остаются в приложении.</string>
+    <string name="stage_screen_birth_locked_hint">После рождения доступны только послеродовые этапы: «В роддоме» и «Дома».</string>
     <string name="stage_screen_preparing_title">Подготовка без лишней тревоги</string>
     <string name="stage_screen_preparing_description">Используйте этот этап, пока роды не начались. Главная держит в фокусе ПДР, подготовку, документы и спокойные действия.</string>
     <string name="stage_screen_preparing_visibility">На главной остаются подготовительные блоки. Ближе к сроку появятся готовность к роддому и быстрый вход в сценарий схваток.</string>
@@ -119,8 +134,13 @@
     <string name="events_birth_confirm">Сохранить событие</string>
     <string name="events_birth_skip">Сохранить без деталей</string>
     <string name="events_labor_started_saved">Этап родов активирован</string>
+    <string name="events_labor_started_already_saved">Начало родов уже было зафиксировано ранее</string>
+    <string name="events_labor_start_blocked_after_birth">После рождения нельзя снова запускать сценарий родов</string>
     <string name="events_birth_saved">Рождение зафиксировано</string>
     <string name="events_arrived_home_saved">Домашний этап активирован</string>
+    <string name="events_arrived_home_already_saved">Домашний этап уже активен</string>
+    <string name="events_arrived_home_requires_birth">Сначала нужно зафиксировать рождение ребенка</string>
+    <string name="events_arrived_home_requires_hospital">Вернуться домой можно отмечать только из этапа «В роддоме»</string>
     <string name="events_contraction_started">Схватка начата</string>
     <string name="events_contraction_stopped">Схватка завершена</string>
     <string name="events_status_contraction_running">Схватка идет прямо сейчас. Можно завершить ее одним нажатием ниже.</string>
@@ -273,6 +293,20 @@
     <string name="checklist_summary_overline">Общий статус</string>
     <string name="checklist_summary_title">Всё важное в одном месте</string>
     <string name="checklist_progress">Прогресс: %1$d/%2$d</string>
+    <string name="checklist_create_title">Свой чек-лист</string>
+    <string name="checklist_create_description">Добавьте свой список для этапа «%1$s»</string>
+    <string name="checklist_create_action">Создать список</string>
+    <string name="checklist_name_label">Название списка</string>
+    <string name="checklist_system_label">Системный список</string>
+    <string name="checklist_custom_label">Ваш список</string>
+    <string name="checklist_empty_stage">Для этого этапа пока нет списков. Можно создать свой.</string>
+    <string name="checklist_rename_title">Переименовать список</string>
+    <string name="checklist_delete_title">Удалить список?</string>
+    <string name="checklist_delete_message">Список «%1$s» будет удален вместе со всеми пунктами.</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_edit">Изменить</string>
     <string name="add_item">Добавить пункт</string>
     <string name="custom_item_hint">Новый пункт</string>
     <string name="save_item">Сохранить</string>
@@ -360,6 +394,7 @@
     <string name="timeline_filter_all">Все</string>
     <string name="timeline_filter_labor">Роды</string>
     <string name="timeline_filter_postpartum">После родов</string>
+    <string name="timeline_item_expand_hint">Нажмите, чтобы открыть детали</string>
 
     <string name="settings_title">Настройки</string>
     <string name="settings_subtitle">Личные параметры, тема и безопасное управление локальными данными</string>
@@ -369,6 +404,7 @@
     <string name="settings_theme_description">Выберите спокойный режим отображения, который удобнее днём или ночью.</string>
     <string name="settings_stage_title">Этап приложения</string>
     <string name="settings_stage_description">Переключайте этап вручную, когда ситуация изменилась. ПДР ничего не меняет автоматически.</string>
+    <string name="settings_stage_after_birth_hint">После рождения для ручного выбора остаются только этапы «В роддоме» и «Дома».</string>
     <string name="settings_name">Имя папы</string>
     <string name="settings_due_date">ПДР</string>
     <string name="settings_due_date_hint">Формат: ДД.ММ.ГГГГ</string>
@@ -390,6 +426,7 @@
     <string name="ok">ОК</string>
 
     <string name="error_generic">Не удалось выполнить действие. Повторите попытку.</string>
+    <string name="stage_switch_after_birth_blocked">После рождения нельзя вернуть приложение на этап до родов или схваток</string>
     <string name="saved">Сохранено</string>
 
     <string name="recommendation_monitor">Продолжайте наблюдение дома, ведите таймер и сохраняйте спокойствие</string>
@@ -427,6 +464,10 @@
     <string name="timeline_type_water_break">Отхождение вод</string>
     <string name="timeline_type_labor">Событие родов</string>
     <string name="timeline_type_birth">Рождение ребенка</string>
+    <string name="timeline_type_preparation_note">Подготовка</string>
+    <string name="timeline_type_labor_note">Заметка в родах</string>
+    <string name="timeline_type_hospital_note">Заметка из роддома</string>
+    <string name="timeline_type_home_note">Домашняя заметка</string>
     <string name="timeline_type_feeding">Кормление</string>
     <string name="timeline_type_diaper">Подгузник</string>
     <string name="timeline_type_sleep">Сон</string>
@@ -435,8 +476,12 @@
     <string name="emergency_contacts_subtitle">Скорая уже сохранена. Остальные контакты добавляйте только если они вам нужны.</string>
     <string name="emergency_contact_name">Название</string>
     <string name="emergency_contact_phone">Телефон</string>
+    <string name="emergency_contact_address">Адрес</string>
     <string name="emergency_contact_call">Позвонить</string>
+    <string name="emergency_contact_route">Построить маршрут</string>
+    <string name="emergency_contact_copy_address">Скопировать адрес</string>
     <string name="emergency_contacts_add_more">Добавить еще контакт</string>
+    <string name="emergency_contacts_add_description">Храните только те контакты, которые реально пригодятся в дороге и в роддоме.</string>
     <string name="emergency_contacts_add_contact">Добавить: %1$s</string>
     <string name="contact_type_ambulance">Скорая</string>
     <string name="contact_type_maternity">Роддом</string>
@@ -445,6 +490,13 @@
     <string name="contact_type_trusted">Доверенное лицо</string>
     <string name="contact_type_partner">Жена / близкий человек</string>
     <string name="contact_type_taxi">Такси</string>
+    <string name="contact_type_relative">Родственник</string>
+    <string name="contact_type_custom">Другой контакт</string>
+    <string name="help_contacts_route_title">Контакты и маршрут</string>
+    <string name="help_contacts_route_description">Телефон и адрес роддома теперь настраиваются в разделе контактов, чтобы звонок и маршрут были рядом.</string>
+    <string name="help_open_contacts">Открыть контакты</string>
+    <string name="sos_call_doctor">Позвонить врачу</string>
+    <string name="sos_call_wife">Позвонить жене</string>
     <string name="help_title">Справка</string>
     <string name="help_subtitle">Подсказки по этапам, важным действиям и дороге в роддом</string>
     <string name="help_maternity_route_title">Роддом и маршрут</string>

@@ -236,12 +236,24 @@ fun SettingsScreen(
                             verticalArrangement = Arrangement.spacedBy(spacing.sm)
                         ) {
                             AppStage.entries.forEach { stage: AppStage ->
+                                val enabled = !state.birthRecorded || stage !in setOf(
+                                    AppStage.PREPARING,
+                                    AppStage.CONTRACTIONS
+                                )
                                 FilterChip(
                                     selected = state.appStage == stage,
+                                    enabled = enabled,
                                     onClick = { viewModel.updateAppStage(stage) },
                                     label = { Text(text = stringResource(id = appStageLabelRes(stage))) }
                                 )
                             }
+                        }
+                        if (state.birthRecorded) {
+                            Text(
+                                text = stringResource(id = R.string.settings_stage_after_birth_hint),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

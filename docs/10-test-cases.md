@@ -1,30 +1,8 @@
-# Реестр тестов
+﻿# Реестр тестов
 
-Документ описывает актуальные автоматические тесты проекта и последний подтвержденный прогон.
+Документ описывает актуальные автоматические тесты и последний подтвержденный прогон.
 
-## 1. Как запускаются тесты
-
-### Unit tests
-
-Запускаются из `app/src/test/java` и проверяют:
-
-- бизнес-логику;
-- stage rules;
-- home builder;
-- доменные use case;
-- аналитические расчеты.
-
-### Instrumented tests
-
-Запускаются из `app/src/androidTest/java` на эмуляторе или устройстве и проверяют:
-
-- shell navigation;
-- drawer и stage screen;
-- настройки;
-- журнал;
-- экранные сценарии и seeded данные схваток.
-
-## 2. Последний подтвержденный прогон
+## 1. Последний подтвержденный прогон
 
 Дата: 27.03.2026
 
@@ -36,164 +14,118 @@
 
 - `:app:compileDebugKotlin` — успешно
 - `:app:compileDebugAndroidTestKotlin` — успешно
-- `:app:assembleDebug` — успешно
-- `:app:assembleDebugAndroidTest` — успешно
-- `:app:testDebugUnitTest` для целевых suites — успешно
+- `:app:testDebugUnitTest` — успешно
+- `:app:connectedDebugAndroidTest` — успешно
+
+Instrumentation summary:
+
 - `DeviceScenarioUiTest` — `OK (7 tests)`
+- `NavigationUiTest` — `OK (1 test)`
 - `SettingsValidationUiTest` — `OK (1 test)`
 - `ContractionAnalyticsUiTest` — `OK (3 tests)`
 
-## 3. Unit test suites
+Итого подтверждено на эмуляторе: `12 instrumented tests`.
 
-### 3.1 [StageManagementTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/service/StageManagementTest.kt)
+## 2. Unit test suites
 
-Покрывает:
-
-- совместимость старых stage-значений;
-- расчет readiness-window с 37 недели;
-- отсутствие ПДР;
-- переходы `CONTRACTIONS / AT_HOSPITAL / AT_HOME`;
-- reminder о ПДР на главной;
-- появление contraction shortcut c 37 недели;
-- скрытие contraction shortcut в `AT_HOSPITAL`.
-
-Количество тестов:
-
-- `7`
-
-### 3.2 [EventsProviderTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/service/EventsProviderTest.kt)
+### [StageManagementTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/service/StageManagementTest.kt)
 
 Покрывает:
 
-- подготовительный `Events`-сценарий до readiness-window;
-- расширение `Events` в readiness-window c 37 недели;
-- подмену `Начать схватку / Завершить схватку` по live-state;
-- hospital-секцию с `Приехали домой`;
-- домашние quick-record действия без labor-controls.
+- совместимость legacy stage-значений
+- readiness-window с 37 недели
+- отсутствие ПДР
+- допустимые переходы между этапами
+- блокировку ручного отката после рождения
+- базовые правила `HomeContentBuilder`
 
-Количество тестов:
-
-- `5`
-
-### 3.3 [LaborLifecycleUseCasesTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/labor/LaborLifecycleUseCasesTest.kt)
+### [LaborLifecycleUseCasesTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/labor/LaborLifecycleUseCasesTest.kt)
 
 Покрывает:
 
-- первое начало родов;
-- защиту от повторного перезаписывания `laborStartTime`;
-- первое сохранение рождения;
-- защиту от дублей рождения;
-- игнорирование пустого необязательного имени ребенка.
+- первое начало родов
+- запрет повторного старта
+- блокировку `Начались роды` после рождения
+- первое сохранение рождения
+- guard для `Приехали домой`
 
-Количество тестов:
-
-- `5`
-
-### 3.4 [CalculateContractionStatsUseCaseTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/CalculateContractionStatsUseCaseTest.kt)
+### [SettingsStageGuardUseCasesTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/settings/SettingsStageGuardUseCasesTest.kt)
 
 Покрывает:
 
-- пустую историю;
-- устойчивый moderate-паттерн;
-- устойчивый strong-паттерн;
-- нерегулярный паттерн с длинными схватками;
-- использование recent-window;
-- расчет длины текущего паттерна.
+- защиту `UpdateAppStageUseCase`
+- защиту `SaveSettingsUseCase`
+- невозможность сохранить нелогичный stage rollback после рождения
 
-Количество тестов:
-
-- `6`
-
-### 3.5 [ChecklistUseCasesTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/ChecklistUseCasesTest.kt)
+### [ChecklistUseCasesTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/ChecklistUseCasesTest.kt)
 
 Покрывает:
 
-- запрет на пустой custom item;
-- trim пользовательского текста;
-- делегирование toggle в репозиторий.
+- создание пользовательского списка
+- trim названия списка
+- запрет пустого названия
+- добавление пункта
+- trim текста пункта
+- delete item / delete checklist
+- toggle item
 
-Количество тестов:
-
-- `3`
-
-### 3.6 [EvaluateHospitalDecisionUseCaseTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/EvaluateHospitalDecisionUseCaseTest.kt)
+### [CalculateContractionStatsUseCaseTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/CalculateContractionStatsUseCaseTest.kt)
 
 Покрывает:
 
-- emergency-решение при кровотечении;
-- рекомендацию ехать при активном регулярном паттерне;
-- возврат `MONITOR`, если тревожных признаков нет.
+- пустую историю
+- monitor / prepare / go patterns
+- irregular сценарии
+- recent-window расчеты
 
-Количество тестов:
+## 3. Instrumented test suites
 
-- `3`
-
-## 4. Instrumented test suites
-
-### 4.1 [NavigationUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/NavigationUiTest.kt)
+### [DeviceScenarioUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/DeviceScenarioUiTest.kt)
 
 Проверяет:
 
-- открытие экрана счетчика схваток из вкладки `События`.
+- `Главная -> Чек-листы -> Главная`
+- открытие stage screen из drawer
+- перестройку `Главной` в `AT_HOSPITAL`
+- hospital-сценарий `Событий`
+- home-сценарий `Событий`
+- `Справку` и `SOS`
+- открытие `Настроек` и наличие controls для ПДР
 
-Количество тестов:
-
-- `1`
-
-### 4.2 [DeviceScenarioUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/DeviceScenarioUiTest.kt)
-
-Проверяет:
-
-- `Главная -> Чек-листы -> Главная` через bottom navigation;
-- открытие stage screen из drawer;
-- перестройку главной в `AT_HOSPITAL` и скрытие shortcut счетчика схваток;
-- hospital-сценарий `Событий` с `Приехали домой` и скрытием labor-tools;
-- домашний `Events`-сценарий с быстрыми записями;
-- открытие настроек и наличие controls ПДР;
-- валидацию пустого labor-события в журнале;
-- отображение ключевых блоков `Справка` и `SOS`.
-
-Количество тестов:
-
-- `7`
-
-### 4.3 [SettingsValidationUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/SettingsValidationUiTest.kt)
+### [NavigationUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/NavigationUiTest.kt)
 
 Проверяет:
 
-- inline-валидацию неверной ПДР на Compose-экране.
+- переход в экран схваток из `Событий`
 
-Количество тестов:
+### [SettingsValidationUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/SettingsValidationUiTest.kt)
 
-- `1`
+Проверяет:
 
-### 4.4 [ContractionAnalyticsUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/ContractionAnalyticsUiTest.kt)
+- inline-валидацию неверной ПДР
+
+### [ContractionAnalyticsUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/ContractionAnalyticsUiTest.kt)
 
 Проверяет через seeded данные:
 
-- `Наблюдаем` для нерегулярных схваток;
-- `Готовимся к выезду` для moderate regular pattern;
-- `Пора ехать` для strong regular pattern.
+- `Наблюдаем`
+- `Готовимся к выезду`
+- `Пора ехать`
 
-Количество тестов:
+## 4. Тестовые данные для длинных сценариев
 
-- `3`
+Для сценариев, которые в реальности занимают десятки минут, используется [TestAppStateSeeder.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/testsupport/TestAppStateSeeder.kt).
 
-## 5. Тестовые данные для долгих сценариев
+Seeder умеет:
 
-Для сценариев, которые в реальности занимают 30-90 минут, используется [TestAppStateSeeder.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/testsupport/TestAppStateSeeder.kt).
-
-Он умеет:
-
-- очищать локальные данные;
-- seed-ить готовые сценарии схваток;
-- seed-ить конкретный этап приложения.
+- очищать локальные данные
+- seed-ить stage
+- seed-ить готовые паттерны схваток с историческими timestamp
 
 Это позволяет проверять критические и граничные сценарии без реального ожидания времени.
 
-## 6. Что пока не покрыто полностью
+## 5. Что дополнительно подтверждено этим прогоном
 
-Автоматически пока не покрыты как отдельные полноценные e2e-сценарии:
-
-- полный путь `схватки -> воды -> рождение -> AT_HOME` одним тестом;
-- расширенный CRUD контактов и адресов.
+- миграция Room `4 -> 6` теперь работает на уже существующей тестовой базе
+- общий и прямой migration path для новых checklist/contact изменений не ломает открытие приложения
+- обновленные `Справка`, `Контакты`, `SOS` и `Чек-листы` не ломают navigation smoke suite

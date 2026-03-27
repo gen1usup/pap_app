@@ -1,6 +1,7 @@
 package com.dadnavigator.app.presentation.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dadnavigator.app.R
 import com.dadnavigator.app.core.ui.DadTheme
 
 @Composable
@@ -27,7 +30,9 @@ fun TimelineItem(
     time: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    description: String? = null
+    description: String? = null,
+    expanded: Boolean = true,
+    onToggleExpanded: (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -50,7 +55,15 @@ fun TimelineItem(
             )
         }
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (onToggleExpanded != null) {
+                        Modifier.clickable(onClick = onToggleExpanded)
+                    } else {
+                        Modifier
+                    }
+                ),
             shape = DadTheme.shapes.card,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -82,11 +95,17 @@ fun TimelineItem(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                if (!description.isNullOrBlank()) {
+                if (!description.isNullOrBlank() && expanded) {
                     Text(
                         text = description,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
+                    )
+                } else if (!description.isNullOrBlank() && onToggleExpanded != null) {
+                    Text(
+                        text = stringResource(id = R.string.timeline_item_expand_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

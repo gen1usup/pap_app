@@ -32,39 +32,82 @@ class EmergencyContactsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(EmergencyContactsUiState())
     val uiState: StateFlow<EmergencyContactsUiState> = _uiState.asStateFlow()
 
+    private var hasLocalChanges = false
+    private var nextTempId = -1L
+
     init {
         viewModelScope.launch(ioDispatcher) {
             seedEmergencyContactsUseCase()
         }
         viewModelScope.launch {
             observeEmergencyContactsUseCase().collect { contacts ->
-                _uiState.update { current ->
-                    current.copy(
-                        contacts = if (current.contacts.isEmpty()) contacts else current.contacts,
-                        expandedTypes = current.expandedTypes + contacts
-                            .filter { it.type == EmergencyContactType.AMBULANCE || it.phone.isNotBlank() }
-                            .map { it.type }
-                    )
+                if (!hasLocalChanges || _uiState.value.contacts.isEmpty()) {
+                    _uiState.update { current ->
+                        current.copy(contacts = contacts.sortedBy { it.sortOrder })
+                    }
                 }
             }
         }
     }
 
-    fun updateTitle(type: EmergencyContactType, value: String) {
-        updateContact(type) { it.copy(title = value) }
+    fun addContact(type: EmergencyContactType) {
+        val currentContacts = uiState.value.contacts
+        if (type in singleInstanceTypes && currentContacts.any { it.type == type }) return
+
+        hasLocalChanges = true
+        _uiState.update { current ->
+            current.copy(
+                contacts = current.contacts + EmergencyContact(
+                    id = nextTempId--,
+                    type = type,
+                    title = defaultTitle(type),
+                    phone = "",
+                    address = "",
+                    sortOrder = current.contacts.size,
+                    isDefault = false
+                )
+            )
+        }
     }
 
-    fun updatePhone(type: EmergencyContactType, value: String) {
-        updateContact(type) { it.copy(phone = value) }
+    fun updateTitle(contactId: Long, value: String) {
+        updateContact(contactId) { it.copy(title = value) }
+    }
+
+    fun updatePhone(contactId: Long, value: String) {
+        updateContact(contactId) { it.copy(phone = value) }
+    }
+
+    fun updateAddress(contactId: Long, value: String) {
+        updateContact(contactId) { it.copy(address = value) }
+    }
+
+    fun deleteContact(contactId: Long) {
+        val contact = uiState.value.contacts.firstOrNull { it.id == contactId } ?: return
+        if (contact.isDefault) return
+
+        hasLocalChanges = true
+        _uiState.update { current ->
+            current.copy(
+                contacts = current.contacts
+                    .filterNot { it.id == contactId }
+                    .mapIndexed { index, item -> item.copy(sortOrder = index) }
+            )
+        }
     }
 
     fun save() {
         viewModelScope.launch(ioDispatcher) {
             runCatching {
-                saveEmergencyContactsUseCase(uiState.value.contacts)
+                saveEmergencyContactsUseCase(
+                    uiState.value.contacts
+                        .sortedBy { it.sortOrder }
+                        .mapIndexed { index, contact -> contact.copy(sortOrder = index) }
+                )
+                hasLocalChanges = false
                 _uiState.update { it.copy(infoRes = R.string.saved, errorRes = null) }
             }.onFailure {
-                _uiState.update { it.copy(errorRes = R.string.error_generic) }
+                _uiState.update { it.copy(errorRes = R.string.error_generic, infoRes = null) }
             }
         }
     }
@@ -73,22 +116,37 @@ class EmergencyContactsViewModel @Inject constructor(
         _uiState.update { it.copy(infoRes = null, errorRes = null) }
     }
 
-    fun showContact(type: EmergencyContactType) {
-        _uiState.update { current ->
-            current.copy(expandedTypes = current.expandedTypes + type)
-        }
-    }
-
     private fun updateContact(
-        type: EmergencyContactType,
+        contactId: Long,
         transform: (EmergencyContact) -> EmergencyContact
     ) {
+        hasLocalChanges = true
         _uiState.update { current ->
             current.copy(
                 contacts = current.contacts.map { contact ->
-                    if (contact.type == type) transform(contact) else contact
+                    if (contact.id == contactId) transform(contact) else contact
                 }
             )
         }
+    }
+
+    private fun defaultTitle(type: EmergencyContactType): String = when (type) {
+        EmergencyContactType.EMERGENCY -> "Скорая помощь"
+        EmergencyContactType.WIFE -> "Жена"
+        EmergencyContactType.DOCTOR -> "Врач"
+        EmergencyContactType.HOSPITAL -> "Роддом"
+        EmergencyContactType.TAXI -> "Такси"
+        EmergencyContactType.RELATIVE -> "Родственник"
+        EmergencyContactType.CUSTOM -> "Контакт"
+    }
+
+    private companion object {
+        val singleInstanceTypes = setOf(
+            EmergencyContactType.EMERGENCY,
+            EmergencyContactType.WIFE,
+            EmergencyContactType.DOCTOR,
+            EmergencyContactType.HOSPITAL,
+            EmergencyContactType.TAXI
+        )
     }
 }

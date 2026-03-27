@@ -1,7 +1,5 @@
 package com.dadnavigator.app.presentation.screen.sos
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.Emergency
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.MedicalServices
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.Card
@@ -30,6 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dadnavigator.app.R
 import com.dadnavigator.app.core.ui.DadNavigatorTheme
 import com.dadnavigator.app.core.ui.DadTheme
+import com.dadnavigator.app.core.util.openDialer
 import com.dadnavigator.app.domain.model.EmergencyContactType
 import com.dadnavigator.app.presentation.component.DangerButton
 import com.dadnavigator.app.presentation.component.InfoCard
@@ -48,12 +48,9 @@ fun SosScreen(
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val criticalScenarios = stringArrayResource(id = R.array.sos_critical_scenarios).toList()
     val actions = stringArrayResource(id = R.array.sos_actions).toList()
-    val quickContacts = state.contacts.filter { it.phone.isNotBlank() }
-    val maternityPhone = state.contacts
-        .firstOrNull { it.type == EmergencyContactType.MATERNITY_HOSPITAL }
-        ?.phone
-        .orEmpty()
-        .ifBlank { "103" }
+    val quickContacts = state.contacts.filter { it.phone.isNotBlank() && it.type != EmergencyContactType.EMERGENCY }
+    val doctorPhone = state.contacts.firstOrNull { it.type == EmergencyContactType.DOCTOR }?.phone.orEmpty()
+    val wifePhone = state.contacts.firstOrNull { it.type == EmergencyContactType.WIFE }?.phone.orEmpty()
 
     ScreenScaffold(
         title = stringResource(id = R.string.sos_title),
@@ -106,17 +103,29 @@ fun SosScreen(
             item {
                 DangerButton(
                     text = stringResource(id = R.string.sos_call_112),
-                    onClick = { dial(context, "112") },
+                    onClick = { openDialer(context, "112") },
                     icon = Icons.Outlined.Call
                 )
             }
 
-            item {
-                SecondaryButton(
-                    text = stringResource(id = R.string.sos_call_maternity),
-                    onClick = { dial(context, maternityPhone) },
-                    icon = Icons.Outlined.MedicalServices
-                )
+            if (doctorPhone.isNotBlank()) {
+                item {
+                    SecondaryButton(
+                        text = stringResource(id = R.string.sos_call_doctor),
+                        onClick = { openDialer(context, doctorPhone) },
+                        icon = Icons.Outlined.MedicalServices
+                    )
+                }
+            }
+
+            if (wifePhone.isNotBlank()) {
+                item {
+                    SecondaryButton(
+                        text = stringResource(id = R.string.sos_call_wife),
+                        onClick = { openDialer(context, wifePhone) },
+                        icon = Icons.Outlined.FavoriteBorder
+                    )
+                }
             }
 
             item {
@@ -136,7 +145,7 @@ fun SosScreen(
                             quickContacts.take(4).forEach { contact ->
                                 PrimaryButton(
                                     text = contact.title,
-                                    onClick = { dial(context, contact.phone) },
+                                    onClick = { openDialer(context, contact.phone) },
                                     icon = Icons.Outlined.Call
                                 )
                             }
@@ -180,11 +189,6 @@ fun SosScreen(
             }
         }
     }
-}
-
-private fun dial(context: android.content.Context, phone: String) {
-    if (phone.isBlank()) return
-    context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true)

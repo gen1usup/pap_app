@@ -81,6 +81,7 @@ fun TimelineScreen(
         onBack = onBack,
         onMenu = onMenu,
         onFilterSelected = viewModel::setFilter,
+        onToggleExpanded = viewModel::toggleExpanded,
         onShowAddSheet = viewModel::showAddSheet,
         onHideAddSheet = viewModel::hideAddSheet,
         onTypeSelected = viewModel::updateType,
@@ -98,6 +99,7 @@ private fun TimelineContent(
     onBack: (() -> Unit)?,
     onMenu: (() -> Unit)?,
     onFilterSelected: (TimelineFilter) -> Unit,
+    onToggleExpanded: (Long) -> Unit,
     onShowAddSheet: () -> Unit,
     onHideAddSheet: () -> Unit,
     onTypeSelected: (TimelineType) -> Unit,
@@ -174,12 +176,19 @@ private fun TimelineContent(
                     }
                 } else {
                     items(state.events) { event ->
+                        val canExpand = event.description.isNotBlank()
                         TimelineItem(
                             title = event.title.ifBlank { stringResource(id = timelineTypeLabel(event.type)) },
                             subtitle = stringResource(id = timelineTypeLabel(event.type)),
                             time = event.timestamp.toReadableDateTime().takeLast(5),
                             description = event.description.takeIf { it.isNotBlank() },
-                            icon = timelineTypeIcon(event.type)
+                            icon = timelineTypeIcon(event.type),
+                            expanded = event.id in state.expandedEventIds,
+                            onToggleExpanded = if (canExpand) {
+                                { onToggleExpanded(event.id) }
+                            } else {
+                                null
+                            }
                         )
                     }
                 }
@@ -250,6 +259,10 @@ private fun timelineTypeLabel(type: TimelineType): Int = when (type) {
     TimelineType.WATER_BREAK -> R.string.timeline_type_water_break
     TimelineType.LABOR -> R.string.timeline_type_labor
     TimelineType.BIRTH -> R.string.timeline_type_birth
+    TimelineType.PREPARATION_NOTE -> R.string.timeline_type_preparation_note
+    TimelineType.LABOR_NOTE -> R.string.timeline_type_labor_note
+    TimelineType.HOSPITAL_NOTE -> R.string.timeline_type_hospital_note
+    TimelineType.HOME_NOTE -> R.string.timeline_type_home_note
     TimelineType.FEEDING -> R.string.timeline_type_feeding
     TimelineType.DIAPER -> R.string.timeline_type_diaper
     TimelineType.SLEEP -> R.string.timeline_type_sleep
@@ -261,6 +274,10 @@ private fun timelineTypeIcon(type: TimelineType): ImageVector = when (type) {
     TimelineType.WATER_BREAK -> Icons.Outlined.WaterDrop
     TimelineType.LABOR -> Icons.Outlined.LocalHospital
     TimelineType.BIRTH -> Icons.Outlined.ChildCare
+    TimelineType.PREPARATION_NOTE,
+    TimelineType.LABOR_NOTE,
+    TimelineType.HOSPITAL_NOTE,
+    TimelineType.HOME_NOTE -> Icons.Outlined.EditNote
     TimelineType.FEEDING -> Icons.Outlined.FavoriteBorder
     TimelineType.DIAPER -> Icons.Outlined.BabyChangingStation
     TimelineType.SLEEP -> Icons.Outlined.NightlightRound
@@ -282,6 +299,7 @@ private fun TimelinePreview() {
             onBack = {},
             onMenu = {},
             onFilterSelected = {},
+            onToggleExpanded = {},
             onShowAddSheet = {},
             onHideAddSheet = {},
             onTypeSelected = {},

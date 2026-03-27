@@ -24,25 +24,29 @@ class EmergencyContactRepositoryImpl @Inject constructor(
     override suspend fun seedContactsIfNeeded() {
         if (emergencyContactDao.countContacts() > 0) return
 
-        emergencyContactDao.upsertContacts(
+        emergencyContactDao.replaceContacts(
             listOf(
-                EmergencyContact(EmergencyContactType.AMBULANCE, "Скорая помощь", "112", 0),
-                EmergencyContact(EmergencyContactType.MATERNITY_HOSPITAL, "Роддом", "", 1),
-                EmergencyContact(EmergencyContactType.DOCTOR, "Врач", "", 2),
-                EmergencyContact(EmergencyContactType.MIDWIFE, "Акушерка", "", 3),
-                EmergencyContact(EmergencyContactType.TRUSTED_PERSON, "Доверенное лицо", "", 4),
-                EmergencyContact(EmergencyContactType.PARTNER, "Жена / близкий человек", "", 5),
-                EmergencyContact(EmergencyContactType.TAXI, "Такси", "", 6)
+                EmergencyContact(
+                    id = 0,
+                    type = EmergencyContactType.EMERGENCY,
+                    title = "Скорая помощь",
+                    phone = "112",
+                    address = "",
+                    sortOrder = 0,
+                    isDefault = true
+                )
             ).map { it.toEntity() }
         )
     }
 
     override suspend fun saveContacts(contacts: List<EmergencyContact>) {
-        emergencyContactDao.upsertContacts(
-            contacts.sortedBy { it.sortOrder }.map { contact ->
+        emergencyContactDao.replaceContacts(
+            contacts.sortedBy { it.sortOrder }.mapIndexed { index, contact ->
                 contact.copy(
                     title = contact.title.trim(),
-                    phone = contact.phone.trim()
+                    phone = contact.phone.trim(),
+                    address = contact.address.trim(),
+                    sortOrder = index
                 ).toEntity()
             }
         )

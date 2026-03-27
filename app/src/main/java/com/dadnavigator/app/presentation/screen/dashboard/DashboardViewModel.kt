@@ -3,16 +3,27 @@ package com.dadnavigator.app.presentation.screen.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dadnavigator.app.R
+import com.dadnavigator.app.domain.model.ActiveContractionState
 import com.dadnavigator.app.domain.model.AppStage
+import com.dadnavigator.app.domain.model.ContractionStats
+import com.dadnavigator.app.domain.model.ContractionTrend
 import com.dadnavigator.app.domain.model.DEFAULT_USER_ID
+import com.dadnavigator.app.domain.model.EmergencyContact
+import com.dadnavigator.app.domain.model.EmergencyContactType
 import com.dadnavigator.app.domain.model.LaborSummary
+import com.dadnavigator.app.domain.model.RecommendationLevel
 import com.dadnavigator.app.domain.model.Settings
 import com.dadnavigator.app.domain.model.TimelineEvent
 import com.dadnavigator.app.domain.service.HomeContentBuilder
 import com.dadnavigator.app.domain.usecase.checklist.ObserveChecklistsUseCase
+import com.dadnavigator.app.domain.usecase.contraction.CalculateContractionStatsUseCase
 import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedUseCase
+import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedResult
 import com.dadnavigator.app.domain.service.StageManager
+import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionResult
+import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionUseCase
+import com.dadnavigator.app.domain.usecase.emergency.ObserveEmergencyContactsUseCase
 import com.dadnavigator.app.domain.usecase.settings.ObserveSettingsUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveLaborSummaryUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveTimelineUseCase
@@ -46,13 +57,17 @@ class DashboardViewModel @Inject constructor(
     private val observeChecklistsUseCase: ObserveChecklistsUseCase,
     private val observeTimelineUseCase: ObserveTimelineUseCase,
     private val observeLaborSummaryUseCase: ObserveLaborSummaryUseCase,
+    private val observeEmergencyContactsUseCase: ObserveEmergencyContactsUseCase,
     private val markLaborStartedUseCase: MarkLaborStartedUseCase,
+    private val toggleContractionUseCase: ToggleContractionUseCase,
+    private val calculateContractionStatsUseCase: CalculateContractionStatsUseCase,
     private val homeContentBuilder: HomeContentBuilder,
     private val stageManager: StageManager,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     private val userIdState = MutableStateFlow(DEFAULT_USER_ID)
+    private val infoState = MutableStateFlow<Int?>(null)
     private val errorState = MutableStateFlow<Int?>(null)
 
     private val ticker = flow {
@@ -73,7 +88,7 @@ class DashboardViewModel @Inject constructor(
             ) { settings, contractionState, waterBreakEvent, checklists, timeline ->
                 DashboardBaseState(
                     settings = settings,
-                    hasActiveContractionSession = contractionState.session?.isActive == true,
+                    contractionState = contractionState,
                     isWaterBreakActive = waterBreakEvent?.isActive == true,
                     stageChecklistCompleted = checklists
                         .filter { it.checklist.stage == settings.appStage }
@@ -81,17 +96,25 @@ class DashboardViewModel @Inject constructor(
                     stageChecklistTotal = checklists
                         .filter { it.checklist.stage == settings.appStage }
                         .sumOf { it.totalCount },
-                    recentEvents = timeline.take(4)
+                    recentEvents = timeline.take(4),
+                    contacts = emptyList()
                 )
+            }
+            val dashboardBaseWithContacts = combine(
+                dashboardBase,
+                observeEmergencyContactsUseCase()
+            ) { base, contacts ->
+                base.copy(contacts = contacts)
             }
 
             combine(
-                dashboardBase,
+                dashboardBaseWithContacts,
                 observeActiveWaterBreakUseCase(userId),
                 observeLaborSummaryUseCase(userId),
                 ticker
             ) { base, waterBreakEvent, laborSummary, now ->
                 val settings = base.settings
+                val contractionStats = calculateContractionStatsUseCase(base.contractionState.contractions)
                 val stageInfo = stageManager.buildStageInfo(
                     settings = settings,
                     laborSummary = laborSummary,
@@ -101,7 +124,7 @@ class DashboardViewModel @Inject constructor(
                     settings = settings,
                     stageInfo = stageInfo,
                     laborSummary = laborSummary,
-                    hasActiveContractionSession = base.hasActiveContractionSession,
+                    hasActiveContractionSession = base.contractionState.session?.isActive == true,
                     hasActiveWaterBreak = base.isWaterBreakActive
                 )
                 DashboardUiState(
@@ -109,7 +132,18 @@ class DashboardViewModel @Inject constructor(
                     appStage = settings.appStage,
                     dueDate = settings.dueDate,
                     daysUntilDueDate = stageInfo.daysUntilDueDate,
-                    hasActiveContractionSession = base.hasActiveContractionSession,
+                    hasActiveContractionSession = base.contractionState.session?.isActive == true,
+                    contractionSessionId = base.contractionState.session?.id,
+                    activeContractionId = base.contractionState.activeContraction?.id,
+                    isContractionRunning = base.contractionState.activeContraction != null,
+                    currentContractionDuration = base.contractionState.activeContraction?.let {
+                        Duration.between(it.startedAt, now)
+                    } ?: Duration.ZERO,
+                    currentInterval = currentInterval(
+                        contractionState = base.contractionState,
+                        now = now
+                    ),
+                    contractionStats = contractionStats,
                     hasActiveWaterBreak = base.isWaterBreakActive,
                     waterBreakElapsed = waterBreakEvent?.elapsed(now),
                     laborSummary = laborSummary,
@@ -118,11 +152,19 @@ class DashboardViewModel @Inject constructor(
                     recentEvents = base.recentEvents,
                     showDueDateReminder = homeContent.showDueDateReminder,
                     showContractionShortcut = homeContent.showContractionShortcut,
+                    showLiveContractionBlock = homeContent.showLiveContractionBlock,
                     showWaterBreakShortcut = homeContent.showWaterBreakShortcut,
                     showBirthDetailsCard = homeContent.showBirthDetailsCard,
                     checklistFirst = homeContent.checklistFirst,
+                    showLaborQuickActions = homeContent.showLaborQuickActions,
+                    hospitalPhone = base.contacts.firstPhone(EmergencyContactType.HOSPITAL),
+                    doctorPhone = base.contacts.firstPhone(EmergencyContactType.DOCTOR),
+                    hospitalAddress = base.contacts.firstAddress(EmergencyContactType.HOSPITAL),
+                    infoRes = null,
                     errorRes = null
                 )
+            }.combine(infoState) { partial, infoRes ->
+                partial.copy(infoRes = infoRes)
             }.combine(errorState) { partial, errorRes ->
                 partial.copy(errorRes = errorRes)
             }
@@ -145,11 +187,44 @@ class DashboardViewModel @Inject constructor(
 
         viewModelScope.launch(ioDispatcher) {
             runCatching {
-                markLaborStartedUseCase(
+                when (markLaborStartedUseCase(
                     userId = userId,
                     eventTitle = eventTitle,
                     eventDescription = eventDescription
-                )
+                )) {
+                    MarkLaborStartedResult.Started -> {
+                        infoState.value = R.string.events_labor_started_saved
+                    }
+                    MarkLaborStartedResult.AlreadyStarted -> {
+                        infoState.value = R.string.events_labor_started_already_saved
+                    }
+                    MarkLaborStartedResult.BlockedAfterBirth -> {
+                        infoState.value = R.string.events_labor_start_blocked_after_birth
+                    }
+                }
+            }.onFailure {
+                errorState.value = R.string.error_generic
+            }
+        }
+    }
+
+    fun toggleContraction() {
+        val userId = userIdState.value
+        val currentState = uiState.value
+        if (userId.isBlank()) return
+
+        viewModelScope.launch(ioDispatcher) {
+            runCatching {
+                infoState.value = when (
+                    toggleContractionUseCase(
+                        userId = userId,
+                        sessionId = currentState.contractionSessionId,
+                        activeContractionId = currentState.activeContractionId
+                    )
+                ) {
+                    ToggleContractionResult.Started -> R.string.events_contraction_started
+                    ToggleContractionResult.Stopped -> R.string.events_contraction_stopped
+                }
             }.onFailure {
                 errorState.value = R.string.error_generic
             }
@@ -157,6 +232,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun dismissError() {
+        infoState.value = null
         errorState.value = null
     }
 }
@@ -167,6 +243,19 @@ data class DashboardUiState(
     val dueDate: LocalDate? = null,
     val daysUntilDueDate: Long? = null,
     val hasActiveContractionSession: Boolean = false,
+    val contractionSessionId: Long? = null,
+    val activeContractionId: Long? = null,
+    val isContractionRunning: Boolean = false,
+    val currentContractionDuration: Duration = Duration.ZERO,
+    val currentInterval: Duration? = null,
+    val contractionStats: ContractionStats = ContractionStats(
+        count = 0,
+        averageDuration = null,
+        averageInterval = null,
+        lastInterval = null,
+        trend = ContractionTrend.INSUFFICIENT_DATA,
+        recommendationLevel = RecommendationLevel.MONITOR
+    ),
     val hasActiveWaterBreak: Boolean = false,
     val waterBreakElapsed: Duration? = null,
     val laborSummary: LaborSummary = LaborSummary(
@@ -181,17 +270,52 @@ data class DashboardUiState(
     val recentEvents: List<TimelineEvent> = emptyList(),
     val showDueDateReminder: Boolean = true,
     val showContractionShortcut: Boolean = false,
+    val showLiveContractionBlock: Boolean = false,
     val showWaterBreakShortcut: Boolean = false,
     val showBirthDetailsCard: Boolean = false,
     val checklistFirst: Boolean = true,
+    val showLaborQuickActions: Boolean = false,
+    val hospitalPhone: String = "",
+    val doctorPhone: String = "",
+    val hospitalAddress: String = "",
+    val infoRes: Int? = null,
     val errorRes: Int? = null
 )
 
 private data class DashboardBaseState(
     val settings: Settings,
-    val hasActiveContractionSession: Boolean,
+    val contractionState: ActiveContractionState,
     val isWaterBreakActive: Boolean,
     val stageChecklistCompleted: Int,
     val stageChecklistTotal: Int,
-    val recentEvents: List<TimelineEvent>
+    val recentEvents: List<TimelineEvent>,
+    val contacts: List<EmergencyContact>
 )
+
+private fun currentInterval(
+    contractionState: ActiveContractionState,
+    now: Instant
+): Duration? {
+    val sortedContractions = contractionState.contractions.sortedBy { it.startedAt }
+    val activeContraction = contractionState.activeContraction
+
+    return when {
+        activeContraction != null -> {
+            sortedContractions
+                .filterNot { it.id == activeContraction.id }
+                .lastOrNull()
+                ?.let { previous -> Duration.between(previous.startedAt, activeContraction.startedAt) }
+        }
+
+        sortedContractions.isNotEmpty() -> Duration.between(sortedContractions.last().startedAt, now)
+        else -> null
+    }
+}
+
+private fun List<EmergencyContact>.firstPhone(type: EmergencyContactType): String {
+    return firstOrNull { it.type == type }?.phone.orEmpty()
+}
+
+private fun List<EmergencyContact>.firstAddress(type: EmergencyContactType): String {
+    return firstOrNull { it.type == type }?.address.orEmpty()
+}

@@ -1,6 +1,5 @@
 package com.dadnavigator.app.domain.usecase.labor
 
-import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.LaborSummary
 import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.domain.repository.LaborRepository
@@ -25,8 +24,12 @@ class MarkLaborStartedUseCase @Inject constructor(
         eventTitle: String,
         eventDescription: String = "",
         timestamp: Instant = Instant.now()
-    ) {
+    ): MarkLaborStartedResult {
         val currentSummary = laborRepository.observeLaborSummary(userId).first()
+        if (currentSummary.birthTime != null) {
+            return MarkLaborStartedResult.BlockedAfterBirth
+        }
+
         val settings = settingsRepository.observeSettings().first()
         settingsRepository.saveSettings(
             settings.copy(appStage = stageTransitionManager.laborStarted(currentSummary))
@@ -43,6 +46,15 @@ class MarkLaborStartedUseCase @Inject constructor(
                 description = eventDescription.trim(),
                 type = TimelineType.LABOR
             )
+            return MarkLaborStartedResult.Started
         }
+
+        return MarkLaborStartedResult.AlreadyStarted
     }
+}
+
+enum class MarkLaborStartedResult {
+    Started,
+    AlreadyStarted,
+    BlockedAfterBirth
 }

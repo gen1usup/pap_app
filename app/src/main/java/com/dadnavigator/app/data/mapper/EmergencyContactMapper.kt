@@ -8,16 +8,21 @@ import com.dadnavigator.app.domain.model.EmergencyContactType
  * Maps emergency contact storage model.
  */
 fun EmergencyContactEntity.toDomain(): EmergencyContact = EmergencyContact(
-    type = runCatching { EmergencyContactType.valueOf(type) }
-        .getOrDefault(EmergencyContactType.TRUSTED_PERSON),
+    id = id,
+    type = EmergencyContactType.fromStorage(type),
     title = title,
     phone = phone,
-    sortOrder = sortOrder
+    address = address,
+    sortOrder = sortOrder,
+    isDefault = isDefault
 )
 
 fun EmergencyContact.toEntity(): EmergencyContactEntity = EmergencyContactEntity(
+    id = id,
     type = type.name,
     title = title,
     phone = phone,
-    sortOrder = sortOrder
+    address = address,
+    sortOrder = sortOrder,
+    isDefault = isDefault
 )

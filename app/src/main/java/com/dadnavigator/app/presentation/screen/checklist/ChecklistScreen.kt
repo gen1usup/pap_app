@@ -3,7 +3,9 @@ package com.dadnavigator.app.presentation.screen.checklist
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,14 +14,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddTask
 import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.PlaylistAdd
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -30,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dadnavigator.app.R
 import com.dadnavigator.app.core.ui.DadTheme
 import com.dadnavigator.app.domain.model.AppStage
+import com.dadnavigator.app.domain.model.Checklist
 import com.dadnavigator.app.domain.model.ChecklistWithItems
 import com.dadnavigator.app.presentation.component.ChecklistItem
 import com.dadnavigator.app.presentation.component.EmptyState
@@ -37,6 +46,7 @@ import com.dadnavigator.app.presentation.component.InfoCard
 import com.dadnavigator.app.presentation.component.PrimaryButton
 import com.dadnavigator.app.presentation.component.ScreenBackground
 import com.dadnavigator.app.presentation.component.ScreenScaffold
+import com.dadnavigator.app.presentation.component.SecondaryButton
 import com.dadnavigator.app.presentation.component.TimelineActionButton
 
 @Composable
@@ -53,12 +63,13 @@ fun ChecklistScreen(
 
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val snackbarHostState = remember { SnackbarHostState() }
-    val errorMessage = state.errorRes?.let { stringResource(id = it) }
+    val message = state.errorRes?.let { stringResource(id = it) }
+        ?: state.infoRes?.let { stringResource(id = it) }
 
-    LaunchedEffect(errorMessage) {
-        if (errorMessage != null) {
-            snackbarHostState.showSnackbar(errorMessage)
-            viewModel.dismissError()
+    LaunchedEffect(message) {
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
+            viewModel.dismissMessages()
         }
     }
 
@@ -69,8 +80,18 @@ fun ChecklistScreen(
         onMenu = onMenu,
         onOpenTimeline = onOpenTimeline,
         onStageSelected = viewModel::selectStage,
-        onDraftChanged = viewModel::updateDraft,
+        onNewChecklistTitleChanged = viewModel::updateNewChecklistTitle,
+        onCreateChecklist = viewModel::createChecklist,
+        onOpenRenameDialog = viewModel::openRenameDialog,
+        onRenameDraftChanged = viewModel::updateRenameDraft,
+        onConfirmRename = viewModel::renameChecklist,
+        onDismissRename = viewModel::dismissRenameDialog,
+        onRequestDeleteChecklist = viewModel::requestDeleteChecklist,
+        onConfirmDeleteChecklist = viewModel::confirmDeleteChecklist,
+        onDismissDeleteDialog = viewModel::dismissDeleteDialog,
+        onDraftChanged = viewModel::updateItemDraft,
         onAddItem = viewModel::addItem,
+        onDeleteItem = viewModel::deleteItem,
         onCheckedChanged = viewModel::setItemChecked
     )
 }
@@ -84,14 +105,74 @@ private fun ChecklistContent(
     onMenu: (() -> Unit)?,
     onOpenTimeline: (() -> Unit)?,
     onStageSelected: (AppStage) -> Unit,
+    onNewChecklistTitleChanged: (String) -> Unit,
+    onCreateChecklist: () -> Unit,
+    onOpenRenameDialog: (Checklist) -> Unit,
+    onRenameDraftChanged: (String) -> Unit,
+    onConfirmRename: () -> Unit,
+    onDismissRename: () -> Unit,
+    onRequestDeleteChecklist: (Checklist) -> Unit,
+    onConfirmDeleteChecklist: () -> Unit,
+    onDismissDeleteDialog: () -> Unit,
     onDraftChanged: (Long, String) -> Unit,
     onAddItem: (Long) -> Unit,
+    onDeleteItem: (Long) -> Unit,
     onCheckedChanged: (Long, Boolean) -> Unit
 ) {
     val spacing = DadTheme.spacing
     val completed = state.checklists.sumOf { it.completedCount }
     val total = state.checklists.sumOf { it.totalCount }
     val progress = if (total == 0) 0f else completed.toFloat() / total.toFloat()
+
+    state.renameTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = onDismissRename,
+            title = { Text(text = stringResource(id = R.string.checklist_rename_title)) },
+            text = {
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = state.renameDraft,
+                    onValueChange = onRenameDraftChanged,
+                    label = { Text(text = stringResource(id = R.string.checklist_name_label)) }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = onConfirmRename) {
+                    Text(text = stringResource(id = R.string.action_save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissRename) {
+                    Text(text = stringResource(id = R.string.action_cancel))
+                }
+            }
+        )
+    }
+
+    state.deleteTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = onDismissDeleteDialog,
+            title = { Text(text = stringResource(id = R.string.checklist_delete_title)) },
+            text = {
+                Text(
+                    text = stringResource(
+                        id = R.string.checklist_delete_message,
+                        target.title
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = onConfirmDeleteChecklist) {
+                    Text(text = stringResource(id = R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissDeleteDialog) {
+                    Text(text = stringResource(id = R.string.action_cancel))
+                }
+            }
+        )
+    }
 
     ScreenScaffold(
         title = stringResource(id = R.string.checklist_title),
@@ -125,7 +206,7 @@ private fun ChecklistContent(
                         overline = stringResource(id = R.string.checklist_summary_overline)
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
-                            androidx.compose.foundation.layout.FlowRow(
+                            FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(spacing.sm),
                                 verticalArrangement = Arrangement.spacedBy(spacing.sm)
                             ) {
@@ -145,11 +226,35 @@ private fun ChecklistContent(
                     }
                 }
 
+                item {
+                    InfoCard(
+                        title = stringResource(id = R.string.checklist_create_title),
+                        description = stringResource(
+                            id = R.string.checklist_create_description,
+                            stringResource(id = stageLabelRes(state.selectedStage))
+                        ),
+                        icon = Icons.Outlined.PlaylistAdd
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = state.newChecklistTitle,
+                                onValueChange = onNewChecklistTitleChanged,
+                                label = { Text(text = stringResource(id = R.string.checklist_name_label)) }
+                            )
+                            PrimaryButton(
+                                text = stringResource(id = R.string.checklist_create_action),
+                                onClick = onCreateChecklist
+                            )
+                        }
+                    }
+                }
+
                 if (state.checklists.isEmpty()) {
                     item {
                         EmptyState(
                             title = stringResource(id = R.string.empty_state_title),
-                            description = stringResource(id = R.string.no_items),
+                            description = stringResource(id = R.string.checklist_empty_stage),
                             icon = Icons.Outlined.AddTask
                         )
                     }
@@ -166,10 +271,17 @@ private fun ChecklistContent(
                         items(checklists, key = { it.checklist.id }) { checklistWithItems ->
                             ChecklistGroupCard(
                                 checklist = checklistWithItems,
-                                draft = state.drafts[checklistWithItems.checklist.id].orEmpty(),
+                                draft = state.itemDrafts[checklistWithItems.checklist.id].orEmpty(),
                                 onDraftChanged = { onDraftChanged(checklistWithItems.checklist.id, it) },
                                 onAddItem = { onAddItem(checklistWithItems.checklist.id) },
-                                onCheckedChanged = onCheckedChanged
+                                onDeleteItem = onDeleteItem,
+                                onCheckedChanged = onCheckedChanged,
+                                onRenameChecklist = {
+                                    onOpenRenameDialog(checklistWithItems.checklist)
+                                },
+                                onDeleteChecklist = {
+                                    onRequestDeleteChecklist(checklistWithItems.checklist)
+                                }
                             )
                         }
                     }
@@ -185,7 +297,10 @@ private fun ChecklistGroupCard(
     draft: String,
     onDraftChanged: (String) -> Unit,
     onAddItem: () -> Unit,
-    onCheckedChanged: (Long, Boolean) -> Unit
+    onDeleteItem: (Long) -> Unit,
+    onCheckedChanged: (Long, Boolean) -> Unit,
+    onRenameChecklist: () -> Unit,
+    onDeleteChecklist: () -> Unit
 ) {
     val spacing = DadTheme.spacing
     val progress = if (checklist.totalCount == 0) 0f else {
@@ -202,10 +317,45 @@ private fun ChecklistGroupCard(
             modifier = Modifier.padding(spacing.lg),
             verticalArrangement = Arrangement.spacedBy(spacing.md)
         ) {
-            Text(
-                text = checklist.checklist.title,
-                style = MaterialTheme.typography.titleLarge
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm)
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(spacing.xs)
+                ) {
+                    Text(
+                        text = checklist.checklist.title,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        text = if (checklist.checklist.isSystem) {
+                            stringResource(id = R.string.checklist_system_label)
+                        } else {
+                            stringResource(id = R.string.checklist_custom_label)
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (!checklist.checklist.isSystem) {
+                    TextButton(onClick = onRenameChecklist) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = null
+                        )
+                        Text(text = stringResource(id = R.string.action_edit))
+                    }
+                    TextButton(onClick = onDeleteChecklist) {
+                        Icon(
+                            imageVector = Icons.Outlined.DeleteOutline,
+                            contentDescription = null
+                        )
+                        Text(text = stringResource(id = R.string.action_delete))
+                    }
+                }
+            }
             Text(
                 text = stringResource(
                     id = R.string.checklist_progress,
@@ -223,7 +373,8 @@ private fun ChecklistGroupCard(
                 ChecklistItem(
                     title = item.text,
                     checked = item.isChecked,
-                    onCheckedChange = { checked -> onCheckedChanged(item.id, checked) }
+                    onCheckedChange = { checked -> onCheckedChanged(item.id, checked) },
+                    onDelete = { onDeleteItem(item.id) }
                 )
             }
             OutlinedTextField(
@@ -232,7 +383,7 @@ private fun ChecklistGroupCard(
                 onValueChange = onDraftChanged,
                 label = { Text(text = stringResource(id = R.string.custom_item_hint)) }
             )
-            PrimaryButton(
+            SecondaryButton(
                 text = stringResource(id = R.string.add_item),
                 onClick = onAddItem
             )

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.dadnavigator.app.data.local.entity.EmergencyContactEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -13,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface EmergencyContactDao {
 
-    @Query("SELECT * FROM emergency_contacts ORDER BY sortOrder ASC")
+    @Query("SELECT * FROM emergency_contacts ORDER BY sortOrder ASC, id ASC")
     fun observeContacts(): Flow<List<EmergencyContactEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -24,4 +25,10 @@ interface EmergencyContactDao {
 
     @Query("DELETE FROM emergency_contacts")
     suspend fun clearContacts()
+
+    @Transaction
+    suspend fun replaceContacts(contacts: List<EmergencyContactEntity>) {
+        clearContacts()
+        upsertContacts(contacts)
+    }
 }

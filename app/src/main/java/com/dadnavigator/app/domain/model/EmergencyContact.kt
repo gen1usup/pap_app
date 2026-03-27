@@ -1,24 +1,40 @@
 package com.dadnavigator.app.domain.model
 
 /**
- * Fixed contact slots for emergency and logistics flows.
+ * Contact role used by quick actions and emergency flows.
  */
 enum class EmergencyContactType {
-    AMBULANCE,
-    MATERNITY_HOSPITAL,
+    EMERGENCY,
+    WIFE,
     DOCTOR,
-    MIDWIFE,
-    TRUSTED_PERSON,
-    PARTNER,
-    TAXI
+    HOSPITAL,
+    TAXI,
+    RELATIVE,
+    CUSTOM;
+
+    companion object {
+        fun fromStorage(value: String): EmergencyContactType = when (value) {
+            "EMERGENCY", "AMBULANCE" -> EMERGENCY
+            "HOSPITAL", "MATERNITY_HOSPITAL" -> HOSPITAL
+            "WIFE", "PARTNER" -> WIFE
+            "DOCTOR" -> DOCTOR
+            "TAXI" -> TAXI
+            "RELATIVE", "MIDWIFE", "TRUSTED_PERSON" -> RELATIVE
+            "CUSTOM" -> CUSTOM
+            else -> CUSTOM
+        }
+    }
 }
 
 /**
- * Editable emergency contact stored locally for fast access.
+ * Editable emergency or logistics contact stored locally for fast access.
  */
 data class EmergencyContact(
+    val id: Long,
     val type: EmergencyContactType,
     val title: String,
     val phone: String,
-    val sortOrder: Int
+    val address: String,
+    val sortOrder: Int,
+    val isDefault: Boolean
 )

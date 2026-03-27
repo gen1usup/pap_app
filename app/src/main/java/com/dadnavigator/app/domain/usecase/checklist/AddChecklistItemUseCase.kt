@@ -11,6 +11,6 @@ class AddChecklistItemUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(userId: String, checklistId: Long, text: String) {
         if (text.isBlank()) return
-        checklistRepository.addCustomItem(userId, checklistId, text.trim())
+        checklistRepository.addChecklistItem(userId, checklistId, text.trim())
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dadnavigator.app.R
@@ -26,6 +27,7 @@ import com.dadnavigator.app.domain.model.AppStage
 internal fun AppDrawerContent(
     currentRoute: String?,
     currentStage: AppStage,
+    birthRecorded: Boolean,
     onStageSelected: (AppStage) -> Unit,
     onServiceSelected: (AppDestination) -> Unit
 ) {
@@ -48,10 +50,18 @@ internal fun AppDrawerContent(
         }
 
         AppStage.entries.forEach { stage ->
+            val enabled = !birthRecorded || stage !in setOf(
+                AppStage.PREPARING,
+                AppStage.CONTRACTIONS
+            )
             NavigationDrawerItem(
                 label = { Text(text = stringResource(id = stageLabelRes(stage))) },
                 selected = currentRoute == AppDestination.StageDetails.routeFor(stage),
-                onClick = { onStageSelected(stage) },
+                onClick = {
+                    if (enabled) {
+                        onStageSelected(stage)
+                    }
+                },
                 icon = {
                     Icon(
                         imageVector = stageIcon(stage),
@@ -65,7 +75,9 @@ internal fun AppDrawerContent(
                         }
                     }
                 },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier
+                    .alpha(if (enabled) 1f else 0.5f)
+                    .padding(NavigationDrawerItemDefaults.ItemPadding)
             )
         }
 

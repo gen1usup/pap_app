@@ -1,153 +1,176 @@
-﻿# Структура локального хранения
+﻿# Структура данных
 
-## Общая модель
+## 1. Технологии хранения
 
-Приложение использует два локальных источника:
+Приложение использует:
 
-- `Room` — основная оффлайн-база событий и доменных записей;
-- `DataStore` — текущие пользовательские настройки и app-level state.
+- `Room` для событий, истории, чек-листов, labor summary, трекеров и контактов
+- `DataStore` для пользовательских настроек и app-level stage
 
-## Room
+## 2. Room database
 
-### База
+Главная база: [AppDatabase.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/data/local/AppDatabase.kt)
 
-- файл базы: `dad_navigator.db`
-- текущая версия схемы: `4`
-- база описана в [AppDatabase.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/data/local/AppDatabase.kt)
+Актуальная версия схемы: `6`
 
-### Таблицы
+Ключевые миграции описаны в [DatabaseModule.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/di/DatabaseModule.kt).
 
-#### `users`
+## 3. Основные таблицы
 
-Назначение:
+### `contraction_sessions`
 
-- базовый локальный профиль пользователя.
+Хранит сессии схваток.
 
 Ключевые поля:
 
 - `id`
-- `displayName`
+- `userId`
+- `startedAt`
+- `endedAt`
+
+### `contractions`
+
+Хранит отдельные схватки внутри сессии.
+
+Ключевые поля:
+
+- `id`
+- `sessionId`
+- `userId`
+- `startedAt`
+- `endedAt`
+
+### `water_break_events`
+
+Хранит события вод.
+
+Ключевые поля:
+
+- `id`
+- `userId`
+- `startedAt`
+- `endedAt`
+- `color`
+- `note`
+
+### `timeline_events`
+
+Хранит журнал событий.
+
+Ключевые поля:
+
+- `id`
+- `userId`
+- `type`
+- `title`
+- `description`
+- `occurredAt`
+
+Типы включают как milestone-события, так и stage-specific notes.
+
+### `checklists`
+
+Хранит корневые списки.
+
+Ключевые поля:
+
+- `id`
+- `userId`
+- `title`
+- `stage`
+- `category`
+- `isSystem`
+- `sortOrder`
 - `createdAt`
 
-#### `settings`
+### `checklist_items`
 
-Назначение:
+Хранит пункты чек-листов.
 
-- snapshot настроек для локальной согласованности и миграций.
+Ключевые поля:
+
+- `id`
+- `checklistId`
+- `userId`
+- `text`
+- `note`
+- `quantity`
+- `priority`
+- `metadataJson`
+- `isChecked`
+- `createdAt`
+
+Расширенные поля уже добавлены для будущего richer item model.
+
+### `labor_summary`
+
+Хранит агрегированное состояние родового / послеродового сценария.
 
 Ключевые поля:
 
 - `userId`
-- `themeMode`
-- `fatherName`
-- `dueDateEpochDay`
-- `maternityHospitalAddress`
-- `notificationsEnabled`
-- `appStage`
-- `updatedAt`
-
-#### `labor_summary`
-
-Назначение:
-
-- агрегированные данные о родах и ребенке.
-
-Ключевые поля:
-
 - `laborStartTime`
 - `birthTime`
 - `babyName`
 - `birthWeightGrams`
 - `birthHeightCm`
 
-#### `contraction_sessions`
+### `emergency_contacts`
 
-Назначение:
+Хранит пользовательские контакты.
 
-- одна пользовательская сессия отслеживания схваток.
+Ключевые поля:
 
-#### `contractions`
-
-Назначение:
-
-- отдельные схватки внутри сессии.
-
-#### `water_break_events`
-
-Назначение:
-
-- события отхождения вод и их состояние.
-
-#### `timeline_events`
-
-Назначение:
-
-- единый журнал важных событий и ручных записей.
-
-#### `checklists`
-
-Назначение:
-
-- заголовки и metadata чек-листов.
-
-Ключевые поля включают:
-
-- `stage`
-- `category`
+- `id`
+- `type`
 - `title`
-- признак системного списка
+- `phone`
+- `address`
+- `sortOrder`
+- `isDefault`
 
-#### `checklist_items`
+Поддерживаются роли:
 
-Назначение:
+- `EMERGENCY`
+- `WIFE`
+- `DOCTOR`
+- `HOSPITAL`
+- `TAXI`
+- `RELATIVE`
+- `CUSTOM`
 
-- пункты чек-листа и их состояние.
+## 4. DataStore settings
 
-#### `feeding_logs`, `diaper_logs`, `sleep_logs`, `notes`
+Основная модель: [Settings.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/model/Settings.kt)
 
-Назначение:
-
-- данные послеродовых трекеров.
-
-#### `emergency_contacts`
-
-Назначение:
-
-- локальные контакты для звонков и экстренных сценариев.
-
-## DataStore
-
-DataStore хранит текущие значения настроек пользователя.
-
-Ключевые значения:
+Ключевые поля:
 
 - `userId`
 - `themeMode`
 - `fatherName`
 - `dueDate`
-- `maternityHospitalAddress`
 - `notificationsEnabled`
 - `appStage`
+- `maternityHospitalAddress`
 
-## Совместимость этапов
+Важно:
 
-При чтении строкового значения этапа используется совместимость со старой моделью:
+- поле `maternityHospitalAddress` оставлено для совместимости старых данных
+- фактический маршрут и адрес роддома теперь берутся из `emergency_contacts`
 
-- `PREPARING -> PREPARING`
-- `LABOR -> CONTRACTIONS`
-- `AFTER_BIRTH -> AT_HOME`
-- `AT_HOSPITAL -> AT_HOSPITAL`
-- `AT_HOME -> AT_HOME`
+## 5. Совместимость и миграции
 
-## Почему используется и Room, и DataStore
+Актуальные migration paths:
 
-`DataStore` нужен для простого и реактивного хранения настроек.
+- `1 -> 3`
+- `2 -> 3`
+- `3 -> 4`
+- `4 -> 5`
+- `5 -> 6`
+- `4 -> 6`
 
-`Room` нужен для:
+Что делают последние миграции:
 
-- событийной истории;
-- сложных выборок;
-- отношений сущностей;
-- стабильного оффлайн-first сценария.
-
-Такой split позволяет не смешивать длинную историю и lightweight настройки в одном механизме.
+- `4 -> 5` добавляет расширенные поля в `checklist_items`
+- `5 -> 6` переводит `emergency_contacts` на динамическую модель с `id`, `address` и `isDefault`
+- `4 -> 6` обеспечивает прямой безопасный upgrade-path для уже существующих установок

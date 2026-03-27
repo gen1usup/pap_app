@@ -14,6 +14,7 @@ data class SettingsUiState(
     val notificationsEnabled: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val appStage: AppStage = AppStage.PREPARING,
+    val birthRecorded: Boolean = false,
     val dueDateErrorRes: Int? = null,
     val showResetDialog: Boolean = false,
     val infoRes: Int? = null,

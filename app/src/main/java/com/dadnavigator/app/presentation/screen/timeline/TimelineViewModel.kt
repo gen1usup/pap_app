@@ -28,18 +28,18 @@ class TimelineViewModel @Inject constructor(
 
     private val userIdState = MutableStateFlow("")
     private val filterState = MutableStateFlow(TimelineFilter.ALL)
+    private val expandedEventIdsState = MutableStateFlow<Set<Long>>(emptySet())
     private val formState = MutableStateFlow(TimelineFormState())
     private val infoState = MutableStateFlow<Int?>(null)
     private val errorState = MutableStateFlow<Int?>(null)
 
     val uiState = userIdState.flatMapLatest { userId ->
-        combine(
+        val timelineBase = combine(
             observeTimelineUseCase(userId),
             filterState,
-            formState,
-            infoState,
-            errorState
-        ) { events, filter, form, infoRes, errorRes ->
+            expandedEventIdsState,
+            formState
+        ) { events, filter, expandedEventIds, form ->
             TimelineUiState(
                 filter = filter,
                 events = when (filter) {
@@ -48,23 +48,33 @@ class TimelineViewModel @Inject constructor(
                         it.type == TimelineType.LABOR ||
                             it.type == TimelineType.BIRTH ||
                             it.type == TimelineType.CONTRACTION ||
-                            it.type == TimelineType.WATER_BREAK
+                            it.type == TimelineType.WATER_BREAK ||
+                            it.type == TimelineType.LABOR_NOTE ||
+                            it.type == TimelineType.HOSPITAL_NOTE ||
+                            it.type == TimelineType.NOTE
                     }
                     TimelineFilter.POSTPARTUM -> events.filter {
                         it.type == TimelineType.FEEDING ||
                             it.type == TimelineType.DIAPER ||
                             it.type == TimelineType.SLEEP ||
+                            it.type == TimelineType.HOME_NOTE ||
                             it.type == TimelineType.NOTE
                     }
                 },
+                expandedEventIds = expandedEventIds,
                 showAddSheet = form.showAddSheet,
                 selectedType = form.selectedType,
                 draftTitle = form.title,
-                draftDescription = form.description,
-                infoRes = infoRes,
-                errorRes = errorRes
+                draftDescription = form.description
             )
         }
+        timelineBase
+            .combine(infoState) { partial, infoRes ->
+                partial.copy(infoRes = infoRes)
+            }
+            .combine(errorState) { partial, errorRes ->
+                partial.copy(errorRes = errorRes)
+            }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -79,6 +89,12 @@ class TimelineViewModel @Inject constructor(
 
     fun setFilter(filter: TimelineFilter) {
         filterState.value = filter
+    }
+
+    fun toggleExpanded(eventId: Long) {
+        expandedEventIdsState.update { current ->
+            if (eventId in current) current - eventId else current + eventId
+        }
     }
 
     fun showAddSheet() {

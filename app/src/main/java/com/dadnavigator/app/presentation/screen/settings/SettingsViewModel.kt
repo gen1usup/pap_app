@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dadnavigator.app.R
 import com.dadnavigator.app.domain.model.AppStage
+import com.dadnavigator.app.domain.model.DEFAULT_USER_ID
 import com.dadnavigator.app.domain.model.Settings
 import com.dadnavigator.app.domain.model.ThemeMode
+import com.dadnavigator.app.domain.usecase.timeline.ObserveLaborSummaryUseCase
 import com.dadnavigator.app.domain.usecase.settings.ObserveSettingsUseCase
 import com.dadnavigator.app.domain.usecase.settings.ResetAllDataUseCase
 import com.dadnavigator.app.domain.usecase.settings.SaveSettingsUseCase
@@ -20,6 +22,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -29,6 +33,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     observeSettingsUseCase: ObserveSettingsUseCase,
+    observeLaborSummaryUseCase: ObserveLaborSummaryUseCase,
     private val saveSettingsUseCase: SaveSettingsUseCase,
     private val resetAllDataUseCase: ResetAllDataUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
@@ -43,7 +48,12 @@ class SettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            observeSettingsUseCase().collect { settings ->
+            observeSettingsUseCase().flatMapLatest { settings ->
+                val resolvedUserId = settings.userId.ifBlank { DEFAULT_USER_ID }
+                observeLaborSummaryUseCase(resolvedUserId).map { laborSummary ->
+                    settings to laborSummary
+                }
+            }.collect { (settings, laborSummary) ->
                 _uiState.update {
                     it.copy(
                         userId = settings.userId,
@@ -56,7 +66,8 @@ class SettingsViewModel @Inject constructor(
                         maternityHospitalAddress = settings.maternityHospitalAddress,
                         notificationsEnabled = settings.notificationsEnabled,
                         themeMode = settings.themeMode,
-                        appStage = settings.appStage
+                        appStage = settings.appStage,
+                        birthRecorded = laborSummary.birthTime != null
                     )
                 }
             }
@@ -102,13 +113,18 @@ class SettingsViewModel @Inject constructor(
                         notificationsEnabled = current.notificationsEnabled,
                         appStage = current.appStage
                     )
-                )
-                _uiState.update {
-                    it.copy(
-                        infoRes = R.string.saved,
-                        errorRes = null,
-                        dueDateErrorRes = null
-                    )
+                ).also { decision ->
+                    _uiState.update {
+                        it.copy(
+                            infoRes = if (decision.blockedByBirthRecord) {
+                                R.string.stage_switch_after_birth_blocked
+                            } else {
+                                R.string.saved
+                            },
+                            errorRes = null,
+                            dueDateErrorRes = null
+                        )
+                    }
                 }
             }.onFailure { error ->
                 if (error is IllegalArgumentException) {
