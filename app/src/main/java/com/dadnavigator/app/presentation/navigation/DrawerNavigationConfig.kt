@@ -4,7 +4,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.ChildCare
-import androidx.compose.material.icons.outlined.Emergency
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.outlined.MonitorHeart
@@ -26,7 +25,6 @@ internal fun stageIcon(stage: AppStage): ImageVector = when (stage) {
 }
 
 internal val drawerServiceDestinations = listOf(
-    DrawerServiceDestinationUi(AppDestination.Sos, Icons.Outlined.Emergency),
     DrawerServiceDestinationUi(AppDestination.EmergencyContacts, Icons.Outlined.Phone),
     DrawerServiceDestinationUi(AppDestination.Help, Icons.AutoMirrored.Outlined.MenuBook),
     DrawerServiceDestinationUi(AppDestination.About, Icons.Outlined.Info),

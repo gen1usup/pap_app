@@ -110,10 +110,7 @@ internal fun AppNavGraph(
             TrackersScreen(userId = userId, onBack = { navController.popBackStack() })
         }
         composable(AppDestination.Help.route) {
-            HelpScreen(
-                onBack = { navController.popBackStack() },
-                onOpenContacts = { navController.navigate(AppDestination.EmergencyContacts.route) }
-            )
+            HelpScreen(onBack = { navController.popBackStack() })
         }
         composable(AppDestination.About.route) {
             AboutScreen(onBack = { navController.popBackStack() })

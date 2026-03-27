@@ -145,22 +145,22 @@ class DeviceScenarioUiTest {
     }
 
     @Test
-    fun helpAndSosRenderCoreScenarioInformation() {
+    fun helpAndContactsRenderCoreScenarioInformation() {
         openDrawer()
         clickText(targetContext.getString(R.string.help_title))
 
-        assertTrue(waitForText(targetContext.getString(R.string.help_contacts_route_title)))
-        assertTrue(waitForText(targetContext.getString(R.string.help_open_contacts)))
+        assertTrue(waitForText(targetContext.getString(R.string.help_title)))
+        assertTrue(waitForText(targetContext.getString(R.string.app_stage_preparing)))
 
         device.pressBack()
         assertTrue(waitForText(targetContext.getString(R.string.dashboard_title)))
 
         openDrawer()
-        clickText(targetContext.getString(R.string.sos_title))
+        clickText(targetContext.getString(R.string.emergency_contacts_title))
 
-        assertTrue(waitForText(targetContext.getString(R.string.sos_call_112)))
-        assertTrue(waitForText(targetContext.getString(R.string.sos_signs_title)))
-        assertTrue(waitForText(targetContext.getString(R.string.sos_manage_contacts)))
+        assertTrue(waitForText(targetContext.getString(R.string.contact_type_ambulance_full)))
+        assertTrue(waitForText(targetContext.getString(R.string.contact_type_maternity)))
+        assertTrue(waitForText(targetContext.getString(R.string.emergency_contacts_add_action)))
     }
 
     private fun openDrawer() {

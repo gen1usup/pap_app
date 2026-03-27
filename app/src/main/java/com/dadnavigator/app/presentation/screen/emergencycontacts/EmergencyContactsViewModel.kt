@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel for editable emergency quick-dial contacts.
+ * ViewModel for manually managed emergency and hospital contacts.
  */
 @HiltViewModel
 class EmergencyContactsViewModel @Inject constructor(
@@ -32,7 +32,7 @@ class EmergencyContactsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(EmergencyContactsUiState())
     val uiState: StateFlow<EmergencyContactsUiState> = _uiState.asStateFlow()
 
-    private var hasLocalChanges = false
+    private var persistedContacts: List<EmergencyContact> = emptyList()
     private var nextTempId = -1L
 
     init {
@@ -41,74 +41,107 @@ class EmergencyContactsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             observeEmergencyContactsUseCase().collect { contacts ->
-                if (!hasLocalChanges || _uiState.value.contacts.isEmpty()) {
+                persistedContacts = contacts.sortedBy { it.sortOrder }
+                if (_uiState.value.dirtyContactIds.isEmpty()) {
                     _uiState.update { current ->
-                        current.copy(contacts = contacts.sortedBy { it.sortOrder })
+                        current.copy(contacts = persistedContacts)
                     }
                 }
             }
         }
     }
 
-    fun addContact(type: EmergencyContactType) {
-        val currentContacts = uiState.value.contacts
-        if (type in singleInstanceTypes && currentContacts.any { it.type == type }) return
-
-        hasLocalChanges = true
+    fun addContact() {
+        val newContact = EmergencyContact(
+            id = nextTempId--,
+            type = EmergencyContactType.CUSTOM,
+            title = "",
+            phone = "",
+            address = "",
+            sortOrder = uiState.value.contacts.size,
+            isDefault = false
+        )
         _uiState.update { current ->
             current.copy(
-                contacts = current.contacts + EmergencyContact(
-                    id = nextTempId--,
-                    type = type,
-                    title = defaultTitle(type),
-                    phone = "",
-                    address = "",
-                    sortOrder = current.contacts.size,
-                    isDefault = false
-                )
+                contacts = (current.contacts + newContact).reindexed(),
+                dirtyContactIds = current.dirtyContactIds + newContact.id,
+                infoRes = null,
+                errorRes = null
             )
         }
     }
 
     fun updateTitle(contactId: Long, value: String) {
-        updateContact(contactId) { it.copy(title = value) }
+        updateContact(contactId) { contact -> contact.copy(title = value) }
     }
 
     fun updatePhone(contactId: Long, value: String) {
-        updateContact(contactId) { it.copy(phone = value) }
+        if (isEmergency(contactId)) return
+        updateContact(contactId) { contact -> contact.copy(phone = value) }
     }
 
     fun updateAddress(contactId: Long, value: String) {
-        updateContact(contactId) { it.copy(address = value) }
+        updateContact(contactId) { contact -> contact.copy(address = value) }
+    }
+
+    fun saveContact(contactId: Long) {
+        val contacts = uiState.value.contacts
+        val contact = contacts.firstOrNull { it.id == contactId } ?: return
+        if (!canSave(contact)) {
+            _uiState.update { it.copy(errorRes = R.string.input_required, infoRes = null) }
+            return
+        }
+
+        viewModelScope.launch(ioDispatcher) {
+            runCatching {
+                val contactsToSave = contacts.reindexed()
+                saveEmergencyContactsUseCase(contactsToSave)
+                _uiState.update { current ->
+                    current.copy(
+                        contacts = contactsToSave,
+                        dirtyContactIds = emptySet(),
+                        infoRes = R.string.saved,
+                        errorRes = null
+                    )
+                }
+            }.onFailure {
+                _uiState.update { it.copy(errorRes = R.string.error_generic, infoRes = null) }
+            }
+        }
     }
 
     fun deleteContact(contactId: Long) {
         val contact = uiState.value.contacts.firstOrNull { it.id == contactId } ?: return
         if (contact.isDefault) return
 
-        hasLocalChanges = true
-        _uiState.update { current ->
-            current.copy(
-                contacts = current.contacts
-                    .filterNot { it.id == contactId }
-                    .mapIndexed { index, item -> item.copy(sortOrder = index) }
-            )
-        }
-    }
+        val remaining = uiState.value.contacts
+            .filterNot { it.id == contactId }
+            .reindexed()
 
-    fun save() {
         viewModelScope.launch(ioDispatcher) {
             runCatching {
-                saveEmergencyContactsUseCase(
-                    uiState.value.contacts
-                        .sortedBy { it.sortOrder }
-                        .mapIndexed { index, contact -> contact.copy(sortOrder = index) }
-                )
-                hasLocalChanges = false
-                _uiState.update { it.copy(infoRes = R.string.saved, errorRes = null) }
+                saveEmergencyContactsUseCase(remaining)
+                _uiState.update {
+                    it.copy(
+                        contacts = remaining,
+                        dirtyContactIds = it.dirtyContactIds - contactId,
+                        infoRes = R.string.saved,
+                        errorRes = null
+                    )
+                }
             }.onFailure {
                 _uiState.update { it.copy(errorRes = R.string.error_generic, infoRes = null) }
             }
+        }
+    }
+
+    fun isDirty(contactId: Long): Boolean = uiState.value.dirtyContactIds.contains(contactId)
+
+    fun canSave(contact: EmergencyContact): Boolean {
+        return when {
+            contact.type == EmergencyContactType.EMERGENCY -> false
+            contact.type == EmergencyContactType.HOSPITAL -> true
+            else -> contact.title.trim().isNotBlank()
         }
     }
 
@@ -120,33 +153,59 @@ class EmergencyContactsViewModel @Inject constructor(
         contactId: Long,
         transform: (EmergencyContact) -> EmergencyContact
     ) {
-        hasLocalChanges = true
         _uiState.update { current ->
-            current.copy(
-                contacts = current.contacts.map { contact ->
-                    if (contact.id == contactId) transform(contact) else contact
+            val updatedContacts = current.contacts.map { contact ->
+                if (contact.id == contactId) {
+                    transform(contact)
+                } else {
+                    contact
                 }
+            }
+            current.copy(
+                contacts = updatedContacts,
+                dirtyContactIds = current.dirtyContactIds.updateDirtyIds(
+                    contactId = contactId,
+                    updatedContacts = updatedContacts,
+                    persistedContacts = persistedContacts
+                ),
+                infoRes = null,
+                errorRes = null
             )
         }
     }
 
-    private fun defaultTitle(type: EmergencyContactType): String = when (type) {
-        EmergencyContactType.EMERGENCY -> "Скорая помощь"
-        EmergencyContactType.WIFE -> "Жена"
-        EmergencyContactType.DOCTOR -> "Врач"
-        EmergencyContactType.HOSPITAL -> "Роддом"
-        EmergencyContactType.TAXI -> "Такси"
-        EmergencyContactType.RELATIVE -> "Родственник"
-        EmergencyContactType.CUSTOM -> "Контакт"
+    private fun Set<Long>.updateDirtyIds(
+        contactId: Long,
+        updatedContacts: List<EmergencyContact>,
+        persistedContacts: List<EmergencyContact>
+    ): Set<Long> {
+        val updated = updatedContacts.firstOrNull { it.id == contactId } ?: return this - contactId
+        val persisted = persistedContacts.firstOrNull { it.id == contactId }
+        val isDirty = persisted == null || updated.normalizedForComparison() != persisted.normalizedForComparison()
+        return if (isDirty) this + contactId else this - contactId
     }
 
-    private companion object {
-        val singleInstanceTypes = setOf(
-            EmergencyContactType.EMERGENCY,
-            EmergencyContactType.WIFE,
-            EmergencyContactType.DOCTOR,
-            EmergencyContactType.HOSPITAL,
-            EmergencyContactType.TAXI
+    private fun List<EmergencyContact>.reindexed(): List<EmergencyContact> {
+        return sortedWith(compareBy<EmergencyContact> { requiredPosition(it) }.thenBy { it.sortOrder }.thenBy { it.id })
+            .mapIndexed { index, contact -> contact.copy(sortOrder = index) }
+    }
+
+    private fun requiredPosition(contact: EmergencyContact): Int = when (contact.type) {
+        EmergencyContactType.EMERGENCY -> 0
+        EmergencyContactType.HOSPITAL -> 1
+        else -> 2
+    }
+
+    private fun EmergencyContact.normalizedForComparison(): EmergencyContact {
+        return copy(
+            title = title.trim(),
+            phone = phone.trim(),
+            address = address.trim(),
+            sortOrder = requiredPosition(this)
         )
+    }
+
+    private fun isEmergency(contactId: Long): Boolean {
+        return uiState.value.contacts.any { it.id == contactId && it.type == EmergencyContactType.EMERGENCY }
     }
 }

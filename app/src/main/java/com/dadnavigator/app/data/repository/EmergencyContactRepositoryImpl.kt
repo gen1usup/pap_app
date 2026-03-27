@@ -22,27 +22,19 @@ class EmergencyContactRepositoryImpl @Inject constructor(
     }
 
     override suspend fun seedContactsIfNeeded() {
-        if (emergencyContactDao.countContacts() > 0) return
+        val currentContacts = emergencyContactDao.getContacts().map { it.toDomain() }
+        val normalized = ensureRequiredContacts(currentContacts)
 
-        emergencyContactDao.replaceContacts(
-            listOf(
-                EmergencyContact(
-                    id = 0,
-                    type = EmergencyContactType.EMERGENCY,
-                    title = "Скорая помощь",
-                    phone = "112",
-                    address = "",
-                    sortOrder = 0,
-                    isDefault = true
-                )
-            ).map { it.toEntity() }
-        )
+        if (currentContacts != normalized) {
+            emergencyContactDao.replaceContacts(normalized.map { it.toEntity() })
+        }
     }
 
     override suspend fun saveContacts(contacts: List<EmergencyContact>) {
         emergencyContactDao.replaceContacts(
-            contacts.sortedBy { it.sortOrder }.mapIndexed { index, contact ->
+            ensureRequiredContacts(contacts).mapIndexed { index, contact ->
                 contact.copy(
+                    id = if (contact.id < 0) 0 else contact.id,
                     title = contact.title.trim(),
                     phone = contact.phone.trim(),
                     address = contact.address.trim(),
@@ -50,5 +42,51 @@ class EmergencyContactRepositoryImpl @Inject constructor(
                 ).toEntity()
             }
         )
+    }
+
+    private fun ensureRequiredContacts(contacts: List<EmergencyContact>): List<EmergencyContact> {
+        val emergency = contacts.firstOrNull { it.type == EmergencyContactType.EMERGENCY }?.copy(
+            title = EMERGENCY_TITLE,
+            phone = EMERGENCY_PHONE,
+            address = "",
+            isDefault = true
+        ) ?: EmergencyContact(
+            id = 0,
+            type = EmergencyContactType.EMERGENCY,
+            title = EMERGENCY_TITLE,
+            phone = EMERGENCY_PHONE,
+            address = "",
+            sortOrder = 0,
+            isDefault = true
+        )
+        val hospital = contacts.firstOrNull { it.type == EmergencyContactType.HOSPITAL }?.copy(
+            title = HOSPITAL_TITLE,
+            isDefault = true
+        ) ?: EmergencyContact(
+            id = 0,
+            type = EmergencyContactType.HOSPITAL,
+            title = HOSPITAL_TITLE,
+            phone = "",
+            address = "",
+            sortOrder = 1,
+            isDefault = true
+        )
+        val others = contacts
+            .filterNot { it.type == EmergencyContactType.EMERGENCY || it.type == EmergencyContactType.HOSPITAL }
+            .map { it.copy(isDefault = false) }
+
+        return buildList {
+            add(emergency)
+            add(hospital)
+            addAll(others)
+        }.mapIndexed { index, contact ->
+            contact.copy(sortOrder = index)
+        }
+    }
+
+    private companion object {
+        const val EMERGENCY_TITLE = "Скорая помощь"
+        const val EMERGENCY_PHONE = "112"
+        const val HOSPITAL_TITLE = "Роддом"
     }
 }

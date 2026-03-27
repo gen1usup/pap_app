@@ -7,9 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.outlined.MonitorHeart
-import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.SnackbarHostState
@@ -20,16 +18,13 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import com.dadnavigator.app.R
 import com.dadnavigator.app.core.ui.DadTheme
-import com.dadnavigator.app.presentation.component.InfoCard
 import com.dadnavigator.app.presentation.component.InfoSectionCard
-import com.dadnavigator.app.presentation.component.PrimaryButton
 import com.dadnavigator.app.presentation.component.ScreenBackground
 import com.dadnavigator.app.presentation.component.ScreenScaffold
 
 @Composable
 fun HelpScreen(
-    onBack: () -> Unit,
-    onOpenContacts: () -> Unit
+    onBack: () -> Unit
 ) {
     val preparing = stringArrayResource(id = R.array.help_preparing).toList()
     val labor = stringArrayResource(id = R.array.help_labor).toList()
@@ -50,19 +45,6 @@ fun HelpScreen(
                 contentPadding = PaddingValues(horizontal = DadTheme.spacing.md, vertical = DadTheme.spacing.sm),
                 verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.md)
             ) {
-                item {
-                    InfoCard(
-                        title = stringResource(id = R.string.help_contacts_route_title),
-                        description = stringResource(id = R.string.help_contacts_route_description),
-                        icon = Icons.Outlined.LocalHospital
-                    ) {
-                        PrimaryButton(
-                            text = stringResource(id = R.string.help_open_contacts),
-                            onClick = onOpenContacts,
-                            icon = Icons.Outlined.Phone
-                        )
-                    }
-                }
                 item {
                     InfoSectionCard(
                         title = stringResource(id = R.string.app_stage_preparing),

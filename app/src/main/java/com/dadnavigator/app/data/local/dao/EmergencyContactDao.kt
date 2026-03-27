@@ -17,6 +17,9 @@ interface EmergencyContactDao {
     @Query("SELECT * FROM emergency_contacts ORDER BY sortOrder ASC, id ASC")
     fun observeContacts(): Flow<List<EmergencyContactEntity>>
 
+    @Query("SELECT * FROM emergency_contacts ORDER BY sortOrder ASC, id ASC")
+    suspend fun getContacts(): List<EmergencyContactEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertContacts(contacts: List<EmergencyContactEntity>)
 

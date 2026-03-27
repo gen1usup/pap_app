@@ -7,6 +7,7 @@ import com.dadnavigator.app.domain.model.EmergencyContact
  */
 data class EmergencyContactsUiState(
     val contacts: List<EmergencyContact> = emptyList(),
+    val dirtyContactIds: Set<Long> = emptySet(),
     val infoRes: Int? = null,
     val errorRes: Int? = null
 )

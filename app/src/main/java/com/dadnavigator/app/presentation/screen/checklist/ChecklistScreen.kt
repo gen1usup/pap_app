@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddTask
 import androidx.compose.material.icons.outlined.Checklist
-import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.PlaylistAdd
 import androidx.compose.material3.AlertDialog
@@ -86,9 +85,6 @@ fun ChecklistScreen(
         onRenameDraftChanged = viewModel::updateRenameDraft,
         onConfirmRename = viewModel::renameChecklist,
         onDismissRename = viewModel::dismissRenameDialog,
-        onRequestDeleteChecklist = viewModel::requestDeleteChecklist,
-        onConfirmDeleteChecklist = viewModel::confirmDeleteChecklist,
-        onDismissDeleteDialog = viewModel::dismissDeleteDialog,
         onDraftChanged = viewModel::updateItemDraft,
         onAddItem = viewModel::addItem,
         onDeleteItem = viewModel::deleteItem,
@@ -111,9 +107,6 @@ private fun ChecklistContent(
     onRenameDraftChanged: (String) -> Unit,
     onConfirmRename: () -> Unit,
     onDismissRename: () -> Unit,
-    onRequestDeleteChecklist: (Checklist) -> Unit,
-    onConfirmDeleteChecklist: () -> Unit,
-    onDismissDeleteDialog: () -> Unit,
     onDraftChanged: (Long, String) -> Unit,
     onAddItem: (Long) -> Unit,
     onDeleteItem: (Long) -> Unit,
@@ -143,31 +136,6 @@ private fun ChecklistContent(
             },
             dismissButton = {
                 TextButton(onClick = onDismissRename) {
-                    Text(text = stringResource(id = R.string.action_cancel))
-                }
-            }
-        )
-    }
-
-    state.deleteTarget?.let { target ->
-        AlertDialog(
-            onDismissRequest = onDismissDeleteDialog,
-            title = { Text(text = stringResource(id = R.string.checklist_delete_title)) },
-            text = {
-                Text(
-                    text = stringResource(
-                        id = R.string.checklist_delete_message,
-                        target.title
-                    )
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = onConfirmDeleteChecklist) {
-                    Text(text = stringResource(id = R.string.action_delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismissDeleteDialog) {
                     Text(text = stringResource(id = R.string.action_cancel))
                 }
             }
@@ -278,9 +246,6 @@ private fun ChecklistContent(
                                 onCheckedChanged = onCheckedChanged,
                                 onRenameChecklist = {
                                     onOpenRenameDialog(checklistWithItems.checklist)
-                                },
-                                onDeleteChecklist = {
-                                    onRequestDeleteChecklist(checklistWithItems.checklist)
                                 }
                             )
                         }
@@ -299,8 +264,7 @@ private fun ChecklistGroupCard(
     onAddItem: () -> Unit,
     onDeleteItem: (Long) -> Unit,
     onCheckedChanged: (Long, Boolean) -> Unit,
-    onRenameChecklist: () -> Unit,
-    onDeleteChecklist: () -> Unit
+    onRenameChecklist: () -> Unit
 ) {
     val spacing = DadTheme.spacing
     val progress = if (checklist.totalCount == 0) 0f else {
@@ -346,13 +310,6 @@ private fun ChecklistGroupCard(
                             contentDescription = null
                         )
                         Text(text = stringResource(id = R.string.action_edit))
-                    }
-                    TextButton(onClick = onDeleteChecklist) {
-                        Icon(
-                            imageVector = Icons.Outlined.DeleteOutline,
-                            contentDescription = null
-                        )
-                        Text(text = stringResource(id = R.string.action_delete))
                     }
                 }
             }

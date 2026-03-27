@@ -8,8 +8,6 @@ import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.ContractionStats
 import com.dadnavigator.app.domain.model.ContractionTrend
 import com.dadnavigator.app.domain.model.DEFAULT_USER_ID
-import com.dadnavigator.app.domain.model.EmergencyContact
-import com.dadnavigator.app.domain.model.EmergencyContactType
 import com.dadnavigator.app.domain.model.LaborSummary
 import com.dadnavigator.app.domain.model.RecommendationLevel
 import com.dadnavigator.app.domain.model.Settings
@@ -23,7 +21,6 @@ import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedResult
 import com.dadnavigator.app.domain.service.StageManager
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionResult
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionUseCase
-import com.dadnavigator.app.domain.usecase.emergency.ObserveEmergencyContactsUseCase
 import com.dadnavigator.app.domain.usecase.settings.ObserveSettingsUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveLaborSummaryUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveTimelineUseCase
@@ -57,7 +54,6 @@ class DashboardViewModel @Inject constructor(
     private val observeChecklistsUseCase: ObserveChecklistsUseCase,
     private val observeTimelineUseCase: ObserveTimelineUseCase,
     private val observeLaborSummaryUseCase: ObserveLaborSummaryUseCase,
-    private val observeEmergencyContactsUseCase: ObserveEmergencyContactsUseCase,
     private val markLaborStartedUseCase: MarkLaborStartedUseCase,
     private val toggleContractionUseCase: ToggleContractionUseCase,
     private val calculateContractionStatsUseCase: CalculateContractionStatsUseCase,
@@ -96,19 +92,12 @@ class DashboardViewModel @Inject constructor(
                     stageChecklistTotal = checklists
                         .filter { it.checklist.stage == settings.appStage }
                         .sumOf { it.totalCount },
-                    recentEvents = timeline.take(4),
-                    contacts = emptyList()
+                    recentEvents = timeline.take(4)
                 )
-            }
-            val dashboardBaseWithContacts = combine(
-                dashboardBase,
-                observeEmergencyContactsUseCase()
-            ) { base, contacts ->
-                base.copy(contacts = contacts)
             }
 
             combine(
-                dashboardBaseWithContacts,
+                dashboardBase,
                 observeActiveWaterBreakUseCase(userId),
                 observeLaborSummaryUseCase(userId),
                 ticker
@@ -157,9 +146,6 @@ class DashboardViewModel @Inject constructor(
                     showBirthDetailsCard = homeContent.showBirthDetailsCard,
                     checklistFirst = homeContent.checklistFirst,
                     showLaborQuickActions = homeContent.showLaborQuickActions,
-                    hospitalPhone = base.contacts.firstPhone(EmergencyContactType.HOSPITAL),
-                    doctorPhone = base.contacts.firstPhone(EmergencyContactType.DOCTOR),
-                    hospitalAddress = base.contacts.firstAddress(EmergencyContactType.HOSPITAL),
                     infoRes = null,
                     errorRes = null
                 )
@@ -275,9 +261,6 @@ data class DashboardUiState(
     val showBirthDetailsCard: Boolean = false,
     val checklistFirst: Boolean = true,
     val showLaborQuickActions: Boolean = false,
-    val hospitalPhone: String = "",
-    val doctorPhone: String = "",
-    val hospitalAddress: String = "",
     val infoRes: Int? = null,
     val errorRes: Int? = null
 )
@@ -288,8 +271,7 @@ private data class DashboardBaseState(
     val isWaterBreakActive: Boolean,
     val stageChecklistCompleted: Int,
     val stageChecklistTotal: Int,
-    val recentEvents: List<TimelineEvent>,
-    val contacts: List<EmergencyContact>
+    val recentEvents: List<TimelineEvent>
 )
 
 private fun currentInterval(
@@ -310,12 +292,4 @@ private fun currentInterval(
         sortedContractions.isNotEmpty() -> Duration.between(sortedContractions.last().startedAt, now)
         else -> null
     }
-}
-
-private fun List<EmergencyContact>.firstPhone(type: EmergencyContactType): String {
-    return firstOrNull { it.type == type }?.phone.orEmpty()
-}
-
-private fun List<EmergencyContact>.firstAddress(type: EmergencyContactType): String {
-    return firstOrNull { it.type == type }?.address.orEmpty()
 }
