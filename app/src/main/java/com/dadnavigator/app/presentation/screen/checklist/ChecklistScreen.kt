@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddTask
 import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.PlaylistAdd
 import androidx.compose.material3.AlertDialog
@@ -21,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -82,9 +84,12 @@ fun ChecklistScreen(
         onNewChecklistTitleChanged = viewModel::updateNewChecklistTitle,
         onCreateChecklist = viewModel::createChecklist,
         onOpenRenameDialog = viewModel::openRenameDialog,
+        onOpenDeleteDialog = viewModel::openDeleteDialog,
         onRenameDraftChanged = viewModel::updateRenameDraft,
         onConfirmRename = viewModel::renameChecklist,
         onDismissRename = viewModel::dismissRenameDialog,
+        onConfirmDelete = viewModel::deleteChecklist,
+        onDismissDelete = viewModel::dismissDeleteDialog,
         onDraftChanged = viewModel::updateItemDraft,
         onAddItem = viewModel::addItem,
         onDeleteItem = viewModel::deleteItem,
@@ -104,9 +109,12 @@ private fun ChecklistContent(
     onNewChecklistTitleChanged: (String) -> Unit,
     onCreateChecklist: () -> Unit,
     onOpenRenameDialog: (Checklist) -> Unit,
+    onOpenDeleteDialog: (Checklist) -> Unit,
     onRenameDraftChanged: (String) -> Unit,
     onConfirmRename: () -> Unit,
     onDismissRename: () -> Unit,
+    onConfirmDelete: () -> Unit,
+    onDismissDelete: () -> Unit,
     onDraftChanged: (Long, String) -> Unit,
     onAddItem: (Long) -> Unit,
     onDeleteItem: (Long) -> Unit,
@@ -136,6 +144,31 @@ private fun ChecklistContent(
             },
             dismissButton = {
                 TextButton(onClick = onDismissRename) {
+                    Text(text = stringResource(id = R.string.action_cancel))
+                }
+            }
+        )
+    }
+
+    state.deleteTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = onDismissDelete,
+            title = { Text(text = stringResource(id = R.string.checklist_delete_title)) },
+            text = {
+                Text(
+                    text = stringResource(
+                        id = R.string.checklist_delete_message,
+                        target.title
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = onConfirmDelete) {
+                    Text(text = stringResource(id = R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissDelete) {
                     Text(text = stringResource(id = R.string.action_cancel))
                 }
             }
@@ -246,6 +279,9 @@ private fun ChecklistContent(
                                 onCheckedChanged = onCheckedChanged,
                                 onRenameChecklist = {
                                     onOpenRenameDialog(checklistWithItems.checklist)
+                                },
+                                onDeleteChecklist = {
+                                    onOpenDeleteDialog(checklistWithItems.checklist)
                                 }
                             )
                         }
@@ -264,7 +300,8 @@ private fun ChecklistGroupCard(
     onAddItem: () -> Unit,
     onDeleteItem: (Long) -> Unit,
     onCheckedChanged: (Long, Boolean) -> Unit,
-    onRenameChecklist: () -> Unit
+    onRenameChecklist: () -> Unit,
+    onDeleteChecklist: () -> Unit
 ) {
     val spacing = DadTheme.spacing
     val progress = if (checklist.totalCount == 0) 0f else {
@@ -274,7 +311,7 @@ private fun ChecklistGroupCard(
     Card(
         shape = DadTheme.shapes.card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
     ) {
         Column(
@@ -293,23 +330,21 @@ private fun ChecklistGroupCard(
                         text = checklist.checklist.title,
                         style = MaterialTheme.typography.titleLarge
                     )
-                    Text(
-                        text = if (checklist.checklist.isSystem) {
-                            stringResource(id = R.string.checklist_system_label)
-                        } else {
-                            stringResource(id = R.string.checklist_custom_label)
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
-                if (!checklist.checklist.isSystem) {
-                    TextButton(onClick = onRenameChecklist) {
-                        Icon(
-                            imageVector = Icons.Outlined.Edit,
-                            contentDescription = null
-                        )
-                        Text(text = stringResource(id = R.string.action_edit))
+                Row(horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                    if (!checklist.checklist.isSystem) {
+                        IconButton(onClick = onRenameChecklist) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = stringResource(id = R.string.action_edit)
+                            )
+                        }
+                        IconButton(onClick = onDeleteChecklist) {
+                            Icon(
+                                imageVector = Icons.Outlined.DeleteOutline,
+                                contentDescription = stringResource(id = R.string.action_delete)
+                            )
+                        }
                     }
                 }
             }

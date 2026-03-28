@@ -74,13 +74,15 @@ fun ContractionScreen(
 
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val snackbarHostState = remember { SnackbarHostState() }
-    val errorMessage = state.errorRes?.let { stringResource(id = it) }
+    val message = state.errorRes?.let { stringResource(id = it) }
+        ?: state.infoRes?.let { stringResource(id = it) }
     val haptics = LocalHapticFeedback.current
+    val birthTitle = stringResource(id = R.string.events_action_birth)
     var showFinishSessionConfirmation by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(errorMessage) {
-        if (errorMessage != null) {
-            snackbarHostState.showSnackbar(message = errorMessage)
+    LaunchedEffect(message) {
+        if (message != null) {
+            snackbarHostState.showSnackbar(message = message)
             viewModel.dismissError()
         }
     }
@@ -93,7 +95,11 @@ fun ContractionScreen(
             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
             viewModel.startOrFinishContraction()
         },
-        onAskFinishSession = { showFinishSessionConfirmation = true }
+        onAskFinishSession = { showFinishSessionConfirmation = true },
+        onMarkBirth = {
+            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+            viewModel.markBirthNow(eventTitle = birthTitle)
+        }
     )
 
     if (showFinishSessionConfirmation) {
@@ -126,7 +132,8 @@ private fun ContractionContent(
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
     onPrimaryAction: () -> Unit,
-    onAskFinishSession: () -> Unit
+    onAskFinishSession: () -> Unit,
+    onMarkBirth: () -> Unit
 ) {
     val spacing = DadTheme.spacing
     val completedContractions = state.contractions.filter { it.endedAt != null }.reversed()
@@ -180,6 +187,12 @@ private fun ContractionContent(
                         currentDuration = state.currentContractionDuration.toReadableDuration(),
                         onPrimaryAction = onPrimaryAction,
                         onFinishSession = onAskFinishSession
+                    )
+                }
+
+                item {
+                    PrimaryBirthButton(
+                        onClick = onMarkBirth
                     )
                 }
 
@@ -425,6 +438,29 @@ private fun BigContractionButton(
 }
 
 @Composable
+private fun PrimaryBirthButton(
+    onClick: () -> Unit
+) {
+    PrimaryBirthAction(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+private fun PrimaryBirthAction(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SecondaryButton(
+        text = stringResource(id = R.string.events_action_birth),
+        onClick = onClick,
+        modifier = modifier,
+        fullWidth = true
+    )
+}
+
+@Composable
 private fun MetricCard(
     label: String,
     value: String,
@@ -548,7 +584,8 @@ private fun ContractionPreview() {
             snackbarHostState = remember { SnackbarHostState() },
             onBack = {},
             onPrimaryAction = {},
-            onAskFinishSession = {}
+            onAskFinishSession = {},
+            onMarkBirth = {}
         )
     }
 }

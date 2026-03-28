@@ -7,6 +7,7 @@ import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.Checklist
 import com.dadnavigator.app.domain.usecase.checklist.AddChecklistItemUseCase
 import com.dadnavigator.app.domain.usecase.checklist.CreateChecklistUseCase
+import com.dadnavigator.app.domain.usecase.checklist.DeleteChecklistUseCase
 import com.dadnavigator.app.domain.usecase.checklist.DeleteChecklistItemUseCase
 import com.dadnavigator.app.domain.usecase.checklist.ObserveChecklistsUseCase
 import com.dadnavigator.app.domain.usecase.checklist.RenameChecklistUseCase
@@ -37,6 +38,7 @@ class ChecklistViewModel @Inject constructor(
     private val seedDefaultChecklistsUseCase: SeedDefaultChecklistsUseCase,
     private val createChecklistUseCase: CreateChecklistUseCase,
     private val renameChecklistUseCase: RenameChecklistUseCase,
+    private val deleteChecklistUseCase: DeleteChecklistUseCase,
     private val addChecklistItemUseCase: AddChecklistItemUseCase,
     private val deleteChecklistItemUseCase: DeleteChecklistItemUseCase,
     private val toggleChecklistItemUseCase: ToggleChecklistItemUseCase,
@@ -49,6 +51,7 @@ class ChecklistViewModel @Inject constructor(
     private val newChecklistTitleState = MutableStateFlow("")
     private val renameTargetState = MutableStateFlow<Checklist?>(null)
     private val renameDraftState = MutableStateFlow("")
+    private val deleteTargetState = MutableStateFlow<Checklist?>(null)
     private val infoState = MutableStateFlow<Int?>(null)
     private val errorState = MutableStateFlow<Int?>(null)
 
@@ -73,12 +76,14 @@ class ChecklistViewModel @Inject constructor(
         val dialogState = combine(
             renameTargetState,
             renameDraftState,
+            deleteTargetState,
             infoState,
             errorState
-        ) { renameTarget, renameDraft, infoRes, errorRes ->
+        ) { renameTarget, renameDraft, deleteTarget, infoRes, errorRes ->
             ChecklistUiState(
                 renameTarget = renameTarget,
                 renameDraft = renameDraft,
+                deleteTarget = deleteTarget,
                 infoRes = infoRes,
                 errorRes = errorRes
             )
@@ -88,6 +93,7 @@ class ChecklistViewModel @Inject constructor(
             base.copy(
                 renameTarget = dialog.renameTarget,
                 renameDraft = dialog.renameDraft,
+                deleteTarget = dialog.deleteTarget,
                 infoRes = dialog.infoRes,
                 errorRes = dialog.errorRes
             )
@@ -167,6 +173,30 @@ class ChecklistViewModel @Inject constructor(
     fun dismissRenameDialog() {
         renameTargetState.value = null
         renameDraftState.value = ""
+    }
+
+    fun openDeleteDialog(checklist: Checklist) {
+        deleteTargetState.value = checklist
+    }
+
+    fun dismissDeleteDialog() {
+        deleteTargetState.value = null
+    }
+
+    fun deleteChecklist() {
+        val userId = userIdState.value
+        val checklist = deleteTargetState.value ?: return
+        if (userId.isBlank()) return
+
+        viewModelScope.launch(ioDispatcher) {
+            runCatching {
+                deleteChecklistUseCase(userId, checklist.id)
+                deleteTargetState.value = null
+                infoState.value = R.string.saved
+            }.onFailure {
+                errorState.value = R.string.error_generic
+            }
+        }
     }
 
     fun updateItemDraft(checklistId: Long, value: String) {

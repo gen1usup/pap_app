@@ -50,18 +50,10 @@ internal fun AppDrawerContent(
         }
 
         AppStage.entries.forEach { stage ->
-            val enabled = !birthRecorded || stage !in setOf(
-                AppStage.PREPARING,
-                AppStage.CONTRACTIONS
-            )
             NavigationDrawerItem(
                 label = { Text(text = stringResource(id = stageLabelRes(stage))) },
                 selected = currentRoute == AppDestination.StageDetails.routeFor(stage),
-                onClick = {
-                    if (enabled) {
-                        onStageSelected(stage)
-                    }
-                },
+                onClick = { onStageSelected(stage) },
                 icon = {
                     Icon(
                         imageVector = stageIcon(stage),
@@ -75,9 +67,7 @@ internal fun AppDrawerContent(
                         }
                     }
                 },
-                modifier = Modifier
-                    .alpha(if (enabled) 1f else 0.5f)
-                    .padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
         }
 

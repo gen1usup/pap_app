@@ -150,6 +150,7 @@ private fun TimelineContent(
                                                 TimelineFilter.ALL -> R.string.timeline_filter_all
                                                 TimelineFilter.LABOR -> R.string.timeline_filter_labor
                                                 TimelineFilter.POSTPARTUM -> R.string.timeline_filter_postpartum
+                                                TimelineFilter.NOTES -> R.string.timeline_filter_notes
                                             }
                                         )
                                     )

@@ -14,11 +14,11 @@ import com.dadnavigator.app.domain.service.StageManager
 import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUseCase
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionResult
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionUseCase
-import com.dadnavigator.app.domain.usecase.labor.MarkArrivedHomeUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkArrivedHomeResult
+import com.dadnavigator.app.domain.usecase.labor.MarkArrivedHomeUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkBirthUseCase
-import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedResult
+import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedUseCase
 import com.dadnavigator.app.domain.usecase.settings.ObserveSettingsUseCase
 import com.dadnavigator.app.domain.usecase.timeline.AddTimelineEventUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveLaborSummaryUseCase
@@ -129,11 +129,13 @@ class EventsViewModel @Inject constructor(
 
         viewModelScope.launch(ioDispatcher) {
             runCatching {
-                infoState.value = when (markLaborStartedUseCase(
-                    userId = userId,
-                    eventTitle = eventTitle,
-                    eventDescription = eventDescription
-                )) {
+                infoState.value = when (
+                    markLaborStartedUseCase(
+                        userId = userId,
+                        eventTitle = eventTitle,
+                        eventDescription = eventDescription
+                    )
+                ) {
                     MarkLaborStartedResult.Started -> R.string.events_labor_started_saved
                     MarkLaborStartedResult.AlreadyStarted -> R.string.events_labor_started_already_saved
                     MarkLaborStartedResult.BlockedAfterBirth -> R.string.events_labor_start_blocked_after_birth
@@ -192,11 +194,13 @@ class EventsViewModel @Inject constructor(
 
         viewModelScope.launch(ioDispatcher) {
             runCatching {
-                infoState.value = when (markArrivedHomeUseCase(
-                    userId = userId,
-                    eventTitle = eventTitle,
-                    eventDescription = eventDescription
-                )) {
+                infoState.value = when (
+                    markArrivedHomeUseCase(
+                        userId = userId,
+                        eventTitle = eventTitle,
+                        eventDescription = eventDescription
+                    )
+                ) {
                     MarkArrivedHomeResult.Marked -> R.string.events_arrived_home_saved
                     MarkArrivedHomeResult.AlreadyHome -> R.string.events_arrived_home_already_saved
                     MarkArrivedHomeResult.BirthNotRecorded -> R.string.events_arrived_home_requires_birth
@@ -238,8 +242,13 @@ class EventsViewModel @Inject constructor(
         val action = quickRecord.action ?: return
         val config = quickRecordConfig(action)
         val title = if (config.titleEditable) quickRecord.title.trim() else config.defaultTitle
+        val description = quickRecord.description.trim()
 
         if (config.requireTitle && title.isBlank()) {
+            errorState.value = R.string.input_required
+            return
+        }
+        if (action.isNoteAction() && title.isBlank() && description.isBlank()) {
             errorState.value = R.string.input_required
             return
         }
@@ -250,7 +259,7 @@ class EventsViewModel @Inject constructor(
                     userId = userId,
                     timestamp = Instant.now(),
                     title = title,
-                    description = quickRecord.description.trim(),
+                    description = description,
                     type = config.timelineType
                 )
                 quickRecordState.value = QuickRecordState()
@@ -380,22 +389,19 @@ class EventsViewModel @Inject constructor(
             defaultTitle = "Пробный выезд"
         )
         EventAction.RecordPreparationNote -> QuickRecordConfig(
-            timelineType = TimelineType.NOTE,
-            defaultTitle = "Заметка",
-            titleEditable = true,
-            requireTitle = true
+            timelineType = TimelineType.PREPARATION_NOTE,
+            defaultTitle = "",
+            titleEditable = true
         )
         EventAction.RecordLaborNote -> QuickRecordConfig(
-            timelineType = TimelineType.NOTE,
-            defaultTitle = "Заметка во время родов",
-            titleEditable = true,
-            requireTitle = true
+            timelineType = TimelineType.LABOR_NOTE,
+            defaultTitle = "",
+            titleEditable = true
         )
         EventAction.RecordHospitalNote -> QuickRecordConfig(
-            timelineType = TimelineType.NOTE,
-            defaultTitle = "Заметка из роддома",
-            titleEditable = true,
-            requireTitle = true
+            timelineType = TimelineType.HOSPITAL_NOTE,
+            defaultTitle = "",
+            titleEditable = true
         )
         EventAction.RecordSupportAction -> QuickRecordConfig(
             timelineType = TimelineType.NOTE,
@@ -426,16 +432,23 @@ class EventsViewModel @Inject constructor(
             defaultTitle = "Вес"
         )
         EventAction.RecordHomeNote -> QuickRecordConfig(
-            timelineType = TimelineType.NOTE,
-            defaultTitle = "Домашняя заметка",
-            titleEditable = true,
-            requireTitle = true
+            timelineType = TimelineType.HOME_NOTE,
+            defaultTitle = "",
+            titleEditable = true
         )
         else -> QuickRecordConfig(
             timelineType = TimelineType.NOTE,
             defaultTitle = "Заметка"
         )
     }
+}
+
+private fun EventAction.isNoteAction(): Boolean = when (this) {
+    EventAction.RecordPreparationNote,
+    EventAction.RecordLaborNote,
+    EventAction.RecordHospitalNote,
+    EventAction.RecordHomeNote -> true
+    else -> false
 }
 
 private data class BirthFormState(

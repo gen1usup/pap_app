@@ -47,18 +47,16 @@ import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.TimelineEvent
 import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.presentation.component.ActionCard
-import com.dadnavigator.app.presentation.component.recommendationHeadlineRes
-import com.dadnavigator.app.presentation.component.recommendationTextRes
 import com.dadnavigator.app.presentation.component.EmptyState
 import com.dadnavigator.app.presentation.component.InfoCard
 import com.dadnavigator.app.presentation.component.PrimaryButton
 import com.dadnavigator.app.presentation.component.ScreenBackground
 import com.dadnavigator.app.presentation.component.ScreenScaffold
 import com.dadnavigator.app.presentation.component.SecondaryButton
-import com.dadnavigator.app.presentation.component.StatusCard
-import com.dadnavigator.app.presentation.component.StatusTone
-import com.dadnavigator.app.presentation.component.TimelineItem
 import com.dadnavigator.app.presentation.component.TimelineActionButton
+import com.dadnavigator.app.presentation.component.TimelineItem
+import com.dadnavigator.app.presentation.component.recommendationHeadlineRes
+import com.dadnavigator.app.presentation.component.recommendationTextRes
 import com.dadnavigator.app.presentation.navigation.AppDestination
 import java.time.LocalDate
 
@@ -89,6 +87,7 @@ fun DashboardScreen(
         ?: state.infoRes?.let { stringResource(id = it) }
     val laborStartedTitle = stringResource(id = R.string.events_action_labor_started)
     val laborStartedDescription = stringResource(id = R.string.events_action_labor_started_desc)
+    val birthTitle = stringResource(id = R.string.events_action_birth)
 
     LaunchedEffect(message) {
         if (message != null) {
@@ -115,298 +114,12 @@ fun DashboardScreen(
             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
             viewModel.toggleContraction()
         },
+        onMarkBirth = {
+            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+            viewModel.markBirthNow(eventTitle = birthTitle)
+        },
         onNavigate = onNavigate
     )
-}
-
-@Composable
-private fun DashboardContent(
-    state: DashboardUiState,
-    widthSizeClass: WindowWidthSizeClass,
-    onMenu: (() -> Unit)?,
-    onOpenTimeline: (() -> Unit)?,
-    snackbarHostState: SnackbarHostState,
-    onStartLabor: () -> Unit,
-    onToggleContraction: () -> Unit,
-    onNavigate: (String) -> Unit
-) {
-    val spacing = DadTheme.spacing
-    val quickActions = quickActionsForStage(state.appStage)
-    val showContractionsFirst = state.appStage == AppStage.CONTRACTIONS && state.showLiveContractionBlock
-
-    ScreenScaffold(
-        title = stringResource(id = R.string.dashboard_title),
-        subtitle = stringResource(id = R.string.dashboard_subtitle),
-        onBack = null,
-        onMenu = onMenu,
-        snackbarHostState = snackbarHostState,
-        actions = {
-            if (onOpenTimeline != null) {
-                TimelineActionButton(onClick = onOpenTimeline)
-            }
-        }
-    ) { innerPadding ->
-        ScreenBackground {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(
-                    start = spacing.md,
-                    top = spacing.xs,
-                    end = spacing.md,
-                    bottom = spacing.section
-                ),
-                verticalArrangement = Arrangement.spacedBy(spacing.md)
-            ) {
-                if (showContractionsFirst) {
-                    item {
-                        DashboardContractionLiveCard(
-                            state = state,
-                            onToggleContraction = onToggleContraction,
-                            onOpenDetails = { onNavigate(AppDestination.Contraction.route) }
-                        )
-                    }
-
-                    if (state.showWaterBreakShortcut) {
-                        item {
-                            StageSupportCard(
-                                state = state,
-                                onNavigate = onNavigate
-                            )
-                        }
-                    }
-
-                    item {
-                        LaborQuickActionsCard(
-                            onOpenContacts = { onNavigate(AppDestination.EmergencyContacts.route) }
-                        )
-                    }
-
-                    item {
-                        DashboardChecklistCard(
-                            state = state,
-                            onClick = { onNavigate(AppDestination.Checklist.route) }
-                        )
-                    }
-                }
-
-                item {
-                    StatusCard(
-                        title = stringResource(id = dashboardStageTitleRes(state.appStage)),
-                        description = dashboardStageDescription(
-                            stage = state.appStage,
-                            fatherName = state.fatherName,
-                            hasActiveContractionSession = state.hasActiveContractionSession,
-                            hasActiveWaterBreak = state.hasActiveWaterBreak
-                        ),
-                        tone = when (state.appStage) {
-                            AppStage.PREPARING -> StatusTone.Calm
-                            AppStage.CONTRACTIONS -> StatusTone.Warning
-                            AppStage.AT_HOSPITAL,
-                            AppStage.AT_HOME -> StatusTone.Success
-                        },
-                        icon = when (state.appStage) {
-                            AppStage.PREPARING -> Icons.Outlined.Route
-                            AppStage.CONTRACTIONS -> Icons.Outlined.MonitorHeart
-                            AppStage.AT_HOSPITAL -> Icons.Outlined.LocalHospital
-                            AppStage.AT_HOME -> Icons.Outlined.ChildCare
-                        },
-                        headline = stringResource(id = R.string.dashboard_stage_overline)
-                    )
-                }
-
-                if (state.showDueDateReminder) {
-                    item {
-                        InfoCard(
-                            title = stringResource(id = R.string.dashboard_due_date_missing_title),
-                            description = stringResource(id = R.string.dashboard_due_date_missing_description),
-                            icon = Icons.Outlined.Settings,
-                            overline = stringResource(id = R.string.dashboard_due_date_overline)
-                        ) {
-                            SecondaryButton(
-                                text = stringResource(id = R.string.dashboard_due_date_missing_action),
-                                onClick = { onNavigate(AppDestination.Settings.route) }
-                            )
-                        }
-                    }
-                }
-
-                if (state.dueDate != null) {
-                    item {
-                        InfoCard(
-                            title = stringResource(id = R.string.dashboard_due_date_title),
-                            description = dueDateDescription(state.dueDate, state.daysUntilDueDate),
-                            icon = Icons.Outlined.AccessTime,
-                            overline = stringResource(id = R.string.dashboard_due_date_overline)
-                        )
-                    }
-                }
-
-                if (!showContractionsFirst) {
-                    item {
-                        if (state.showLiveContractionBlock) {
-                            DashboardContractionLiveCard(
-                                state = state,
-                                onToggleContraction = onToggleContraction,
-                                onOpenDetails = { onNavigate(AppDestination.Contraction.route) }
-                            )
-                        } else {
-                            DashboardPrimaryCard(
-                                state = state,
-                                onStartLabor = onStartLabor,
-                                onNavigate = onNavigate
-                            )
-                        }
-                    }
-                }
-
-                if (state.showBirthDetailsCard) {
-                    item {
-                        InfoCard(
-                            title = stringResource(id = R.string.dashboard_birth_details_title),
-                            description = stringResource(id = R.string.dashboard_birth_details_description),
-                            icon = Icons.Outlined.BabyChangingStation
-                        ) {
-                            SecondaryButton(
-                                text = stringResource(id = R.string.events_open_birth_details),
-                                onClick = { onNavigate(AppDestination.Labor.route) }
-                            )
-                        }
-                    }
-                }
-
-                if (!showContractionsFirst && state.showLaborQuickActions) {
-                    if (state.showWaterBreakShortcut) {
-                        item {
-                            StageSupportCard(
-                                state = state,
-                                onNavigate = onNavigate
-                            )
-                        }
-                    }
-
-                    item {
-                        LaborQuickActionsCard(
-                            onOpenContacts = { onNavigate(AppDestination.EmergencyContacts.route) }
-                        )
-                    }
-
-                    item {
-                        DashboardChecklistCard(
-                            state = state,
-                            onClick = { onNavigate(AppDestination.Checklist.route) }
-                        )
-                    }
-                } else if (!showContractionsFirst) {
-                    item {
-                        if (widthSizeClass == WindowWidthSizeClass.Expanded) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(spacing.md)
-                            ) {
-                                DashboardChecklistCard(
-                                    modifier = Modifier.weight(1f),
-                                    state = state,
-                                    onClick = { onNavigate(AppDestination.Checklist.route) }
-                                )
-                                StageSupportCard(
-                                    modifier = Modifier.weight(1f),
-                                    state = state,
-                                    onNavigate = onNavigate
-                                )
-                            }
-                        } else {
-                            Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
-                                if (state.checklistFirst) {
-                                    DashboardChecklistCard(
-                                        state = state,
-                                        onClick = { onNavigate(AppDestination.Checklist.route) }
-                                    )
-                                    StageSupportCard(
-                                        state = state,
-                                        onNavigate = onNavigate
-                                    )
-                                } else {
-                                    StageSupportCard(
-                                        state = state,
-                                        onNavigate = onNavigate
-                                    )
-                                    DashboardChecklistCard(
-                                        state = state,
-                                        onClick = { onNavigate(AppDestination.Checklist.route) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    item {
-                        Text(
-                            text = stringResource(id = R.string.quick_actions),
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(top = spacing.xs),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-
-                    item {
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(spacing.md),
-                            contentPadding = PaddingValues(end = spacing.xs)
-                        ) {
-                            items(quickActions) { action ->
-                                Box(modifier = Modifier.fillParentMaxWidth(0.84f)) {
-                                    ActionCard(
-                                        title = stringResource(id = action.titleRes),
-                                        description = stringResource(id = action.descriptionRes),
-                                        icon = action.icon,
-                                        onClick = { onNavigate(action.route) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                item {
-                    Text(
-                        text = stringResource(id = R.string.dashboard_recent_events_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(top = spacing.sm),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-
-                if (state.recentEvents.isEmpty()) {
-                    item {
-                        EmptyState(
-                            title = stringResource(id = R.string.dashboard_recent_events_empty_title),
-                            description = stringResource(id = R.string.dashboard_recent_events_empty_description),
-                            icon = Icons.Outlined.StickyNote2,
-                            action = {
-                                SecondaryButton(
-                                    text = stringResource(id = R.string.nav_journal),
-                                    onClick = { onNavigate(AppDestination.Timeline.route) },
-                                    fullWidth = false
-                                )
-                            }
-                        )
-                    }
-                } else {
-                    items(state.recentEvents) { event ->
-                        TimelineItem(
-                            title = eventTitle(event),
-                            subtitle = event.timestamp.toReadableDateTime(),
-                            time = event.timestamp.toReadableDateTime().takeLast(5),
-                            description = event.description.takeIf { it.isNotBlank() },
-                            icon = eventIcon(event.type)
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -483,14 +196,23 @@ private fun LaborQuickActionsCard(
         icon = Icons.Outlined.Route,
         overline = stringResource(id = R.string.dashboard_labor_quick_actions_overline)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)) {
-            SecondaryButton(
-                text = stringResource(id = R.string.dashboard_open_contacts_action),
-                onClick = onOpenContacts,
-                icon = Icons.Outlined.LocalHospital
-            )
-        }
+        SecondaryButton(
+            text = stringResource(id = R.string.dashboard_open_contacts_action),
+            onClick = onOpenContacts,
+            icon = Icons.Outlined.LocalHospital
+        )
     }
+}
+
+@Composable
+private fun DashboardMilestoneButton(
+    text: String,
+    onClick: () -> Unit
+) {
+    PrimaryButton(
+        text = text,
+        onClick = onClick
+    )
 }
 
 @Composable
@@ -510,7 +232,6 @@ private fun DashboardMetricCard(
 @Composable
 private fun DashboardPrimaryCard(
     state: DashboardUiState,
-    onStartLabor: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     val icon = when (state.appStage) {
@@ -528,13 +249,25 @@ private fun DashboardPrimaryCard(
         Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)) {
             when (state.appStage) {
                 AppStage.PREPARING -> {
-                    PrimaryButton(
-                        text = stringResource(id = R.string.events_action_labor_started),
-                        onClick = onStartLabor,
-                        icon = Icons.Outlined.MonitorHeart
+                    val progress = if (state.stageChecklistTotalCount == 0) 0f else {
+                        state.stageChecklistCompletedCount.toFloat() / state.stageChecklistTotalCount.toFloat()
+                    }
+
+                    Text(
+                        text = stringResource(
+                            id = R.string.dashboard_checklist_description,
+                            state.stageChecklistCompletedCount,
+                            state.stageChecklistTotalCount
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        progress = { progress }
                     )
                     SecondaryButton(
-                        text = stringResource(id = R.string.action_checklists),
+                        text = stringResource(id = R.string.dashboard_checklist_action),
                         onClick = { onNavigate(AppDestination.Checklist.route) },
                         icon = Icons.Outlined.Checklist
                     )
@@ -553,23 +286,10 @@ private fun DashboardPrimaryCard(
                         onClick = { onNavigate(AppDestination.Events.route) },
                         icon = Icons.Outlined.MonitorHeart
                     )
-                    if (state.showContractionShortcut) {
-                        SecondaryButton(
-                            text = stringResource(
-                                id = if (state.hasActiveContractionSession) {
-                                    R.string.dashboard_open_contraction_cta
-                                } else {
-                                    R.string.dashboard_start_contraction_cta
-                                }
-                            ),
-                            onClick = { onNavigate(AppDestination.Contraction.route) },
-                            icon = Icons.Outlined.AccessTime
-                        )
-                    }
                     SecondaryButton(
-                        text = stringResource(id = R.string.dashboard_water_action),
-                        onClick = { onNavigate(AppDestination.WaterBreak.route) },
-                        icon = Icons.Outlined.WaterDrop
+                        text = stringResource(id = R.string.dashboard_open_contraction_cta),
+                        onClick = { onNavigate(AppDestination.Contraction.route) },
+                        icon = Icons.Outlined.AccessTime
                     )
                 }
 
@@ -789,25 +509,6 @@ private fun dashboardStageTitleRes(stage: AppStage): Int = when (stage) {
     AppStage.AT_HOME -> R.string.app_stage_at_home
 }
 
-private fun dashboardStageDescription(
-    stage: AppStage,
-    fatherName: String,
-    hasActiveContractionSession: Boolean,
-    hasActiveWaterBreak: Boolean
-): String {
-    val prefix = if (fatherName.isBlank()) "" else "$fatherName, "
-    return when (stage) {
-        AppStage.PREPARING -> prefix + "сейчас важны спокойная подготовка, понятный план и готовность к выезду."
-        AppStage.CONTRACTIONS -> when {
-            hasActiveWaterBreak -> prefix + "идут роды, и таймер вод уже активен. Держите под рукой события, контакты и решение про выезд."
-            hasActiveContractionSession -> prefix + "идут роды, и счетчик схваток уже работает. Фиксируйте динамику и важные события."
-            else -> prefix + "идут роды. На главной оставлены только те действия, которые нужны прямо сейчас."
-        }
-        AppStage.AT_HOSPITAL -> prefix + "ребенок уже родился, поэтому на главной остались данные родов, журнал и ближайшие шаги в роддоме."
-        AppStage.AT_HOME -> prefix + "приложение перестроено под первые дни дома: помощь маме, уход за ребенком и базовые трекеры."
-    }
-}
-
 private fun dueDateDescription(dueDate: LocalDate, daysUntilDueDate: Long?): String {
     val base = "ПДР: ${dueDate.toReadableDate()}"
     return when {
@@ -873,7 +574,303 @@ private fun DashboardPreview() {
             snackbarHostState = remember { SnackbarHostState() },
             onStartLabor = {},
             onToggleContraction = {},
+            onMarkBirth = {},
             onNavigate = {}
         )
+    }
+}
+
+@Composable
+private fun DashboardContent(
+    state: DashboardUiState,
+    widthSizeClass: WindowWidthSizeClass,
+    onMenu: (() -> Unit)?,
+    onOpenTimeline: (() -> Unit)?,
+    snackbarHostState: SnackbarHostState,
+    onStartLabor: () -> Unit,
+    onToggleContraction: () -> Unit,
+    onMarkBirth: () -> Unit,
+    onNavigate: (String) -> Unit
+) {
+    val spacing = DadTheme.spacing
+    val quickActions = quickActionsForStage(state.appStage)
+    val showContractionsFirst = state.appStage == AppStage.CONTRACTIONS && state.showLiveContractionBlock
+
+    ScreenScaffold(
+        title = stringResource(id = R.string.dashboard_title),
+        subtitle = stringResource(
+            id = R.string.dashboard_header_stage,
+            stringResource(id = dashboardStageTitleRes(state.appStage))
+        ),
+        onBack = null,
+        onMenu = onMenu,
+        snackbarHostState = snackbarHostState,
+        actions = {
+            if (onOpenTimeline != null) {
+                TimelineActionButton(onClick = onOpenTimeline)
+            }
+        }
+    ) { innerPadding ->
+        ScreenBackground {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(
+                    start = spacing.md,
+                    top = spacing.xs,
+                    end = spacing.md,
+                    bottom = spacing.section
+                ),
+                verticalArrangement = Arrangement.spacedBy(spacing.md)
+            ) {
+                if (showContractionsFirst) {
+                    item {
+                        DashboardContractionLiveCard(
+                            state = state,
+                            onToggleContraction = onToggleContraction,
+                            onOpenDetails = { onNavigate(AppDestination.Contraction.route) }
+                        )
+                    }
+                    if (state.showWaterBreakShortcut) {
+                        item {
+                            StageSupportCard(
+                                state = state,
+                                onNavigate = onNavigate
+                            )
+                        }
+                    }
+                    item {
+                        DashboardMilestoneButton(
+                            text = stringResource(id = R.string.events_action_birth),
+                            onClick = onMarkBirth
+                        )
+                    }
+                    item {
+                        LaborQuickActionsCard(
+                            onOpenContacts = { onNavigate(AppDestination.EmergencyContacts.route) }
+                        )
+                    }
+                    item {
+                        DashboardChecklistCard(
+                            state = state,
+                            onClick = { onNavigate(AppDestination.Checklist.route) }
+                        )
+                    }
+                }
+
+                if (state.showDueDateReminder) {
+                    item {
+                        InfoCard(
+                            title = stringResource(id = R.string.dashboard_due_date_missing_title),
+                            description = stringResource(id = R.string.dashboard_due_date_missing_description),
+                            icon = Icons.Outlined.Settings,
+                            overline = stringResource(id = R.string.dashboard_due_date_overline)
+                        ) {
+                            SecondaryButton(
+                                text = stringResource(id = R.string.dashboard_due_date_missing_action),
+                                onClick = { onNavigate(AppDestination.Settings.route) }
+                            )
+                        }
+                    }
+                }
+
+                if (state.dueDate != null) {
+                    item {
+                        InfoCard(
+                            title = stringResource(id = R.string.dashboard_due_date_title),
+                            description = dueDateDescription(state.dueDate, state.daysUntilDueDate),
+                            icon = Icons.Outlined.AccessTime,
+                            overline = stringResource(id = R.string.dashboard_due_date_overline)
+                        )
+                    }
+                }
+
+                if (!showContractionsFirst) {
+                    item {
+                        if (state.showLiveContractionBlock) {
+                            DashboardContractionLiveCard(
+                                state = state,
+                                onToggleContraction = onToggleContraction,
+                                onOpenDetails = { onNavigate(AppDestination.Contraction.route) }
+                            )
+                        } else {
+                            DashboardPrimaryCard(
+                                state = state,
+                                onNavigate = onNavigate
+                            )
+                        }
+                    }
+
+                    if (state.appStage == AppStage.PREPARING) {
+                        item {
+                            DashboardMilestoneButton(
+                                text = stringResource(id = R.string.dashboard_action_contractions_started),
+                                onClick = onStartLabor
+                            )
+                        }
+                    }
+                }
+
+                if (state.showBirthDetailsCard) {
+                    item {
+                        InfoCard(
+                            title = stringResource(id = R.string.dashboard_birth_details_title),
+                            description = stringResource(id = R.string.dashboard_birth_details_description),
+                            icon = Icons.Outlined.BabyChangingStation
+                        ) {
+                            SecondaryButton(
+                                text = stringResource(id = R.string.events_open_birth_details),
+                                onClick = { onNavigate(AppDestination.Labor.route) }
+                            )
+                        }
+                    }
+                }
+
+                if (!showContractionsFirst && state.showLaborQuickActions) {
+                    if (state.showWaterBreakShortcut) {
+                        item {
+                            StageSupportCard(
+                                state = state,
+                                onNavigate = onNavigate
+                            )
+                        }
+                    }
+                    item {
+                        DashboardMilestoneButton(
+                            text = stringResource(id = R.string.events_action_birth),
+                            onClick = onMarkBirth
+                        )
+                    }
+                    item {
+                        LaborQuickActionsCard(
+                            onOpenContacts = { onNavigate(AppDestination.EmergencyContacts.route) }
+                        )
+                    }
+                    item {
+                        DashboardChecklistCard(
+                            state = state,
+                            onClick = { onNavigate(AppDestination.Checklist.route) }
+                        )
+                    }
+                } else if (!showContractionsFirst) {
+                    item {
+                        when {
+                            state.appStage == AppStage.PREPARING -> {
+                                StageSupportCard(
+                                    state = state,
+                                    onNavigate = onNavigate
+                                )
+                            }
+
+                            widthSizeClass == WindowWidthSizeClass.Expanded -> {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(spacing.md)
+                                ) {
+                                    DashboardChecklistCard(
+                                        modifier = Modifier.weight(1f),
+                                        state = state,
+                                        onClick = { onNavigate(AppDestination.Checklist.route) }
+                                    )
+                                    StageSupportCard(
+                                        modifier = Modifier.weight(1f),
+                                        state = state,
+                                        onNavigate = onNavigate
+                                    )
+                                }
+                            }
+
+                            else -> {
+                                Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+                                    if (state.checklistFirst) {
+                                        DashboardChecklistCard(
+                                            state = state,
+                                            onClick = { onNavigate(AppDestination.Checklist.route) }
+                                        )
+                                        StageSupportCard(
+                                            state = state,
+                                            onNavigate = onNavigate
+                                        )
+                                    } else {
+                                        StageSupportCard(
+                                            state = state,
+                                            onNavigate = onNavigate
+                                        )
+                                        DashboardChecklistCard(
+                                            state = state,
+                                            onClick = { onNavigate(AppDestination.Checklist.route) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        Text(
+                            text = stringResource(id = R.string.quick_actions),
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(top = spacing.xs),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+
+                    item {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(spacing.md),
+                            contentPadding = PaddingValues(end = spacing.xs)
+                        ) {
+                            items(quickActions) { action ->
+                                Box(modifier = Modifier.fillParentMaxWidth(0.84f)) {
+                                    ActionCard(
+                                        title = stringResource(id = action.titleRes),
+                                        description = stringResource(id = action.descriptionRes),
+                                        icon = action.icon,
+                                        onClick = { onNavigate(action.route) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Text(
+                        text = stringResource(id = R.string.dashboard_recent_events_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(top = spacing.sm),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+
+                if (state.recentEvents.isEmpty()) {
+                    item {
+                        EmptyState(
+                            title = stringResource(id = R.string.dashboard_recent_events_empty_title),
+                            description = stringResource(id = R.string.dashboard_recent_events_empty_description),
+                            icon = Icons.Outlined.StickyNote2,
+                            action = {
+                                SecondaryButton(
+                                    text = stringResource(id = R.string.nav_journal),
+                                    onClick = { onNavigate(AppDestination.Timeline.route) },
+                                    fullWidth = false
+                                )
+                            }
+                        )
+                    }
+                } else {
+                    items(state.recentEvents) { event ->
+                        TimelineItem(
+                            title = eventTitle(event),
+                            subtitle = event.timestamp.toReadableDateTime(),
+                            time = event.timestamp.toReadableDateTime().takeLast(5),
+                            description = event.description.takeIf { it.isNotBlank() },
+                            icon = eventIcon(event.type)
+                        )
+                    }
+                }
+            }
+        }
     }
 }

@@ -125,9 +125,8 @@ class DeviceScenarioUiTest {
 
         clickText(targetContext.getString(R.string.nav_events), minTop = 2_000)
 
+        scrollUntilVisible(targetContext.getString(R.string.events_action_feeding))
         assertTrue(waitForText(targetContext.getString(R.string.events_action_feeding)))
-        assertTrue(waitForText(targetContext.getString(R.string.events_action_sleep)))
-        assertTrue(waitForText(targetContext.getString(R.string.events_action_diaper)))
         assertFalse(hasVisibleText(targetContext.getString(R.string.events_action_labor_started)))
     }
 

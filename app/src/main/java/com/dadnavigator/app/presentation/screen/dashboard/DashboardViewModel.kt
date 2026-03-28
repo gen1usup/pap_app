@@ -13,9 +13,11 @@ import com.dadnavigator.app.domain.model.RecommendationLevel
 import com.dadnavigator.app.domain.model.Settings
 import com.dadnavigator.app.domain.model.TimelineEvent
 import com.dadnavigator.app.domain.service.HomeContentBuilder
+import com.dadnavigator.app.domain.usecase.checklist.SeedDefaultChecklistsUseCase
 import com.dadnavigator.app.domain.usecase.checklist.ObserveChecklistsUseCase
 import com.dadnavigator.app.domain.usecase.contraction.CalculateContractionStatsUseCase
 import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUseCase
+import com.dadnavigator.app.domain.usecase.labor.MarkBirthUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedResult
 import com.dadnavigator.app.domain.service.StageManager
@@ -52,8 +54,10 @@ class DashboardViewModel @Inject constructor(
     private val observeContractionStateUseCase: ObserveContractionStateUseCase,
     private val observeActiveWaterBreakUseCase: ObserveActiveWaterBreakUseCase,
     private val observeChecklistsUseCase: ObserveChecklistsUseCase,
+    private val seedDefaultChecklistsUseCase: SeedDefaultChecklistsUseCase,
     private val observeTimelineUseCase: ObserveTimelineUseCase,
     private val observeLaborSummaryUseCase: ObserveLaborSummaryUseCase,
+    private val markBirthUseCase: MarkBirthUseCase,
     private val markLaborStartedUseCase: MarkLaborStartedUseCase,
     private val toggleContractionUseCase: ToggleContractionUseCase,
     private val calculateContractionStatsUseCase: CalculateContractionStatsUseCase,
@@ -65,6 +69,7 @@ class DashboardViewModel @Inject constructor(
     private val userIdState = MutableStateFlow(DEFAULT_USER_ID)
     private val infoState = MutableStateFlow<Int?>(null)
     private val errorState = MutableStateFlow<Int?>(null)
+    private var seededUserId: String? = null
 
     private val ticker = flow {
         while (true) {
@@ -162,8 +167,21 @@ class DashboardViewModel @Inject constructor(
         )
 
     fun setUserId(userId: String) {
-        if (userId.isNotBlank() && userIdState.value != userId) {
+        if (userId.isBlank()) return
+
+        if (userIdState.value != userId) {
             userIdState.value = userId
+        }
+
+        if (seededUserId != userId) {
+            seededUserId = userId
+            viewModelScope.launch(ioDispatcher) {
+                runCatching {
+                    seedDefaultChecklistsUseCase(userId)
+                }.onFailure {
+                    errorState.value = R.string.error_generic
+                }
+            }
         }
     }
 
@@ -211,6 +229,24 @@ class DashboardViewModel @Inject constructor(
                     ToggleContractionResult.Started -> R.string.events_contraction_started
                     ToggleContractionResult.Stopped -> R.string.events_contraction_stopped
                 }
+            }.onFailure {
+                errorState.value = R.string.error_generic
+            }
+        }
+    }
+
+    fun markBirthNow(eventTitle: String) {
+        val userId = userIdState.value
+        if (userId.isBlank()) return
+
+        viewModelScope.launch(ioDispatcher) {
+            runCatching {
+                markBirthUseCase(
+                    userId = userId,
+                    eventTitle = eventTitle,
+                    eventDescription = ""
+                )
+                infoState.value = R.string.events_birth_saved
             }.onFailure {
                 errorState.value = R.string.error_generic
             }

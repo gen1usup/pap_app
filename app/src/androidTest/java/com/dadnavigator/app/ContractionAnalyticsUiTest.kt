@@ -5,6 +5,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import com.dadnavigator.app.testsupport.ContractionScenario
 import com.dadnavigator.app.testsupport.TestAppStateSeeder
@@ -82,9 +84,8 @@ class ContractionAnalyticsUiTest {
     }
 
     private fun openContractionScreen() {
-        clickText(targetContext.getString(R.string.nav_events))
-        assertTrue(waitForText(targetContext.getString(R.string.events_title)))
-        clickText(targetContext.getString(R.string.action_contraction_counter))
+        scrollUntilVisible(targetContext.getString(R.string.dashboard_open_contraction_cta))
+        clickText(targetContext.getString(R.string.dashboard_open_contraction_cta))
         assertTrue(waitForText(targetContext.getString(R.string.contraction_title)))
     }
 
@@ -97,5 +98,29 @@ class ContractionAnalyticsUiTest {
         requireNotNull(object2) { "Could not find text '$text'" }
         object2.click()
         device.waitForIdle()
+    }
+
+    private fun scrollUntilVisible(text: String) {
+        if (device.hasObject(By.text(text))) return
+        if (runCatching {
+                UiScrollable(UiSelector().scrollable(true))
+                    .setAsVerticalList()
+                    .scrollTextIntoView(text)
+            }.getOrDefault(false)
+        ) {
+            return
+        }
+        repeat(8) {
+            if (device.hasObject(By.text(text))) return
+            device.swipe(
+                device.displayWidth / 2,
+                (device.displayHeight * 0.82f).toInt(),
+                device.displayWidth / 2,
+                (device.displayHeight * 0.35f).toInt(),
+                20
+            )
+            device.waitForIdle()
+        }
+        throw AssertionError("Could not scroll to text '$text'")
     }
 }

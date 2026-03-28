@@ -29,7 +29,7 @@ fun InfoCard(
         modifier = modifier.fillMaxWidth(),
         shape = DadTheme.shapes.card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
     ) {
         Column(

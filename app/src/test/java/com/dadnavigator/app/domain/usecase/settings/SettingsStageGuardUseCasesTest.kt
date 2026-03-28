@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class SettingsStageGuardUseCasesTest {
@@ -22,7 +22,7 @@ class SettingsStageGuardUseCasesTest {
     private val transitionManager = StageTransitionManager()
 
     @Test
-    fun `update app stage blocks rollback before birth stages after birth`() = runTest {
+    fun `update app stage allows returning to contractions after birth`() = runTest {
         val settingsRepository = FakeSettingsRepository(initialStage = AppStage.AT_HOSPITAL)
         val laborRepository = FakeLaborRepository(
             LaborSummary(
@@ -41,12 +41,12 @@ class SettingsStageGuardUseCasesTest {
 
         val result = useCase(AppStage.CONTRACTIONS)
 
-        assertTrue(result.blockedByBirthRecord)
-        assertEquals(AppStage.AT_HOSPITAL, settingsRepository.current.appStage)
+        assertFalse(result.blockedByBirthRecord)
+        assertEquals(AppStage.CONTRACTIONS, settingsRepository.current.appStage)
     }
 
     @Test
-    fun `save settings preserves current stage when invalid rollback is requested`() = runTest {
+    fun `save settings persists selected stage after birth`() = runTest {
         val settingsRepository = FakeSettingsRepository(initialStage = AppStage.AT_HOME)
         val laborRepository = FakeLaborRepository(
             LaborSummary(
@@ -70,8 +70,8 @@ class SettingsStageGuardUseCasesTest {
             )
         )
 
-        assertTrue(result.blockedByBirthRecord)
-        assertEquals(AppStage.AT_HOME, settingsRepository.current.appStage)
+        assertFalse(result.blockedByBirthRecord)
+        assertEquals(AppStage.PREPARING, settingsRepository.current.appStage)
         assertEquals("Алексей", settingsRepository.current.fatherName)
     }
 }

@@ -10,7 +10,7 @@ import javax.inject.Inject
 class StageTransitionManager @Inject constructor() {
 
     fun canSelectStage(targetStage: AppStage, currentSummary: LaborSummary): Boolean {
-        return currentSummary.birthTime == null || targetStage !in preBirthStages
+        return true
     }
 
     fun manualSelection(
@@ -18,17 +18,10 @@ class StageTransitionManager @Inject constructor() {
         currentStage: AppStage,
         currentSummary: LaborSummary
     ): ManualStageSelectionResult {
-        return if (canSelectStage(targetStage, currentSummary)) {
-            ManualStageSelectionResult(
-                stage = targetStage,
-                blockedByBirthRecord = false
-            )
-        } else {
-            ManualStageSelectionResult(
-                stage = currentStage,
-                blockedByBirthRecord = true
-            )
-        }
+        return ManualStageSelectionResult(
+            stage = targetStage,
+            blockedByBirthRecord = false
+        )
     }
 
     fun laborStarted(currentSummary: LaborSummary): AppStage {
@@ -43,12 +36,6 @@ class StageTransitionManager @Inject constructor() {
 
     fun arrivedHome(): AppStage = AppStage.AT_HOME
 
-    private companion object {
-        val preBirthStages = setOf(
-            AppStage.PREPARING,
-            AppStage.CONTRACTIONS
-        )
-    }
 }
 
 data class ManualStageSelectionResult(

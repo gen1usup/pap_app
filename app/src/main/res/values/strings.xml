@@ -19,6 +19,7 @@
 
     <string name="dashboard_title">Что делать сейчас</string>
     <string name="dashboard_subtitle">Короткие действия для спокойного и быстрого реагирования</string>
+    <string name="dashboard_header_stage">Этап: %1$s</string>
     <string name="quick_actions">Быстрые действия</string>
     <string name="dashboard_focus_overline">Фокус на сейчас</string>
     <string name="dashboard_focus_title">Спокойно и по шагам</string>
@@ -34,6 +35,7 @@
     <string name="dashboard_water_active_description">Событие активно уже %1$s</string>
     <string name="dashboard_water_idle_description">Если воды отошли, зафиксируйте время и цвет как можно раньше</string>
     <string name="dashboard_water_action">Открыть таймер вод</string>
+    <string name="dashboard_action_contractions_started">Начались схватки</string>
     <string name="dashboard_recent_events_title">Последние события</string>
     <string name="dashboard_recent_events_empty_title">История пока не началась</string>
     <string name="dashboard_recent_events_empty_description">Все важные записи будут появляться здесь в хронологическом порядке</string>
@@ -107,8 +109,8 @@
     <string name="events_stage_at_home_description">Когда семья уже дома, события смещаются к уходу за ребенком, заметкам и домашнему ритму.</string>
     <string name="events_main_tools_title">Быстрый доступ к инструментам</string>
     <string name="events_main_tools_description">Откройте нужный раздел одним нажатием, без лишнего поиска.</string>
-    <string name="events_action_labor_started">Начались роды</string>
-    <string name="events_action_labor_started_desc">Нажмите, когда начались регулярные схватки, отошли воды или нужно перейти в режим родов.</string>
+    <string name="events_action_labor_started">Начались схватки</string>
+    <string name="events_action_labor_started_desc">Нажмите, когда начались регулярные схватки или нужно перейти в этот сценарий вручную.</string>
     <string name="events_action_departed">Выехали в роддом</string>
     <string name="events_action_departed_desc">Сохранить отметку времени выезда.</string>
     <string name="events_action_arrived">Приехали в роддом</string>
@@ -116,6 +118,8 @@
     <string name="events_action_birth">Ребенок родился</string>
     <string name="events_action_arrived_home">Приехали домой</string>
     <string name="events_action_arrived_home_desc">Сохранить момент возвращения домой и переключить приложение на домашний сценарий.</string>
+    <string name="events_notes_card_title">Мои заметки</string>
+    <string name="events_notes_card_description">Короткая заметка сохраняется в журнал именно того этапа, на котором вы сейчас находитесь.</string>
     <string name="events_logistics_title">Логистика родов</string>
     <string name="events_logistics_description">Зафиксируйте выезд, приезд и момент рождения, чтобы не держать всё в голове.</string>
     <string name="events_birth_summary_overline">Рождение</string>
@@ -130,8 +134,8 @@
     <string name="events_birth_confirm">Сохранить событие</string>
     <string name="events_birth_skip">Сохранить без деталей</string>
     <string name="events_labor_started_saved">Этап родов активирован</string>
-    <string name="events_labor_started_already_saved">Начало родов уже было зафиксировано ранее</string>
-    <string name="events_labor_start_blocked_after_birth">После рождения нельзя снова запускать сценарий родов</string>
+    <string name="events_labor_started_already_saved">Начало схваток уже было зафиксировано ранее</string>
+    <string name="events_labor_start_blocked_after_birth">После рождения нельзя снова запускать сценарий схваток</string>
     <string name="events_birth_saved">Рождение зафиксировано</string>
     <string name="events_arrived_home_saved">Домашний этап активирован</string>
     <string name="events_arrived_home_already_saved">Домашний этап уже активен</string>
@@ -290,15 +294,15 @@
     <string name="checklist_summary_title">Всё важное в одном месте</string>
     <string name="checklist_progress">Прогресс: %1$d/%2$d</string>
     <string name="checklist_create_title">Свой чек-лист</string>
-    <string name="checklist_create_description">Добавьте свой список для этапа «%1$s»</string>
-    <string name="checklist_create_action">Создать список</string>
-    <string name="checklist_name_label">Название списка</string>
-    <string name="checklist_system_label">Системный список</string>
-    <string name="checklist_custom_label">Ваш список</string>
-    <string name="checklist_empty_stage">Для этого этапа пока нет списков. Можно создать свой.</string>
-    <string name="checklist_rename_title">Переименовать список</string>
-    <string name="checklist_delete_title">Удалить список?</string>
-    <string name="checklist_delete_message">Список «%1$s» будет удален вместе со всеми пунктами.</string>
+    <string name="checklist_create_description">Добавьте свой чек-лист для этапа «%1$s»</string>
+    <string name="checklist_create_action">Создать чек-лист</string>
+    <string name="checklist_name_label">Название чек-листа</string>
+    <string name="checklist_system_label">Системный чек-лист</string>
+    <string name="checklist_custom_label">Ваш чек-лист</string>
+    <string name="checklist_empty_stage">Для этого этапа пока нет чек-листов. Можно создать свой.</string>
+    <string name="checklist_rename_title">Переименовать чек-лист</string>
+    <string name="checklist_delete_title">Удалить чек-лист?</string>
+    <string name="checklist_delete_message">Чек-лист «%1$s» будет удален вместе со всеми пунктами.</string>
     <string name="action_save">Сохранить</string>
     <string name="action_cancel">Отмена</string>
     <string name="action_delete">Удалить</string>
@@ -390,6 +394,7 @@
     <string name="timeline_filter_all">Все</string>
     <string name="timeline_filter_labor">Роды</string>
     <string name="timeline_filter_postpartum">После родов</string>
+    <string name="timeline_filter_notes">Мои заметки</string>
     <string name="timeline_item_expand_hint">Нажмите, чтобы открыть детали</string>
 
     <string name="settings_title">Настройки</string>

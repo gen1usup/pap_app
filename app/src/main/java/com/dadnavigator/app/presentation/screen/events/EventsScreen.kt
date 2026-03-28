@@ -225,6 +225,22 @@ private fun EventsContent(
                     }
                 }
 
+                noteActionForStage(state.appStage)?.let { noteAction ->
+                    item {
+                        InfoCard(
+                            title = stringResource(id = R.string.events_notes_card_title),
+                            description = stringResource(id = R.string.events_notes_card_description),
+                            icon = Icons.Outlined.EditNote
+                        ) {
+                            SecondaryButton(
+                                text = stringResource(id = R.string.events_action_note),
+                                onClick = { onAction(noteAction) },
+                                icon = Icons.Outlined.EditNote
+                            )
+                        }
+                    }
+                }
+
                 state.content.sections.forEach { section ->
                     item {
                         EventsSectionCard(
@@ -593,4 +609,11 @@ private fun quickRecordSheetDescriptionRes(action: EventAction): Int = when (act
     EventAction.RecordTemperature -> R.string.events_quick_record_temperature_description
     EventAction.RecordWeight -> R.string.events_quick_record_weight_description
     else -> R.string.events_quick_record_note_description
+}
+
+private fun noteActionForStage(stage: AppStage): EventAction = when (stage) {
+    AppStage.PREPARING -> EventAction.RecordPreparationNote
+    AppStage.CONTRACTIONS -> EventAction.RecordLaborNote
+    AppStage.AT_HOSPITAL -> EventAction.RecordHospitalNote
+    AppStage.AT_HOME -> EventAction.RecordHomeNote
 }

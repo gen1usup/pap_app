@@ -24,5 +24,6 @@ data class ContractionUiState(
         recommendationLevel = RecommendationLevel.MONITOR
     ),
     val contractions: List<Contraction> = emptyList(),
+    val infoRes: Int? = null,
     val errorRes: Int? = null
 )

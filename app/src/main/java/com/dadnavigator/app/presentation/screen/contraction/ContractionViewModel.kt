@@ -9,6 +9,7 @@ import com.dadnavigator.app.domain.usecase.contraction.FinishContractionSessionU
 import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUseCase
 import com.dadnavigator.app.domain.usecase.contraction.StartContractionSessionUseCase
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionUseCase
+import com.dadnavigator.app.domain.usecase.labor.MarkBirthUseCase
 import com.dadnavigator.app.di.IoDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Duration
@@ -35,10 +36,12 @@ class ContractionViewModel @Inject constructor(
     private val finishContractionSessionUseCase: FinishContractionSessionUseCase,
     private val toggleContractionUseCase: ToggleContractionUseCase,
     private val calculateContractionStatsUseCase: CalculateContractionStatsUseCase,
+    private val markBirthUseCase: MarkBirthUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     private val userIdState = MutableStateFlow("")
+    private val infoState = MutableStateFlow<Int?>(null)
     private val errorState = MutableStateFlow<Int?>(null)
 
     private val ticker: Flow<Instant> = flow {
@@ -50,7 +53,12 @@ class ContractionViewModel @Inject constructor(
 
     val uiState = userIdState
         .flatMapLatest { userId ->
-            combine(observeContractionStateUseCase(userId), ticker, errorState) { activeState, now, errorRes ->
+            combine(
+                observeContractionStateUseCase(userId),
+                ticker,
+                infoState,
+                errorState
+            ) { activeState, now, infoRes, errorRes ->
                 val stats = calculateContractionStatsUseCase(activeState.contractions)
                 val sessionDuration = activeState.session?.let { Duration.between(it.startedAt, now) } ?: Duration.ZERO
                 val currentDuration = activeState.activeContraction?.let {
@@ -64,6 +72,7 @@ class ContractionViewModel @Inject constructor(
                     currentContractionDuration = currentDuration,
                     stats = stats,
                     contractions = activeState.contractions,
+                    infoRes = infoRes,
                     errorRes = errorRes
                 )
             }
@@ -87,6 +96,7 @@ class ContractionViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             runCatching {
                 startContractionSessionUseCase(userId)
+                infoState.value = R.string.saved
             }.onFailure {
                 errorState.value = R.string.error_generic
             }
@@ -99,6 +109,7 @@ class ContractionViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             runCatching {
                 finishContractionSessionUseCase(sessionId)
+                infoState.value = R.string.saved
             }.onFailure {
                 errorState.value = R.string.error_generic
             }
@@ -117,6 +128,25 @@ class ContractionViewModel @Inject constructor(
                     sessionId = currentState.sessionId,
                     activeContractionId = currentState.activeContractionId
                 )
+                infoState.value = R.string.saved
+            }.onFailure {
+                errorState.value = R.string.error_generic
+            }
+        }
+    }
+
+    fun markBirthNow(eventTitle: String) {
+        val userId = userIdState.value
+        if (userId.isBlank()) return
+
+        viewModelScope.launch(ioDispatcher) {
+            runCatching {
+                markBirthUseCase(
+                    userId = userId,
+                    eventTitle = eventTitle,
+                    eventDescription = ""
+                )
+                infoState.value = R.string.events_birth_saved
             }.onFailure {
                 errorState.value = R.string.error_generic
             }
@@ -124,6 +154,7 @@ class ContractionViewModel @Inject constructor(
     }
 
     fun dismissError() {
+        infoState.value = null
         errorState.value = null
     }
 

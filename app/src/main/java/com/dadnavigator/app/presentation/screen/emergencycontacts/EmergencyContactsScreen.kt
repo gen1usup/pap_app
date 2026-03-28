@@ -42,7 +42,6 @@ import com.dadnavigator.app.core.util.openRoute
 import com.dadnavigator.app.domain.model.EmergencyContact
 import com.dadnavigator.app.domain.model.EmergencyContactType
 import com.dadnavigator.app.presentation.component.DangerButton
-import com.dadnavigator.app.presentation.component.InfoCard
 import com.dadnavigator.app.presentation.component.PrimaryButton
 import com.dadnavigator.app.presentation.component.ScreenBackground
 import com.dadnavigator.app.presentation.component.ScreenScaffold
@@ -95,16 +94,27 @@ fun EmergencyContactsScreen(
                     )
                 }
                 item {
-                    InfoCard(
-                        title = stringResource(id = R.string.emergency_contacts_add_more),
-                        description = stringResource(id = R.string.emergency_contacts_add_description),
-                        icon = Icons.Outlined.Add
-                    ) {
-                        PrimaryButton(
-                            text = stringResource(id = R.string.emergency_contacts_add_action),
-                            onClick = viewModel::addContact,
-                            icon = Icons.Outlined.Add
+                    Card(
+                        shape = DadTheme.shapes.card,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                         )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(DadTheme.spacing.lg),
+                            verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.md)
+                        ) {
+                            PrimaryButton(
+                                text = stringResource(id = R.string.emergency_contacts_add_action),
+                                onClick = viewModel::addContact,
+                                icon = Icons.Outlined.Add
+                            )
+                            Text(
+                                text = stringResource(id = R.string.emergency_contacts_add_description),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -128,6 +138,7 @@ private fun ContactCard(
     val colors = MaterialTheme.colorScheme
     val isEmergency = contact.type == EmergencyContactType.EMERGENCY
     val isHospital = contact.type == EmergencyContactType.HOSPITAL
+    val isNewCustom = contact.type == EmergencyContactType.CUSTOM && contact.id < 0
 
     Card(
         shape = DadTheme.shapes.card,
@@ -135,7 +146,7 @@ private fun ContactCard(
             containerColor = if (isEmergency) {
                 colors.errorContainer
             } else {
-                colors.surfaceContainerLow
+                colors.surfaceContainerHigh
             }
         )
     ) {
@@ -208,12 +219,14 @@ private fun ContactCard(
                 }
 
                 else -> {
-                    OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        value = contact.title,
-                        onValueChange = onTitleChanged,
-                        label = { Text(text = stringResource(id = R.string.emergency_contact_name)) }
-                    )
+                    if (isNewCustom) {
+                        OutlinedTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = contact.title,
+                            onValueChange = onTitleChanged,
+                            label = { Text(text = stringResource(id = R.string.emergency_contact_name)) }
+                        )
+                    }
                     OutlinedTextField(
                         modifier = Modifier.fillMaxWidth(),
                         value = contact.phone,

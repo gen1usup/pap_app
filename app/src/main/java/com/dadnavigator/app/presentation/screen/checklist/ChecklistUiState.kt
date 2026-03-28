@@ -15,6 +15,7 @@ data class ChecklistUiState(
     val newChecklistTitle: String = "",
     val renameTarget: Checklist? = null,
     val renameDraft: String = "",
+    val deleteTarget: Checklist? = null,
     val infoRes: Int? = null,
     val errorRes: Int? = null
 )

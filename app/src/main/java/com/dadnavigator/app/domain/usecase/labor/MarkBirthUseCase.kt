@@ -2,9 +2,11 @@ package com.dadnavigator.app.domain.usecase.labor
 
 import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.TimelineType
+import com.dadnavigator.app.domain.repository.ContractionRepository
 import com.dadnavigator.app.domain.repository.LaborRepository
 import com.dadnavigator.app.domain.repository.SettingsRepository
 import com.dadnavigator.app.domain.repository.TimelineRepository
+import com.dadnavigator.app.domain.repository.WaterBreakRepository
 import com.dadnavigator.app.domain.service.StageTransitionManager
 import java.time.Instant
 import javax.inject.Inject
@@ -16,6 +18,8 @@ import kotlinx.coroutines.flow.first
 class MarkBirthUseCase @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val laborRepository: LaborRepository,
+    private val contractionRepository: ContractionRepository,
+    private val waterBreakRepository: WaterBreakRepository,
     private val timelineRepository: TimelineRepository,
     private val stageTransitionManager: StageTransitionManager
 ) {
@@ -29,6 +33,19 @@ class MarkBirthUseCase @Inject constructor(
         birthHeightCm: Int? = null
     ) {
         val settings = settingsRepository.observeSettings().first()
+        val activeContractions = contractionRepository.observeActiveState(userId).first()
+
+        activeContractions.activeContraction?.id?.let { contractionId ->
+            contractionRepository.finishContraction(contractionId, timestamp)
+        }
+        activeContractions.session
+            ?.takeIf { it.isActive }
+            ?.id
+            ?.let { sessionId ->
+                contractionRepository.finishSession(sessionId, timestamp)
+            }
+        waterBreakRepository.closeActiveEvent(userId, timestamp)
+
         settingsRepository.saveSettings(settings.copy(appStage = stageTransitionManager.babyBorn()))
 
         val currentSummary = laborRepository.observeLaborSummary(userId).first()

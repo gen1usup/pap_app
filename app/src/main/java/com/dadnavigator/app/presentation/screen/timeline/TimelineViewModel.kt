@@ -60,6 +60,13 @@ class TimelineViewModel @Inject constructor(
                             it.type == TimelineType.HOME_NOTE ||
                             it.type == TimelineType.NOTE
                     }
+                    TimelineFilter.NOTES -> events.filter {
+                        it.type == TimelineType.NOTE ||
+                            it.type == TimelineType.PREPARATION_NOTE ||
+                            it.type == TimelineType.LABOR_NOTE ||
+                            it.type == TimelineType.HOSPITAL_NOTE ||
+                            it.type == TimelineType.HOME_NOTE
+                    }
                 },
                 expandedEventIds = expandedEventIds,
                 showAddSheet = form.showAddSheet,

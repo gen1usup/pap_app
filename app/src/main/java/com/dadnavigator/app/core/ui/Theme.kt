@@ -77,17 +77,17 @@ private val DarkColors = darkColorScheme(
 private object ColorTokens {
     val TextStrongLight = androidx.compose.ui.graphics.Color(0xFF182226)
     val TextMutedLight = androidx.compose.ui.graphics.Color(0xFF5C6B72)
-    val SurfaceContainerLowLight = androidx.compose.ui.graphics.Color(0xFFF9FBFB)
-    val SurfaceContainerLight = androidx.compose.ui.graphics.Color(0xFFF0F4F4)
-    val SurfaceContainerHighLight = androidx.compose.ui.graphics.Color(0xFFE5ECEC)
+    val SurfaceContainerLowLight = androidx.compose.ui.graphics.Color(0xFFEAF0F1)
+    val SurfaceContainerLight = androidx.compose.ui.graphics.Color(0xFFE2EAEB)
+    val SurfaceContainerHighLight = androidx.compose.ui.graphics.Color(0xFFD7E1E3)
     val OutlineLight = androidx.compose.ui.graphics.Color(0xFF87979E)
     val OutlineVariantLight = androidx.compose.ui.graphics.Color(0xFFC8D4D8)
 
     val TextStrongDark = androidx.compose.ui.graphics.Color(0xFFE6EEF1)
     val TextMutedDark = androidx.compose.ui.graphics.Color(0xFFB7C5CB)
-    val SurfaceContainerLowDark = androidx.compose.ui.graphics.Color(0xFF151D21)
-    val SurfaceContainerDark = androidx.compose.ui.graphics.Color(0xFF1F282E)
-    val SurfaceContainerHighDark = androidx.compose.ui.graphics.Color(0xFF29343B)
+    val SurfaceContainerLowDark = androidx.compose.ui.graphics.Color(0xFF1E272C)
+    val SurfaceContainerDark = androidx.compose.ui.graphics.Color(0xFF253037)
+    val SurfaceContainerHighDark = androidx.compose.ui.graphics.Color(0xFF2E3A42)
     val OutlineDark = androidx.compose.ui.graphics.Color(0xFF899AA1)
     val OutlineVariantDark = androidx.compose.ui.graphics.Color(0xFF39454C)
 }

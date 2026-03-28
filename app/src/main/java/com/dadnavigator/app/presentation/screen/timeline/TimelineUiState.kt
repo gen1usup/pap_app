@@ -6,7 +6,8 @@ import com.dadnavigator.app.domain.model.TimelineType
 enum class TimelineFilter {
     ALL,
     LABOR,
-    POSTPARTUM
+    POSTPARTUM,
+    NOTES
 }
 
 data class TimelineUiState(

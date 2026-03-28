@@ -113,14 +113,10 @@ class SettingsViewModel @Inject constructor(
                         notificationsEnabled = current.notificationsEnabled,
                         appStage = current.appStage
                     )
-                ).also { decision ->
+                ).also {
                     _uiState.update {
                         it.copy(
-                            infoRes = if (decision.blockedByBirthRecord) {
-                                R.string.stage_switch_after_birth_blocked
-                            } else {
-                                R.string.saved
-                            },
+                            infoRes = R.string.saved,
                             errorRes = null,
                             dueDateErrorRes = null
                         )

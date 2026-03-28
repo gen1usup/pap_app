@@ -20,7 +20,7 @@ class ChecklistRepositoryImpl @Inject constructor(
 ) : ChecklistRepository {
 
     private companion object {
-        const val CUSTOM_CATEGORY = "Мои списки"
+        const val CUSTOM_CATEGORY = "Мои чек-листы"
     }
 
     override fun observeChecklists(userId: String): Flow<List<ChecklistWithItems>> {

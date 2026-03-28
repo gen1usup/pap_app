@@ -38,7 +38,7 @@ fun ChecklistItem(
             containerColor = if (checked) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
+                MaterialTheme.colorScheme.surfaceContainerHigh
             }
         )
     ) {

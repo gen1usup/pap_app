@@ -65,8 +65,7 @@ class EventsProvider @Inject constructor() {
                 type = EventsSectionType.PreparationRecords,
                 actions = listOf(
                     EventAction.RecordBagReady,
-                    EventAction.RecordTestDrive,
-                    EventAction.RecordPreparationNote
+                    EventAction.RecordTestDrive
                 )
             )
         )
@@ -103,8 +102,7 @@ class EventsProvider @Inject constructor() {
                 actions = listOf(
                     EventAction.MarkLeftHome,
                     EventAction.MarkArrivedHospital,
-                    EventAction.ShowBirthSheet,
-                    EventAction.RecordLaborNote
+                    EventAction.ShowBirthSheet
                 )
             )
         )
@@ -128,7 +126,6 @@ class EventsProvider @Inject constructor() {
                     if (hasActiveWaterBreak) {
                         add(EventAction.OpenWaterBreakTimer)
                     }
-                    add(EventAction.RecordHospitalNote)
                     add(EventAction.RecordSupportAction)
                     add(EventAction.RecordPhotoNote)
                     add(EventAction.MarkArrivedHome)
@@ -154,8 +151,7 @@ class EventsProvider @Inject constructor() {
                 type = EventsSectionType.HomeNotes,
                 actions = listOf(
                     EventAction.RecordTemperature,
-                    EventAction.RecordWeight,
-                    EventAction.RecordHomeNote
+                    EventAction.RecordWeight
                 )
             )
         )
