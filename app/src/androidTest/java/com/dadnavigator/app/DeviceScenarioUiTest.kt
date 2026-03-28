@@ -1,15 +1,12 @@
-package com.dadnavigator.app
+﻿package com.dadnavigator.app
 
 import android.content.Intent
 import android.graphics.Rect
-import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
-import androidx.test.uiautomator.UiScrollable
-import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.testsupport.TestAppStateSeeder
@@ -60,33 +57,33 @@ class DeviceScenarioUiTest {
 
     @Test
     fun homeToChecklistsAndBackViaBottomNavigationWorks() {
-        clickText(targetContext.getString(R.string.nav_checklists), minTop = 2_000)
+        clickBottomNav(targetContext.getString(R.string.nav_checklists))
 
         assertTrue(waitForText(targetContext.getString(R.string.nav_checklists)))
         assertTrue(waitForText(targetContext.getString(R.string.checklist_create_title)))
 
-        clickText(targetContext.getString(R.string.nav_home), minTop = 2_000)
+        clickBottomNav(targetContext.getString(R.string.nav_home))
 
         assertTrue(waitForText(targetContext.getString(R.string.dashboard_title)))
-        assertTrue(waitForText(targetContext.getString(R.string.events_action_labor_started)))
     }
 
     @Test
     fun drawerStageEntriesOpenStageScreen() {
         openDrawer()
-        clickText(targetContext.getString(R.string.app_stage_contractions))
+        clickText(targetContext.getString(R.string.app_stage_labor))
 
-        assertTrue(waitForText(targetContext.getString(R.string.stage_screen_contractions_title)))
+        assertTrue(waitForText(targetContext.getString(R.string.stage_screen_labor_title)))
         assertTrue(waitForText(targetContext.getString(R.string.stage_screen_activate)))
     }
 
     @Test
-    fun homeChangesForHospitalStageAndHidesContractionShortcut() {
+    fun babyCardIsVisibleOnHomeAfterBirthAndContractionShortcutIsHidden() {
         device.pressHome()
-        seeder.seedStage(AppStage.AT_HOSPITAL)
+        seeder.seedStage(AppStage.BABY_BORN)
         launchApp()
 
-        assertTrue(waitForText(targetContext.getString(R.string.dashboard_at_hospital_title)))
+        assertTrue(waitForText(targetContext.getString(R.string.baby_card_overline)))
+        assertTrue(waitForText(targetContext.getString(R.string.baby_open_action)))
         assertFalse(
             "Contraction counter shortcut should not stay on after-birth home",
             hasVisibleText(targetContext.getString(R.string.action_contraction_counter))
@@ -104,43 +101,26 @@ class DeviceScenarioUiTest {
     }
 
     @Test
-    fun eventsHospitalStageShowsArrivalHomeAndHidesLaborTools() {
+    fun eventsBabyBornStageHidesLaborTools() {
         device.pressHome()
-        seeder.seedStage(AppStage.AT_HOSPITAL)
+        seeder.seedStage(AppStage.BABY_BORN)
         launchApp()
 
-        clickText(targetContext.getString(R.string.nav_events), minTop = 2_000)
-        scrollUntilVisible(targetContext.getString(R.string.events_action_arrived_home))
+        clickBottomNav(targetContext.getString(R.string.nav_events))
 
-        assertTrue(waitForText(targetContext.getString(R.string.events_action_arrived_home)))
-        assertTrue(waitForText(targetContext.getString(R.string.events_action_support)))
+        assertTrue(waitForText(targetContext.getString(R.string.events_title)))
         assertFalse(hasVisibleText(targetContext.getString(R.string.action_contraction_counter)))
     }
 
     @Test
-    fun eventsAtHomeStageShowsTrackersAndHidesLaborStart() {
+    fun eventsBabyBornStageOpensFromBottomNavigation() {
         device.pressHome()
-        seeder.seedStage(AppStage.AT_HOME)
+        seeder.seedStage(AppStage.BABY_BORN)
         launchApp()
 
-        clickText(targetContext.getString(R.string.nav_events), minTop = 2_000)
+        clickBottomNav(targetContext.getString(R.string.nav_events))
 
-        scrollUntilVisible(targetContext.getString(R.string.events_action_feeding))
-        assertTrue(waitForText(targetContext.getString(R.string.events_action_feeding)))
-        assertFalse(hasVisibleText(targetContext.getString(R.string.events_action_labor_started)))
-    }
-
-    fun journalBlankLaborEventShowsValidationMessageAndKeepsEmptyState() {
-        clickContentDescription(targetContext.getString(R.string.nav_journal))
-
-        assertTrue(waitForText(targetContext.getString(R.string.timeline_empty_title)))
-        clickText(targetContext.getString(R.string.timeline_add_event))
-        assertTrue(waitForText(targetContext.getString(R.string.save_event)))
-
-        clickText(targetContext.getString(R.string.save_event))
-
-        assertTrue(waitForText(targetContext.getString(R.string.input_required)))
-        assertTrue(waitForText(targetContext.getString(R.string.timeline_empty_title)))
+        assertTrue(waitForText(targetContext.getString(R.string.events_title)))
     }
 
     @Test
@@ -154,13 +134,19 @@ class DeviceScenarioUiTest {
         device.pressBack()
         assertTrue(waitForText(targetContext.getString(R.string.dashboard_title)))
 
-        openDrawer()
-        clickText(targetContext.getString(R.string.emergency_contacts_title))
+        clickBottomNav(targetContext.getString(R.string.nav_contacts))
 
+        assertTrue(waitForText(targetContext.getString(R.string.emergency_contacts_title)))
         assertTrue(waitForText(targetContext.getString(R.string.contact_type_ambulance_full)))
         assertTrue(waitForText(targetContext.getString(R.string.contact_type_maternity)))
         assertTrue(waitForText(targetContext.getString(R.string.emergency_contacts_add_action)))
     }
+
+    private fun clickBottomNav(text: String) {
+        clickText(text, minTop = bottomNavMinTop())
+    }
+
+    private fun bottomNavMinTop(): Int = (device.displayHeight * 0.82f).toInt()
 
     private fun openDrawer() {
         val menuButton = device.wait(
@@ -197,58 +183,6 @@ class DeviceScenarioUiTest {
         throw AssertionError("Could not find clickable text '$text'")
     }
 
-    private fun clickContentDescription(description: String) {
-        val candidate = device.wait(
-            Until.findObject(By.desc(description)),
-            timeoutMs
-        )
-        requireNotNull(candidate) { "Could not find clickable object with description '$description'" }
-        candidate.click()
-    }
-
-    private fun setEditTextByIndex(index: Int, value: String) {
-        val deadline = System.currentTimeMillis() + timeoutMs
-        while (System.currentTimeMillis() < deadline) {
-            val fields = device.findObjects(By.clazz(EditText::class.java))
-                .filter { it.visibleBounds.height() > 0 }
-                .sortedBy { it.visibleBounds.top }
-            if (fields.size > index) {
-                fields[index].text = value
-                return
-            }
-            device.waitForIdle()
-        }
-        throw AssertionError("Could not find EditText with index $index")
-    }
-
-    private fun scrollUntilVisible(text: String) {
-        if (scrollWithUiScrollable(text)) return
-        repeat(8) {
-            if (hasVisibleText(text)) return
-            swipeUp()
-        }
-        throw AssertionError("Could not scroll to text '$text'")
-    }
-
-    private fun scrollWithUiScrollable(text: String): Boolean {
-        return runCatching {
-            UiScrollable(UiSelector().scrollable(true))
-                .setAsVerticalList()
-                .scrollTextIntoView(text)
-        }.getOrDefault(false)
-    }
-
-    private fun swipeUp() {
-        device.swipe(
-            device.displayWidth / 2,
-            (device.displayHeight * 0.82f).toInt(),
-            device.displayWidth / 2,
-            (device.displayHeight * 0.35f).toInt(),
-            20
-        )
-        device.waitForIdle()
-    }
-
     private fun findTextObject(
         text: String,
         maxTop: Int?,
@@ -256,7 +190,7 @@ class DeviceScenarioUiTest {
     ): UiObject2? {
         return device.findObjects(By.text(text))
             .filter { it.visibleBounds.isUsable(maxTop, minTop) }
-            .minByOrNull { it.visibleBounds.top }
+            .maxByOrNull { it.visibleBounds.top }
     }
 
     private fun Rect.isUsable(maxTop: Int?, minTop: Int?): Boolean {

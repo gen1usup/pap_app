@@ -9,22 +9,21 @@ package com.dadnavigator.app.domain.model
  */
 enum class AppStage {
     PREPARING,
-    CONTRACTIONS,
-    AT_HOSPITAL,
-    AT_HOME;
+    LABOR,
+    BABY_BORN;
 
     companion object {
         fun fromStorage(rawValue: String?): AppStage = when (rawValue) {
             null,
             PREPARING.name -> PREPARING
 
-            CONTRACTIONS.name,
-            "LABOR" -> CONTRACTIONS
+            LABOR.name,
+            "CONTRACTIONS" -> LABOR
 
-            AT_HOSPITAL.name -> AT_HOSPITAL
-
-            AT_HOME.name,
-            "AFTER_BIRTH" -> AT_HOME
+            BABY_BORN.name,
+            "AT_HOSPITAL",
+            "AT_HOME",
+            "AFTER_BIRTH" -> BABY_BORN
 
             else -> PREPARING
         }

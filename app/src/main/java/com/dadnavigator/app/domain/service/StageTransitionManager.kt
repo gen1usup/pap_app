@@ -1,40 +1,48 @@
-package com.dadnavigator.app.domain.service
+﻿package com.dadnavigator.app.domain.service
 
 import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.LaborSummary
 import javax.inject.Inject
 
 /**
- * Centralizes explicit stage transitions triggered by user actions.
+ * Centralizes application stage transitions.
+ *
+ * The app now has only three stages:
+ * PREPARING, LABOR and BABY_BORN.
+ * Physical location is not encoded in stage anymore.
  */
 class StageTransitionManager @Inject constructor() {
 
+    @Suppress("UNUSED_PARAMETER")
     fun canSelectStage(targetStage: AppStage, currentSummary: LaborSummary): Boolean {
-        return true
+        return when (targetStage) {
+            AppStage.PREPARING,
+            AppStage.LABOR,
+            AppStage.BABY_BORN -> true
+        }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun manualSelection(
         targetStage: AppStage,
         currentStage: AppStage,
         currentSummary: LaborSummary
     ): ManualStageSelectionResult {
         return ManualStageSelectionResult(
-            stage = targetStage,
+            stage = if (currentStage == targetStage) currentStage else targetStage,
             blockedByBirthRecord = false
         )
     }
 
     fun laborStarted(currentSummary: LaborSummary): AppStage {
         return if (currentSummary.birthTime != null) {
-            AppStage.AT_HOSPITAL
+            AppStage.BABY_BORN
         } else {
-            AppStage.CONTRACTIONS
+            AppStage.LABOR
         }
     }
 
-    fun babyBorn(): AppStage = AppStage.AT_HOSPITAL
-
-    fun arrivedHome(): AppStage = AppStage.AT_HOME
+    fun babyBorn(): AppStage = AppStage.BABY_BORN
 
 }
 
@@ -42,3 +50,5 @@ data class ManualStageSelectionResult(
     val stage: AppStage,
     val blockedByBirthRecord: Boolean
 )
+
+

@@ -21,22 +21,16 @@ class EventsProvider @Inject constructor() {
     ): EventsContent {
         val sections = when (stageInfo.currentStage) {
             AppStage.PREPARING -> buildPreparationSections(stageInfo)
-            AppStage.CONTRACTIONS -> buildContractionsSections(
+            AppStage.LABOR -> buildLaborSections(
                 isContractionRunning = isContractionRunning,
                 hasActiveWaterBreak = hasActiveWaterBreak
             )
-            AppStage.AT_HOSPITAL -> buildHospitalSections(
-                laborSummary = laborSummary,
-                hasActiveWaterBreak = hasActiveWaterBreak
-            )
-            AppStage.AT_HOME -> buildAtHomeSections(hasActiveWaterBreak)
+            AppStage.BABY_BORN -> buildBabyBornSections(hasActiveWaterBreak)
         }
 
         return EventsContent(
             sections = sections,
-            showBirthSummary = stageInfo.currentStage == AppStage.AT_HOSPITAL ||
-                stageInfo.currentStage == AppStage.AT_HOME ||
-                laborSummary.birthTime != null
+            showBirthSummary = stageInfo.currentStage == AppStage.BABY_BORN || laborSummary.birthTime != null
         )
     }
 
@@ -71,7 +65,7 @@ class EventsProvider @Inject constructor() {
         )
     }
 
-    private fun buildContractionsSections(
+    private fun buildLaborSections(
         isContractionRunning: Boolean,
         hasActiveWaterBreak: Boolean
     ): List<EventsSection> {
@@ -108,51 +102,25 @@ class EventsProvider @Inject constructor() {
         )
     }
 
-    private fun buildHospitalSections(
-        laborSummary: LaborSummary,
+    private fun buildBabyBornSections(
         hasActiveWaterBreak: Boolean
     ): List<EventsSection> {
-        val firstAction = if (laborSummary.birthTime == null) {
-            EventAction.ShowBirthSheet
-        } else {
-            EventAction.OpenBirthDetails
-        }
-
         return listOf(
             EventsSection(
-                type = EventsSectionType.HospitalActions,
+                type = EventsSectionType.BabyBornActions,
                 actions = buildList {
-                    add(firstAction)
+                    add(EventAction.OpenBirthDetails)
                     if (hasActiveWaterBreak) {
                         add(EventAction.OpenWaterBreakTimer)
                     }
                     add(EventAction.RecordSupportAction)
                     add(EventAction.RecordPhotoNote)
-                    add(EventAction.MarkArrivedHome)
-                }
-            )
-        )
-    }
-
-    private fun buildAtHomeSections(hasActiveWaterBreak: Boolean): List<EventsSection> {
-        return listOf(
-            EventsSection(
-                type = EventsSectionType.HomeTrackers,
-                actions = buildList {
-                    if (hasActiveWaterBreak) {
-                        add(EventAction.OpenWaterBreakTimer)
-                    }
                     add(EventAction.RecordFeeding)
                     add(EventAction.RecordSleep)
                     add(EventAction.RecordDiaper)
+                    add(EventAction.RecordTemperature)
+                    add(EventAction.RecordWeight)
                 }
-            ),
-            EventsSection(
-                type = EventsSectionType.HomeNotes,
-                actions = listOf(
-                    EventAction.RecordTemperature,
-                    EventAction.RecordWeight
-                )
             )
         )
     }
@@ -174,9 +142,7 @@ enum class EventsSectionType {
     PreparationRecords,
     LiveLaborActions,
     LaborLogistics,
-    HospitalActions,
-    HomeTrackers,
-    HomeNotes
+    BabyBornActions
 }
 
 enum class EventAction {
@@ -190,18 +156,16 @@ enum class EventAction {
     MarkLeftHome,
     MarkArrivedHospital,
     ShowBirthSheet,
-    MarkArrivedHome,
     RecordBagReady,
     RecordTestDrive,
     RecordPreparationNote,
     RecordLaborNote,
-    RecordHospitalNote,
+    RecordBabyNote,
     RecordSupportAction,
     RecordPhotoNote,
     RecordFeeding,
     RecordSleep,
     RecordDiaper,
     RecordTemperature,
-    RecordWeight,
-    RecordHomeNote
+    RecordWeight
 }

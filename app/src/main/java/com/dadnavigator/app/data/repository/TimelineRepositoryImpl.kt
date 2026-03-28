@@ -1,9 +1,11 @@
-﻿package com.dadnavigator.app.data.repository
+package com.dadnavigator.app.data.repository
 
 import com.dadnavigator.app.data.local.dao.TimelineDao
 import com.dadnavigator.app.data.local.entity.TimelineEventEntity
 import com.dadnavigator.app.data.mapper.toDomain
 import com.dadnavigator.app.data.mapper.toEntity
+import com.dadnavigator.app.domain.model.AppStage
+import com.dadnavigator.app.domain.model.TimelineEntryType
 import com.dadnavigator.app.domain.model.TimelineEvent
 import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.domain.repository.TimelineRepository
@@ -32,7 +34,9 @@ class TimelineRepositoryImpl @Inject constructor(
         timestamp: Instant,
         title: String,
         description: String,
-        type: TimelineType
+        type: TimelineType,
+        stageAtCreation: AppStage,
+        entryType: TimelineEntryType
     ) {
         timelineDao.insertEvent(
             TimelineEventEntity(
@@ -40,7 +44,9 @@ class TimelineRepositoryImpl @Inject constructor(
                 type = type.name,
                 timestamp = timestamp,
                 title = title,
-                description = description
+                description = description,
+                stageAtCreation = stageAtCreation.name,
+                entryType = entryType.name
             )
         )
     }

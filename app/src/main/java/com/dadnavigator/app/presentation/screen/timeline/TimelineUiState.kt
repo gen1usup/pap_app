@@ -5,8 +5,9 @@ import com.dadnavigator.app.domain.model.TimelineType
 
 enum class TimelineFilter {
     ALL,
+    PREPARING,
     LABOR,
-    POSTPARTUM,
+    BABY_BORN,
     NOTES
 }
 
@@ -15,7 +16,7 @@ data class TimelineUiState(
     val events: List<TimelineEvent> = emptyList(),
     val expandedEventIds: Set<Long> = emptySet(),
     val showAddSheet: Boolean = false,
-    val selectedType: TimelineType = TimelineType.LABOR,
+    val selectedType: TimelineType = TimelineType.NOTE,
     val draftTitle: String = "",
     val draftDescription: String = "",
     val infoRes: Int? = null,

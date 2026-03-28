@@ -1,9 +1,11 @@
 package com.dadnavigator.app.presentation.screen.contraction
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,6 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -53,12 +57,20 @@ import com.dadnavigator.app.domain.model.Contraction
 import com.dadnavigator.app.domain.model.ContractionStats
 import com.dadnavigator.app.domain.model.ContractionTrend
 import com.dadnavigator.app.domain.model.RecommendationLevel
+import com.dadnavigator.app.domain.model.WaterBreakEvent
+import com.dadnavigator.app.domain.model.WaterColor
+import com.dadnavigator.app.domain.service.ActiveLaborRecommendation
+import com.dadnavigator.app.domain.service.ActiveLaborRecommendationSource
 import com.dadnavigator.app.presentation.component.EmptyState
+import com.dadnavigator.app.presentation.component.InfoCard
 import com.dadnavigator.app.presentation.component.ScreenBackground
 import com.dadnavigator.app.presentation.component.ScreenScaffold
 import com.dadnavigator.app.presentation.component.SecondaryButton
 import com.dadnavigator.app.presentation.component.StatusCard
 import com.dadnavigator.app.presentation.component.StatusTone
+import com.dadnavigator.app.presentation.component.recommendationHeadlineRes as contractionRecommendationHeadlineRes
+import com.dadnavigator.app.presentation.component.recommendationTextRes as contractionRecommendationTextRes
+import com.dadnavigator.app.presentation.component.recommendationTone as contractionRecommendationTone
 import java.time.Duration
 import java.time.Instant
 
@@ -66,6 +78,7 @@ import java.time.Instant
 fun ContractionScreen(
     userId: String,
     onBack: () -> Unit,
+    onOpenWaterBreak: () -> Unit,
     viewModel: ContractionViewModel = hiltViewModel()
 ) {
     LaunchedEffect(userId) {
@@ -79,6 +92,7 @@ fun ContractionScreen(
     val haptics = LocalHapticFeedback.current
     val birthTitle = stringResource(id = R.string.events_action_birth)
     var showFinishSessionConfirmation by rememberSaveable { mutableStateOf(false) }
+    var pendingDeleteContractionId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(message) {
         if (message != null) {
@@ -99,8 +113,34 @@ fun ContractionScreen(
         onMarkBirth = {
             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
             viewModel.markBirthNow(eventTitle = birthTitle)
-        }
+        },
+        onOpenWaterBreak = onOpenWaterBreak,
+        onAskDeleteContraction = { pendingDeleteContractionId = it }
     )
+
+    if (pendingDeleteContractionId != null) {
+        AlertDialog(
+            onDismissRequest = { pendingDeleteContractionId = null },
+            title = { Text(text = stringResource(id = R.string.delete_confirm_title)) },
+            text = { Text(text = stringResource(id = R.string.contraction_delete_confirm_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val contractionId = pendingDeleteContractionId ?: return@TextButton
+                        pendingDeleteContractionId = null
+                        viewModel.deleteContraction(contractionId)
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteContractionId = null }) {
+                    Text(text = stringResource(id = R.string.cancel))
+                }
+            }
+        )
+    }
 
     if (showFinishSessionConfirmation) {
         AlertDialog(
@@ -133,7 +173,9 @@ private fun ContractionContent(
     onBack: () -> Unit,
     onPrimaryAction: () -> Unit,
     onAskFinishSession: () -> Unit,
-    onMarkBirth: () -> Unit
+    onMarkBirth: () -> Unit,
+    onOpenWaterBreak: () -> Unit,
+    onAskDeleteContraction: (Long) -> Unit
 ) {
     val spacing = DadTheme.spacing
     val completedContractions = state.contractions.filter { it.endedAt != null }.reversed()
@@ -157,27 +199,60 @@ private fun ContractionContent(
             ) {
                 item {
                     StatusCard(
-                        title = stringResource(id = recommendationHeadlineRes(state.stats.recommendationLevel)),
-                        description = stringResource(id = recommendationTextRes(state.stats.recommendationLevel)),
-                        tone = recommendationTone(state.stats.recommendationLevel),
-                        headline = stringResource(id = R.string.contraction_stage_label)
+                        title = stringResource(id = activeLaborHeadlineRes(state.recommendation)),
+                        description = stringResource(id = activeLaborTextRes(state.recommendation)),
+                        tone = activeLaborTone(state.recommendation),
+                        headline = stringResource(id = R.string.active_labor_recommendation_overline)
+                    )
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(spacing.md)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(spacing.sm)
-                        ) {
-                            MetricCard(
-                                modifier = Modifier.weight(1f),
-                                label = stringResource(id = R.string.session_duration),
-                                value = state.sessionDuration.toReadableDuration()
-                            )
-                            MetricCard(
-                                modifier = Modifier.weight(1f),
-                                label = stringResource(id = R.string.stat_count_short),
-                                value = state.stats.count.toString()
-                            )
-                        }
+                        MetricCard(
+                            modifier = Modifier.weight(1f),
+                            label = stringResource(id = R.string.dashboard_live_contraction_status_label),
+                            value = if (state.activeContractionId != null) {
+                                state.currentContractionDuration.toReadableDuration()
+                            } else {
+                                stringResource(id = R.string.status_inactive)
+                            }
+                        )
+                        MetricCard(
+                            modifier = Modifier.weight(1f),
+                            label = stringResource(id = R.string.dashboard_live_contraction_interval_label),
+                            value = state.currentInterval?.toReadableDuration()
+                                ?: stringResource(id = R.string.unknown)
+                        )
                     }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(spacing.md)
+                    ) {
+                        MetricCard(
+                            modifier = Modifier.weight(1f),
+                            label = stringResource(id = R.string.session_duration),
+                            value = state.sessionDuration.toReadableDuration()
+                        )
+                        MetricCard(
+                            modifier = Modifier.weight(1f),
+                            label = stringResource(id = R.string.stat_count_short),
+                            value = state.stats.count.toString()
+                        )
+                    }
+                }
+
+                item {
+                    WaterStatusCard(
+                        latestWaterBreak = state.latestWaterBreak,
+                        waterBreakElapsed = state.waterBreakElapsed,
+                        onOpenWaterBreak = onOpenWaterBreak
+                    )
                 }
 
                 item {
@@ -212,25 +287,6 @@ private fun ContractionContent(
                             label = stringResource(id = R.string.average_duration),
                             value = state.stats.averageDuration?.toReadableDuration()
                                 ?: stringResource(id = R.string.unknown)
-                        )
-                    }
-                }
-
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(spacing.md)
-                    ) {
-                        MetricCard(
-                            modifier = Modifier.weight(1f),
-                            label = stringResource(id = R.string.last_interval),
-                            value = state.stats.lastInterval?.toReadableDuration()
-                                ?: stringResource(id = R.string.unknown)
-                        )
-                        MetricCard(
-                            modifier = Modifier.weight(1f),
-                            label = stringResource(id = R.string.trend),
-                            value = stringResource(id = trendTextRes(state.stats.trend))
                         )
                     }
                 }
@@ -294,10 +350,22 @@ private fun ContractionContent(
                                 modifier = Modifier.padding(spacing.lg),
                                 verticalArrangement = Arrangement.spacedBy(spacing.xs)
                             ) {
-                                Text(
-                                    text = stringResource(id = R.string.contraction_item_title, completedContractions.size - index),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(id = R.string.contraction_item_title, completedContractions.size - index),
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    IconButton(onClick = { onAskDeleteContraction(contraction.id) }) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.DeleteOutline,
+                                            contentDescription = stringResource(id = R.string.action_delete)
+                                        )
+                                    }
+                                }
                                 Text(
                                     text = contraction.startedAt.toReadableDateTime(),
                                     style = MaterialTheme.typography.bodyMedium,
@@ -326,6 +394,56 @@ private fun ContractionContent(
             }
         }
     }
+}
+
+@Composable
+private fun WaterStatusCard(
+    latestWaterBreak: WaterBreakEvent?,
+    waterBreakElapsed: Duration?,
+    onOpenWaterBreak: () -> Unit
+) {
+    InfoCard(
+        title = stringResource(id = R.string.active_labor_water_title),
+        description = waterStatusText(latestWaterBreak),
+        icon = Icons.Outlined.WaterDrop,
+        overline = stringResource(id = R.string.water_break_overline)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(DadTheme.spacing.sm)) {
+            if (waterBreakElapsed != null) {
+                Text(
+                    text = stringResource(
+                        id = R.string.active_labor_water_elapsed,
+                        waterBreakElapsed.toReadableDuration()
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            SecondaryButton(
+                text = stringResource(
+                    id = if (latestWaterBreak == null) {
+                        R.string.active_labor_record_water_break
+                    } else {
+                        R.string.action_water_break_timer
+                    }
+                ),
+                onClick = onOpenWaterBreak,
+                icon = Icons.Outlined.WaterDrop
+            )
+        }
+    }
+}
+
+@Composable
+private fun waterStatusText(event: WaterBreakEvent?): String {
+    if (event == null) {
+        return stringResource(id = R.string.active_labor_water_not_broken)
+    }
+    return stringResource(
+        id = R.string.active_labor_water_broke_at,
+        stringResource(id = waterColorLabelRes(event.color)),
+        event.happenedAt.toReadableDateTime()
+    )
 }
 
 @Composable
@@ -378,8 +496,8 @@ private fun BigContractionButton(
     ) {
         Column(
             modifier = Modifier
-            .fillMaxWidth()
-            .padding(spacing.lg),
+                .fillMaxWidth()
+                .padding(spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(spacing.md)
         ) {
@@ -441,21 +559,10 @@ private fun BigContractionButton(
 private fun PrimaryBirthButton(
     onClick: () -> Unit
 ) {
-    PrimaryBirthAction(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-
-@Composable
-private fun PrimaryBirthAction(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
     SecondaryButton(
         text = stringResource(id = R.string.events_action_birth),
         onClick = onClick,
-        modifier = modifier,
+        modifier = Modifier.fillMaxWidth(),
         fullWidth = true
     )
 }
@@ -511,7 +618,7 @@ private fun ContractionMiniGraph(contractions: List<Contraction>) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(spacing.xs)
             ) {
-                Box(
+                androidx.compose.foundation.layout.Box(
                     modifier = Modifier
                         .width(28.dp)
                         .height((92 * fraction).dp)
@@ -530,32 +637,30 @@ private fun ContractionMiniGraph(contractions: List<Contraction>) {
     }
 }
 
-private fun recommendationTextRes(level: RecommendationLevel): Int = when (level) {
-    RecommendationLevel.MONITOR -> R.string.recommendation_monitor
-    RecommendationLevel.PREPARE -> R.string.recommendation_prepare
-    RecommendationLevel.GO_TO_HOSPITAL -> R.string.recommendation_go_hospital
-    RecommendationLevel.EMERGENCY -> R.string.recommendation_emergency
+private fun activeLaborHeadlineRes(recommendation: ActiveLaborRecommendation): Int = when (recommendation.source) {
+    ActiveLaborRecommendationSource.CONTRACTIONS -> contractionRecommendationHeadlineRes(recommendation.level)
+    ActiveLaborRecommendationSource.WATER_BREAK_CLEAR -> R.string.active_labor_recommendation_water_title
+    ActiveLaborRecommendationSource.WATER_BREAK_NON_CLEAR -> R.string.active_labor_recommendation_urgent_title
+    ActiveLaborRecommendationSource.BIRTH_RECORDED -> R.string.active_labor_recommendation_birth_title
 }
 
-private fun recommendationHeadlineRes(level: RecommendationLevel): Int = when (level) {
-    RecommendationLevel.MONITOR -> R.string.contraction_stage_monitor
-    RecommendationLevel.PREPARE -> R.string.contraction_stage_prepare
-    RecommendationLevel.GO_TO_HOSPITAL -> R.string.contraction_stage_go
-    RecommendationLevel.EMERGENCY -> R.string.contraction_stage_emergency
+private fun activeLaborTextRes(recommendation: ActiveLaborRecommendation): Int = when (recommendation.source) {
+    ActiveLaborRecommendationSource.CONTRACTIONS -> contractionRecommendationTextRes(recommendation.level)
+    ActiveLaborRecommendationSource.WATER_BREAK_CLEAR -> R.string.active_labor_recommendation_water_text
+    ActiveLaborRecommendationSource.WATER_BREAK_NON_CLEAR -> R.string.active_labor_recommendation_urgent_text
+    ActiveLaborRecommendationSource.BIRTH_RECORDED -> R.string.active_labor_recommendation_birth_text
 }
 
-private fun recommendationTone(level: RecommendationLevel): StatusTone = when (level) {
-    RecommendationLevel.MONITOR -> StatusTone.Calm
-    RecommendationLevel.PREPARE -> StatusTone.Warning
-    RecommendationLevel.GO_TO_HOSPITAL -> StatusTone.Warning
-    RecommendationLevel.EMERGENCY -> StatusTone.Critical
+private fun activeLaborTone(recommendation: ActiveLaborRecommendation): StatusTone = when (recommendation.source) {
+    ActiveLaborRecommendationSource.BIRTH_RECORDED -> StatusTone.Success
+    else -> contractionRecommendationTone(recommendation.level)
 }
 
-private fun trendTextRes(trend: ContractionTrend): Int = when (trend) {
-    ContractionTrend.STABLE -> R.string.trend_stable
-    ContractionTrend.BECOMING_MORE_INTENSE -> R.string.trend_more_intense
-    ContractionTrend.BECOMING_WEAKER -> R.string.trend_weaker
-    ContractionTrend.INSUFFICIENT_DATA -> R.string.trend_insufficient
+private fun waterColorLabelRes(color: WaterColor): Int = when (color) {
+    WaterColor.CLEAR -> R.string.water_color_clear
+    WaterColor.PINK -> R.string.water_color_pink
+    WaterColor.GREEN -> R.string.water_color_green
+    WaterColor.BROWN -> R.string.water_color_brown
 }
 
 @Preview(showBackground = true, widthDp = 412)
@@ -568,6 +673,7 @@ private fun ContractionPreview() {
                 activeContractionId = 1L,
                 sessionDuration = Duration.ofMinutes(53),
                 currentContractionDuration = Duration.ofSeconds(47),
+                currentInterval = Duration.ofMinutes(4),
                 stats = ContractionStats(
                     count = 6,
                     averageDuration = Duration.ofSeconds(58),
@@ -576,6 +682,19 @@ private fun ContractionPreview() {
                     trend = ContractionTrend.BECOMING_MORE_INTENSE,
                     recommendationLevel = RecommendationLevel.PREPARE
                 ),
+                recommendation = ActiveLaborRecommendation(
+                    level = RecommendationLevel.PREPARE,
+                    source = ActiveLaborRecommendationSource.CONTRACTIONS
+                ),
+                latestWaterBreak = WaterBreakEvent(
+                    id = 1L,
+                    userId = "u",
+                    happenedAt = Instant.now().minusSeconds(900),
+                    color = WaterColor.CLEAR,
+                    notes = "",
+                    closedAt = null
+                ),
+                waterBreakElapsed = Duration.ofMinutes(15),
                 contractions = listOf(
                     Contraction(1, 1, "u", Instant.now().minusSeconds(500), Instant.now().minusSeconds(450)),
                     Contraction(2, 1, "u", Instant.now().minusSeconds(300), Instant.now().minusSeconds(250))
@@ -585,7 +704,18 @@ private fun ContractionPreview() {
             onBack = {},
             onPrimaryAction = {},
             onAskFinishSession = {},
-            onMarkBirth = {}
+            onMarkBirth = {},
+            onOpenWaterBreak = {},
+            onAskDeleteContraction = {}
         )
     }
 }
+
+
+
+
+
+
+
+
+

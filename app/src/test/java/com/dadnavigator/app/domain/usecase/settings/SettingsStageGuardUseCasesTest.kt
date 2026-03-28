@@ -22,8 +22,8 @@ class SettingsStageGuardUseCasesTest {
     private val transitionManager = StageTransitionManager()
 
     @Test
-    fun `update app stage allows returning to contractions after birth`() = runTest {
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.AT_HOSPITAL)
+    fun `update app stage allows returning to labor after birth`() = runTest {
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.BABY_BORN)
         val laborRepository = FakeLaborRepository(
             LaborSummary(
                 laborStartTime = Instant.parse("2026-03-27T08:00:00Z"),
@@ -39,15 +39,15 @@ class SettingsStageGuardUseCasesTest {
             stageTransitionManager = transitionManager
         )
 
-        val result = useCase(AppStage.CONTRACTIONS)
+        val result = useCase(AppStage.LABOR)
 
         assertFalse(result.blockedByBirthRecord)
-        assertEquals(AppStage.CONTRACTIONS, settingsRepository.current.appStage)
+        assertEquals(AppStage.LABOR, settingsRepository.current.appStage)
     }
 
     @Test
-    fun `save settings persists selected stage after birth`() = runTest {
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.AT_HOME)
+    fun `save settings persists manually selected stage after birth`() = runTest {
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.BABY_BORN)
         val laborRepository = FakeLaborRepository(
             LaborSummary(
                 laborStartTime = Instant.parse("2026-03-27T08:00:00Z"),
@@ -118,3 +118,5 @@ private class FakeLaborRepository(
         state.value = summary
     }
 }
+
+

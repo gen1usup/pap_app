@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.data.repository
+package com.dadnavigator.app.data.repository
 
 import com.dadnavigator.app.data.local.dao.WaterBreakDao
 import com.dadnavigator.app.data.local.entity.WaterBreakEventEntity
@@ -52,4 +52,9 @@ class WaterBreakRepositoryImpl @Inject constructor(
     override suspend fun closeActiveEvent(userId: String, closedAt: Instant) {
         waterBreakDao.closeActiveEvent(userId, closedAt)
     }
+
+    override suspend fun deleteEvent(eventId: Long) {
+        waterBreakDao.deleteEvent(eventId)
+    }
 }
+

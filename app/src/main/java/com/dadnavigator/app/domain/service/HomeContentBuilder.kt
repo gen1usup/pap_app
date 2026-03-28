@@ -19,23 +19,22 @@ class HomeContentBuilder @Inject constructor() {
         hasActiveContractionSession: Boolean,
         hasActiveWaterBreak: Boolean
     ): HomeContent = HomeContent(
-        showDueDateReminder = stageInfo.isDueDateMissing,
-        showDueDateCard = !stageInfo.isDueDateMissing,
+        showDueDateReminder = settings.appStage != AppStage.BABY_BORN && stageInfo.isDueDateMissing,
+        showDueDateCard = settings.appStage != AppStage.BABY_BORN && !stageInfo.isDueDateMissing,
         showContractionShortcut = when (settings.appStage) {
             AppStage.PREPARING -> hasActiveContractionSession || stageInfo.isLaborReadinessWindow
-            AppStage.CONTRACTIONS -> true
-            AppStage.AT_HOSPITAL,
-            AppStage.AT_HOME -> false
+            AppStage.LABOR -> true
+            AppStage.BABY_BORN -> false
         },
-        showLiveContractionBlock = settings.appStage == AppStage.CONTRACTIONS &&
+        showLiveContractionBlock = settings.appStage == AppStage.LABOR &&
             laborSummary.birthTime == null,
-        showWaterBreakShortcut = settings.appStage == AppStage.CONTRACTIONS || hasActiveWaterBreak,
-        showBirthDetailsCard = settings.appStage == AppStage.AT_HOSPITAL &&
+        showWaterBreakShortcut = settings.appStage == AppStage.LABOR || hasActiveWaterBreak,
+        showBirthDetailsCard = settings.appStage == AppStage.BABY_BORN &&
             (laborSummary.babyName.isNullOrBlank() ||
                 laborSummary.birthWeightGrams == null ||
                 laborSummary.birthHeightCm == null),
         checklistFirst = settings.appStage == AppStage.PREPARING,
-        showLaborQuickActions = settings.appStage == AppStage.CONTRACTIONS &&
+        showLaborQuickActions = settings.appStage == AppStage.LABOR &&
             laborSummary.birthTime == null
     )
 }
@@ -50,3 +49,4 @@ data class HomeContent(
     val checklistFirst: Boolean,
     val showLaborQuickActions: Boolean
 )
+

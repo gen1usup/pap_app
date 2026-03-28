@@ -102,7 +102,7 @@ internal val defaultChecklistTemplates: List<ChecklistTemplate> = listOf(
     ),
     ChecklistTemplate(
         title = "Что проверить сразу",
-        stage = AppStage.CONTRACTIONS,
+        stage = AppStage.LABOR,
         category = "Когда начались роды",
         sortOrder = 10,
         items = listOf(
@@ -114,7 +114,7 @@ internal val defaultChecklistTemplates: List<ChecklistTemplate> = listOf(
     ),
     ChecklistTemplate(
         title = "Что подготовить",
-        stage = AppStage.CONTRACTIONS,
+        stage = AppStage.LABOR,
         category = "Когда начались роды",
         sortOrder = 11,
         items = listOf(
@@ -126,7 +126,7 @@ internal val defaultChecklistTemplates: List<ChecklistTemplate> = listOf(
     ),
     ChecklistTemplate(
         title = "Что не забыть",
-        stage = AppStage.CONTRACTIONS,
+        stage = AppStage.LABOR,
         category = "Когда начались роды",
         sortOrder = 12,
         items = listOf(
@@ -138,7 +138,7 @@ internal val defaultChecklistTemplates: List<ChecklistTemplate> = listOf(
     ),
     ChecklistTemplate(
         title = "Перед выездом",
-        stage = AppStage.CONTRACTIONS,
+        stage = AppStage.LABOR,
         category = "Перед выездом",
         sortOrder = 13,
         items = listOf(
@@ -151,7 +151,7 @@ internal val defaultChecklistTemplates: List<ChecklistTemplate> = listOf(
     ),
     ChecklistTemplate(
         title = "Документы ребенка",
-        stage = AppStage.AT_HOSPITAL,
+        stage = AppStage.BABY_BORN,
         category = "После родов",
         sortOrder = 20,
         items = listOf(
@@ -163,7 +163,7 @@ internal val defaultChecklistTemplates: List<ChecklistTemplate> = listOf(
     ),
     ChecklistTemplate(
         title = "Медицина и визиты",
-        stage = AppStage.AT_HOME,
+        stage = AppStage.BABY_BORN,
         category = "После родов",
         sortOrder = 21,
         items = listOf(
@@ -175,7 +175,7 @@ internal val defaultChecklistTemplates: List<ChecklistTemplate> = listOf(
     ),
     ChecklistTemplate(
         title = "Организация дома",
-        stage = AppStage.AT_HOME,
+        stage = AppStage.BABY_BORN,
         category = "После родов",
         sortOrder = 22,
         items = listOf(
@@ -187,7 +187,7 @@ internal val defaultChecklistTemplates: List<ChecklistTemplate> = listOf(
     ),
     ChecklistTemplate(
         title = "Помощь маме",
-        stage = AppStage.AT_HOME,
+        stage = AppStage.BABY_BORN,
         category = "Помощь маме",
         sortOrder = 23,
         items = listOf(

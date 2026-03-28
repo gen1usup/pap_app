@@ -1,6 +1,5 @@
 package com.dadnavigator.app.domain.usecase.labor
 
-import com.dadnavigator.app.domain.model.LaborSummary
 import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.domain.repository.LaborRepository
 import com.dadnavigator.app.domain.repository.SettingsRepository
@@ -11,7 +10,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
 /**
- * Marks the start of labor and switches the app into labor mode.
+ * Marks the start of active labor and switches the app into LABOR stage.
  */
 class MarkLaborStartedUseCase @Inject constructor(
     private val settingsRepository: SettingsRepository,
@@ -44,7 +43,8 @@ class MarkLaborStartedUseCase @Inject constructor(
                 timestamp = timestamp,
                 title = eventTitle.trim(),
                 description = eventDescription.trim(),
-                type = TimelineType.LABOR
+                type = TimelineType.LABOR,
+                stageAtCreation = com.dadnavigator.app.domain.model.AppStage.LABOR
             )
             return MarkLaborStartedResult.Started
         }
@@ -58,3 +58,4 @@ enum class MarkLaborStartedResult {
     AlreadyStarted,
     BlockedAfterBirth
 }
+

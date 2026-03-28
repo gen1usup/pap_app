@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.data.repository
+package com.dadnavigator.app.data.repository
 
 import com.dadnavigator.app.data.local.dao.ContractionDao
 import com.dadnavigator.app.data.local.entity.ContractionEntity
@@ -79,4 +79,9 @@ class ContractionRepositoryImpl @Inject constructor(
     override suspend fun finishContraction(contractionId: Long, endedAt: Instant) {
         contractionDao.finishContraction(contractionId, endedAt)
     }
+
+    override suspend fun deleteContraction(contractionId: Long) {
+        contractionDao.deleteContraction(contractionId)
+    }
 }
+

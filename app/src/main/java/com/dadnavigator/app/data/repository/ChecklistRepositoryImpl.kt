@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.data.repository
+package com.dadnavigator.app.data.repository
 
 import com.dadnavigator.app.data.local.dao.ChecklistDao
 import com.dadnavigator.app.data.local.entity.ChecklistEntity
@@ -30,7 +30,7 @@ class ChecklistRepositoryImpl @Inject constructor(
     }
 
     override suspend fun seedDefaultChecklistsIfNeeded(userId: String) {
-        if (checklistDao.countChecklists(userId) > 0) return
+        if (checklistDao.countAllChecklists(userId) > 0) return
 
         defaultChecklistTemplates.forEach { template ->
             val checklistId = checklistDao.insertChecklist(
@@ -62,7 +62,7 @@ class ChecklistRepositoryImpl @Inject constructor(
         title: String,
         stage: AppStage
     ): Long {
-        val nextSortOrder = checklistDao.countChecklists(userId)
+        val nextSortOrder = checklistDao.countActiveChecklists(userId)
         return checklistDao.insertChecklist(
             ChecklistEntity(
                 userId = userId,
@@ -81,7 +81,7 @@ class ChecklistRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteChecklist(userId: String, checklistId: Long) {
-        checklistDao.deleteCustomChecklistWithItems(userId, checklistId)
+        checklistDao.deleteChecklistWithItems(userId, checklistId)
     }
 
     override suspend fun addChecklistItem(userId: String, checklistId: Long, text: String) {

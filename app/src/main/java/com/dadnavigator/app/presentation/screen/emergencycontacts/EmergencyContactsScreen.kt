@@ -49,7 +49,8 @@ import com.dadnavigator.app.presentation.component.SecondaryButton
 
 @Composable
 fun EmergencyContactsScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
+    onMenu: (() -> Unit)? = null,
     viewModel: EmergencyContactsViewModel = hiltViewModel()
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
@@ -68,6 +69,7 @@ fun EmergencyContactsScreen(
         title = stringResource(id = R.string.emergency_contacts_title),
         subtitle = stringResource(id = R.string.emergency_contacts_subtitle),
         onBack = onBack,
+        onMenu = onMenu,
         snackbarHostState = snackbarHostState
     ) { innerPadding ->
         ScreenBackground {
@@ -271,3 +273,4 @@ private fun contactHeader(contact: EmergencyContact): String {
         else -> contact.title.ifBlank { stringResource(id = R.string.emergency_contact_new_title) }
     }
 }
+

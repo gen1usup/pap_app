@@ -1,4 +1,4 @@
-package com.dadnavigator.app.presentation.screen.dashboard
+﻿package com.dadnavigator.app.presentation.screen.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,21 +12,26 @@ import com.dadnavigator.app.domain.model.LaborSummary
 import com.dadnavigator.app.domain.model.RecommendationLevel
 import com.dadnavigator.app.domain.model.Settings
 import com.dadnavigator.app.domain.model.TimelineEvent
+import com.dadnavigator.app.domain.model.WaterBreakEvent
+import com.dadnavigator.app.domain.service.ActiveLaborRecommendation
+import com.dadnavigator.app.domain.service.ActiveLaborRecommendationPolicy
+import com.dadnavigator.app.domain.service.ActiveLaborRecommendationSource
 import com.dadnavigator.app.domain.service.HomeContentBuilder
-import com.dadnavigator.app.domain.usecase.checklist.SeedDefaultChecklistsUseCase
-import com.dadnavigator.app.domain.usecase.checklist.ObserveChecklistsUseCase
-import com.dadnavigator.app.domain.usecase.contraction.CalculateContractionStatsUseCase
-import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUseCase
-import com.dadnavigator.app.domain.usecase.labor.MarkBirthUseCase
-import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedUseCase
-import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedResult
+import com.dadnavigator.app.domain.service.LiveContractionSnapshotBuilder
 import com.dadnavigator.app.domain.service.StageManager
+import com.dadnavigator.app.domain.usecase.checklist.ObserveChecklistsUseCase
+import com.dadnavigator.app.domain.usecase.checklist.SeedDefaultChecklistsUseCase
+import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUseCase
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionResult
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionUseCase
+import com.dadnavigator.app.domain.usecase.labor.MarkBirthUseCase
+import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedResult
+import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedUseCase
 import com.dadnavigator.app.domain.usecase.settings.ObserveSettingsUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveLaborSummaryUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveTimelineUseCase
 import com.dadnavigator.app.domain.usecase.waterbreak.ObserveActiveWaterBreakUseCase
+import com.dadnavigator.app.domain.usecase.waterbreak.ObserveWaterBreakHistoryUseCase
 import com.dadnavigator.app.di.IoDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Duration
@@ -53,6 +58,7 @@ class DashboardViewModel @Inject constructor(
     private val observeSettingsUseCase: ObserveSettingsUseCase,
     private val observeContractionStateUseCase: ObserveContractionStateUseCase,
     private val observeActiveWaterBreakUseCase: ObserveActiveWaterBreakUseCase,
+    private val observeWaterBreakHistoryUseCase: ObserveWaterBreakHistoryUseCase,
     private val observeChecklistsUseCase: ObserveChecklistsUseCase,
     private val seedDefaultChecklistsUseCase: SeedDefaultChecklistsUseCase,
     private val observeTimelineUseCase: ObserveTimelineUseCase,
@@ -60,7 +66,8 @@ class DashboardViewModel @Inject constructor(
     private val markBirthUseCase: MarkBirthUseCase,
     private val markLaborStartedUseCase: MarkLaborStartedUseCase,
     private val toggleContractionUseCase: ToggleContractionUseCase,
-    private val calculateContractionStatsUseCase: CalculateContractionStatsUseCase,
+    private val liveContractionSnapshotBuilder: LiveContractionSnapshotBuilder,
+    private val activeLaborRecommendationPolicy: ActiveLaborRecommendationPolicy,
     private val homeContentBuilder: HomeContentBuilder,
     private val stageManager: StageManager,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
@@ -80,22 +87,35 @@ class DashboardViewModel @Inject constructor(
 
     val uiState = userIdState
         .flatMapLatest { userId ->
-            val dashboardBase = combine(
+            val dashboardContext = combine(
                 observeSettingsUseCase(),
                 observeContractionStateUseCase(userId),
                 observeActiveWaterBreakUseCase(userId),
-                observeChecklistsUseCase(userId),
-                observeTimelineUseCase(userId)
-            ) { settings, contractionState, waterBreakEvent, checklists, timeline ->
-                DashboardBaseState(
+                observeWaterBreakHistoryUseCase(userId)
+            ) { settings, contractionState, activeWaterBreakEvent, waterBreakHistory ->
+                DashboardContextState(
                     settings = settings,
                     contractionState = contractionState,
-                    isWaterBreakActive = waterBreakEvent?.isActive == true,
+                    activeWaterBreakEvent = activeWaterBreakEvent,
+                    latestWaterBreak = waterBreakHistory.maxByOrNull { it.happenedAt }
+                )
+            }
+
+            val dashboardBase = combine(
+                dashboardContext,
+                observeChecklistsUseCase(userId),
+                observeTimelineUseCase(userId)
+            ) { context, checklists, timeline ->
+                DashboardBaseState(
+                    settings = context.settings,
+                    contractionState = context.contractionState,
+                    activeWaterBreakEvent = context.activeWaterBreakEvent,
+                    latestWaterBreak = context.latestWaterBreak,
                     stageChecklistCompleted = checklists
-                        .filter { it.checklist.stage == settings.appStage }
+                        .filter { it.checklist.stage == context.settings.appStage }
                         .sumOf { it.completedCount },
                     stageChecklistTotal = checklists
-                        .filter { it.checklist.stage == settings.appStage }
+                        .filter { it.checklist.stage == context.settings.appStage }
                         .sumOf { it.totalCount },
                     recentEvents = timeline.take(4)
                 )
@@ -103,12 +123,10 @@ class DashboardViewModel @Inject constructor(
 
             combine(
                 dashboardBase,
-                observeActiveWaterBreakUseCase(userId),
                 observeLaborSummaryUseCase(userId),
                 ticker
-            ) { base, waterBreakEvent, laborSummary, now ->
+            ) { base, laborSummary, now ->
                 val settings = base.settings
-                val contractionStats = calculateContractionStatsUseCase(base.contractionState.contractions)
                 val stageInfo = stageManager.buildStageInfo(
                     settings = settings,
                     laborSummary = laborSummary,
@@ -119,27 +137,33 @@ class DashboardViewModel @Inject constructor(
                     stageInfo = stageInfo,
                     laborSummary = laborSummary,
                     hasActiveContractionSession = base.contractionState.session?.isActive == true,
-                    hasActiveWaterBreak = base.isWaterBreakActive
+                    hasActiveWaterBreak = base.activeWaterBreakEvent?.isActive == true
                 )
+                val snapshot = liveContractionSnapshotBuilder.build(
+                    activeState = base.contractionState,
+                    now = now
+                )
+                val recommendation = activeLaborRecommendationPolicy.resolve(
+                    contractionStats = snapshot.stats,
+                    latestWaterBreak = base.latestWaterBreak,
+                    birthRecorded = laborSummary.birthTime != null
+                )
+
                 DashboardUiState(
                     fatherName = settings.fatherName,
                     appStage = settings.appStage,
                     dueDate = settings.dueDate,
                     daysUntilDueDate = stageInfo.daysUntilDueDate,
-                    hasActiveContractionSession = base.contractionState.session?.isActive == true,
-                    contractionSessionId = base.contractionState.session?.id,
-                    activeContractionId = base.contractionState.activeContraction?.id,
-                    isContractionRunning = base.contractionState.activeContraction != null,
-                    currentContractionDuration = base.contractionState.activeContraction?.let {
-                        Duration.between(it.startedAt, now)
-                    } ?: Duration.ZERO,
-                    currentInterval = currentInterval(
-                        contractionState = base.contractionState,
-                        now = now
-                    ),
-                    contractionStats = contractionStats,
-                    hasActiveWaterBreak = base.isWaterBreakActive,
-                    waterBreakElapsed = waterBreakEvent?.elapsed(now),
+                    hasActiveContractionSession = snapshot.isSessionActive,
+                    contractionSessionId = snapshot.sessionId,
+                    activeContractionId = snapshot.activeContractionId,
+                    isContractionRunning = snapshot.activeContractionId != null,
+                    currentContractionDuration = snapshot.currentContractionDuration,
+                    currentInterval = snapshot.currentInterval,
+                    contractionStats = snapshot.stats,
+                    recommendation = recommendation,
+                    hasActiveWaterBreak = base.activeWaterBreakEvent?.isActive == true,
+                    waterBreakElapsed = base.activeWaterBreakEvent?.elapsed(now),
                     laborSummary = laborSummary,
                     stageChecklistCompletedCount = base.stageChecklistCompleted,
                     stageChecklistTotalCount = base.stageChecklistTotal,
@@ -150,9 +174,7 @@ class DashboardViewModel @Inject constructor(
                     showWaterBreakShortcut = homeContent.showWaterBreakShortcut,
                     showBirthDetailsCard = homeContent.showBirthDetailsCard,
                     checklistFirst = homeContent.checklistFirst,
-                    showLaborQuickActions = homeContent.showLaborQuickActions,
-                    infoRes = null,
-                    errorRes = null
+                    showLaborQuickActions = homeContent.showLaborQuickActions
                 )
             }.combine(infoState) { partial, infoRes ->
                 partial.copy(infoRes = infoRes)
@@ -196,15 +218,9 @@ class DashboardViewModel @Inject constructor(
                     eventTitle = eventTitle,
                     eventDescription = eventDescription
                 )) {
-                    MarkLaborStartedResult.Started -> {
-                        infoState.value = R.string.events_labor_started_saved
-                    }
-                    MarkLaborStartedResult.AlreadyStarted -> {
-                        infoState.value = R.string.events_labor_started_already_saved
-                    }
-                    MarkLaborStartedResult.BlockedAfterBirth -> {
-                        infoState.value = R.string.events_labor_start_blocked_after_birth
-                    }
+                    MarkLaborStartedResult.Started -> infoState.value = R.string.events_labor_started_saved
+                    MarkLaborStartedResult.AlreadyStarted -> infoState.value = R.string.events_labor_started_already_saved
+                    MarkLaborStartedResult.BlockedAfterBirth -> infoState.value = R.string.events_labor_start_blocked_after_birth
                 }
             }.onFailure {
                 errorState.value = R.string.error_generic
@@ -278,6 +294,10 @@ data class DashboardUiState(
         trend = ContractionTrend.INSUFFICIENT_DATA,
         recommendationLevel = RecommendationLevel.MONITOR
     ),
+    val recommendation: ActiveLaborRecommendation = ActiveLaborRecommendation(
+        level = RecommendationLevel.MONITOR,
+        source = ActiveLaborRecommendationSource.CONTRACTIONS
+    ),
     val hasActiveWaterBreak: Boolean = false,
     val waterBreakElapsed: Duration? = null,
     val laborSummary: LaborSummary = LaborSummary(
@@ -301,31 +321,19 @@ data class DashboardUiState(
     val errorRes: Int? = null
 )
 
+private data class DashboardContextState(
+    val settings: Settings,
+    val contractionState: ActiveContractionState,
+    val activeWaterBreakEvent: WaterBreakEvent?,
+    val latestWaterBreak: WaterBreakEvent?
+)
+
 private data class DashboardBaseState(
     val settings: Settings,
     val contractionState: ActiveContractionState,
-    val isWaterBreakActive: Boolean,
+    val activeWaterBreakEvent: WaterBreakEvent?,
+    val latestWaterBreak: WaterBreakEvent?,
     val stageChecklistCompleted: Int,
     val stageChecklistTotal: Int,
     val recentEvents: List<TimelineEvent>
 )
-
-private fun currentInterval(
-    contractionState: ActiveContractionState,
-    now: Instant
-): Duration? {
-    val sortedContractions = contractionState.contractions.sortedBy { it.startedAt }
-    val activeContraction = contractionState.activeContraction
-
-    return when {
-        activeContraction != null -> {
-            sortedContractions
-                .filterNot { it.id == activeContraction.id }
-                .lastOrNull()
-                ?.let { previous -> Duration.between(previous.startedAt, activeContraction.startedAt) }
-        }
-
-        sortedContractions.isNotEmpty() -> Duration.between(sortedContractions.last().startedAt, now)
-        else -> null
-    }
-}

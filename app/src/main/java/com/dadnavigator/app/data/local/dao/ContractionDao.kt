@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.data.local.dao
+package com.dadnavigator.app.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -85,6 +85,10 @@ interface ContractionDao {
     @Query("UPDATE contractions SET endedAt = :endedAt WHERE id = :contractionId")
     suspend fun finishContraction(contractionId: Long, endedAt: Instant)
 
+    @Query("DELETE FROM contractions WHERE id = :contractionId")
+    suspend fun deleteContraction(contractionId: Long)
+
     @Query("UPDATE contractions SET endedAt = :endedAt WHERE sessionId = :sessionId AND endedAt IS NULL")
     suspend fun finishActiveContractionsInSession(sessionId: Long, endedAt: Instant)
 }
+

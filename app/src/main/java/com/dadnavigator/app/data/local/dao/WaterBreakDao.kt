@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.data.local.dao
+package com.dadnavigator.app.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -54,4 +54,8 @@ interface WaterBreakDao {
         """
     )
     suspend fun closeActiveEvent(userId: String, closedAt: Instant)
+
+    @Query("DELETE FROM water_break_events WHERE id = :eventId")
+    suspend fun deleteEvent(eventId: Long)
 }
+

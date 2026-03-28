@@ -1,131 +1,57 @@
-﻿# Реестр тестов
+﻿# Тестовые сценарии
 
-Документ описывает актуальные автоматические тесты и последний подтвержденный прогон.
-
-## 1. Последний подтвержденный прогон
-
-Дата: 27.03.2026
-
-Стенд:
-
-- `emulator-5554`
-
-Подтвержденные результаты:
-
-- `:app:compileDebugKotlin` — успешно
-- `:app:compileDebugAndroidTestKotlin` — успешно
-- `:app:testDebugUnitTest` — успешно
-- `:app:connectedDebugAndroidTest` — успешно
-
-Instrumentation summary:
-
-- `DeviceScenarioUiTest` — `OK (7 tests)`
-- `NavigationUiTest` — `OK (1 test)`
-- `SettingsValidationUiTest` — `OK (1 test)`
-- `ContractionAnalyticsUiTest` — `OK (3 tests)`
-
-Итого подтверждено на эмуляторе: `12 instrumented tests`.
-
-## 2. Unit test suites
-
-### [StageManagementTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/service/StageManagementTest.kt)
-
-Покрывает:
-
-- совместимость legacy stage-значений
-- readiness-window с 37 недели
-- отсутствие ПДР
-- допустимые переходы между этапами
-- блокировку ручного отката после рождения
+## Unit tests
+### Stage и переходы
+Покрываются:
+- legacy mapping старых stage values
+- `PREPARING -> LABOR` через схватки и воды
+- `LABOR -> BABY_BORN`
+- ручной возврат в `LABOR` после рождения
 - базовые правила `HomeContentBuilder`
 
-### [LaborLifecycleUseCasesTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/labor/LaborLifecycleUseCasesTest.kt)
+Файлы:
+- `StageManagementTest`
+- `LaborLifecycleUseCasesTest`
+- `SettingsStageGuardUseCasesTest`
 
-Покрывает:
+### События и журнал
+Покрываются:
+- stage-aware состав секций `Событий`
+- отсутствие labor-only действий в `BABY_BORN`
+- фильтрация журнала по `stageAtCreation`
+- фильтр `Мои заметки` по `entryType`
 
-- первое начало родов
-- запрет повторного старта
-- блокировку `Начались роды` после рождения
-- первое сохранение рождения
-- guard для `Приехали домой`
+Файлы:
+- `EventsProviderTest`
+- `TimelineFilterPolicyTest`
 
-### [SettingsStageGuardUseCasesTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/settings/SettingsStageGuardUseCasesTest.kt)
+### Удаления и пересчет
+Покрываются:
+- удаление схватки и пересчет интервалов
+- удаление записи о водах и пересчет рекомендации
+- удаленный дефолтный чек-лист не восстанавливается автоматически
 
-Покрывает:
+Файлы:
+- `EventDeletionRecalculationTest`
+- `ChecklistRepositoryImplTest`
 
-- защиту `UpdateAppStageUseCase`
-- защиту `SaveSettingsUseCase`
-- невозможность сохранить нелогичный stage rollback после рождения
+## Instrumentation tests
+Покрываются:
+- bottom navigation smoke
+- drawer stage preview screen
+- `Home -> Checklists -> Home`
+- карточка ребенка на `Главной` после рождения
+- открытие `Событий`, `Контактов`, `Настроек`
+- smoke-сценарии после `BABY_BORN`
 
-### [ChecklistUseCasesTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/ChecklistUseCasesTest.kt)
+Файлы:
+- `DeviceScenarioUiTest`
+- `NavigationUiTest`
+- `SettingsValidationUiTest`
+- `ContractionAnalyticsUiTest`
 
-Покрывает:
-
-- создание пользовательского списка
-- trim названия списка
-- запрет пустого названия
-- добавление пункта
-- trim текста пункта
-- delete item / delete checklist
-- toggle item
-
-### [CalculateContractionStatsUseCaseTest.kt](c:/PROJECTS/pap_app/app/src/test/java/com/dadnavigator/app/domain/usecase/CalculateContractionStatsUseCaseTest.kt)
-
-Покрывает:
-
-- пустую историю
-- monitor / prepare / go patterns
-- irregular сценарии
-- recent-window расчеты
-
-## 3. Instrumented test suites
-
-### [DeviceScenarioUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/DeviceScenarioUiTest.kt)
-
-Проверяет:
-
-- `Главная -> Чек-листы -> Главная`
-- открытие stage screen из drawer
-- перестройку `Главной` в `AT_HOSPITAL`
-- hospital-сценарий `Событий`
-- home-сценарий `Событий`
-- `Справку` и `SOS`
-- открытие `Настроек` и наличие controls для ПДР
-
-### [NavigationUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/NavigationUiTest.kt)
-
-Проверяет:
-
-- переход в экран схваток из `Событий`
-
-### [SettingsValidationUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/SettingsValidationUiTest.kt)
-
-Проверяет:
-
-- inline-валидацию неверной ПДР
-
-### [ContractionAnalyticsUiTest.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/ContractionAnalyticsUiTest.kt)
-
-Проверяет через seeded данные:
-
-- `Наблюдаем`
-- `Готовимся к выезду`
-- `Пора ехать`
-
-## 4. Тестовые данные для длинных сценариев
-
-Для сценариев, которые в реальности занимают десятки минут, используется [TestAppStateSeeder.kt](c:/PROJECTS/pap_app/app/src/androidTest/java/com/dadnavigator/app/testsupport/TestAppStateSeeder.kt).
-
-Seeder умеет:
-
-- очищать локальные данные
-- seed-ить stage
-- seed-ить готовые паттерны схваток с историческими timestamp
-
-Это позволяет проверять критические и граничные сценарии без реального ожидания времени.
-
-## 5. Что дополнительно подтверждено этим прогоном
-
-- миграция Room `4 -> 6` теперь работает на уже существующей тестовой базе
-- общий и прямой migration path для новых checklist/contact изменений не ломает открытие приложения
-- обновленные `Справка`, `Контакты`, `SOS` и `Чек-листы` не ломают navigation smoke suite
+## Последний подтвержденный прогон
+28 марта 2026 года:
+- `:app:testDebugUnitTest` — успешно
+- `:app:connectedDebugAndroidTest` — успешно, `12/12`
+- `:app:assembleDebug` — успешно

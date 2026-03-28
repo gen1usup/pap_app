@@ -8,6 +8,7 @@ import com.dadnavigator.app.domain.model.DEFAULT_USER_ID
 import com.dadnavigator.app.domain.model.LaborSummary
 import com.dadnavigator.app.domain.model.Settings
 import com.dadnavigator.app.domain.model.ThemeMode
+import com.dadnavigator.app.domain.model.TimelineEntryType
 import com.dadnavigator.app.domain.model.TimelineEvent
 import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.domain.model.WaterBreakEvent
@@ -18,7 +19,13 @@ import com.dadnavigator.app.domain.repository.SettingsRepository
 import com.dadnavigator.app.domain.repository.TimelineRepository
 import com.dadnavigator.app.domain.repository.WaterBreakRepository
 import com.dadnavigator.app.domain.service.StageTransitionManager
+import com.dadnavigator.app.domain.usecase.contraction.FinishContractionUseCase
+import com.dadnavigator.app.domain.usecase.contraction.StartContractionSessionUseCase
+import com.dadnavigator.app.domain.usecase.contraction.StartContractionUseCase
+import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionResult
+import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionUseCase
 import com.dadnavigator.app.domain.usecase.timeline.AddTimelineEventUseCase
+import com.dadnavigator.app.domain.usecase.waterbreak.AddWaterBreakEventUseCase
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
@@ -26,12 +33,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Tests manual labor lifecycle transitions and duplicate-protection rules.
+ * Tests labor lifecycle transitions and duplicate-protection rules.
  */
 class LaborLifecycleUseCasesTest {
 
@@ -58,11 +66,65 @@ class LaborLifecycleUseCasesTest {
         )
 
         assertEquals(MarkLaborStartedResult.Started, result)
-        assertEquals(AppStage.CONTRACTIONS, settingsRepository.current.appStage)
+        assertEquals(AppStage.LABOR, settingsRepository.current.appStage)
         assertEquals(timestamp, laborRepository.current.laborStartTime)
         assertEquals(1, timelineRepository.events.size)
         assertEquals(TimelineType.LABOR, timelineRepository.events.single().type)
         assertEquals("Начались схватки", timelineRepository.events.single().title)
+    }
+
+    @Test
+    fun `toggle contraction starts session and moves app to labor`() = runTest {
+        val settingsRepository = FakeSettingsRepository()
+        val laborRepository = FakeLaborRepository()
+        val contractionRepository = FakeContractionRepository()
+        val timelineRepository = FakeTimelineRepository()
+        val toggleUseCase = ToggleContractionUseCase(
+            contractionRepository = contractionRepository,
+            startContractionSessionUseCase = StartContractionSessionUseCase(contractionRepository),
+            startContractionUseCase = StartContractionUseCase(contractionRepository),
+            finishContractionUseCase = FinishContractionUseCase(contractionRepository),
+            addTimelineEventUseCase = AddTimelineEventUseCase(timelineRepository, settingsRepository),
+            settingsRepository = settingsRepository,
+            laborRepository = laborRepository,
+            stageTransitionManager = stageTransitionManager
+        )
+
+        val result = toggleUseCase(
+            userId = DEFAULT_USER_ID,
+            sessionId = null,
+            activeContractionId = null
+        )
+
+        assertEquals(ToggleContractionResult.Started, result)
+        assertEquals(AppStage.LABOR, settingsRepository.current.appStage)
+        assertNotNull(contractionRepository.activeState.value.session)
+        assertNotNull(contractionRepository.activeState.value.activeContraction)
+    }
+
+    @Test
+    fun `adding water break moves app to labor`() = runTest {
+        val settingsRepository = FakeSettingsRepository()
+        val laborRepository = FakeLaborRepository()
+        val waterBreakRepository = FakeWaterBreakRepository()
+        val useCase = AddWaterBreakEventUseCase(
+            waterBreakRepository = waterBreakRepository,
+            settingsRepository = settingsRepository,
+            laborRepository = laborRepository,
+            stageTransitionManager = stageTransitionManager
+        )
+        val happenedAt = Instant.parse("2026-03-27T09:30:00Z")
+
+        useCase(
+            userId = DEFAULT_USER_ID,
+            happenedAt = happenedAt,
+            color = WaterColor.CLEAR,
+            notes = "Прозрачные воды"
+        )
+
+        assertEquals(AppStage.LABOR, settingsRepository.current.appStage)
+        assertEquals(happenedAt, waterBreakRepository.createdEvent?.happenedAt)
+        assertEquals(WaterColor.CLEAR, waterBreakRepository.createdEvent?.color)
     }
 
     @Test
@@ -94,14 +156,14 @@ class LaborLifecycleUseCasesTest {
         )
 
         assertEquals(MarkLaborStartedResult.AlreadyStarted, result)
-        assertEquals(AppStage.CONTRACTIONS, settingsRepository.current.appStage)
+        assertEquals(AppStage.LABOR, settingsRepository.current.appStage)
         assertEquals(existingStart, laborRepository.current.laborStartTime)
         assertTrue("A duplicate labor event should not be created", timelineRepository.events.isEmpty())
     }
 
     @Test
     fun `mark labor started is blocked after birth`() = runTest {
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.AT_HOSPITAL)
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.BABY_BORN)
         val laborRepository = FakeLaborRepository(
             LaborSummary(
                 laborStartTime = null,
@@ -127,14 +189,14 @@ class LaborLifecycleUseCasesTest {
         )
 
         assertEquals(MarkLaborStartedResult.BlockedAfterBirth, result)
-        assertEquals(AppStage.AT_HOSPITAL, settingsRepository.current.appStage)
+        assertEquals(AppStage.BABY_BORN, settingsRepository.current.appStage)
         assertNull(laborRepository.current.laborStartTime)
         assertTrue(timelineRepository.events.isEmpty())
     }
 
     @Test
     fun `mark birth switches stage saves details and creates first birth event`() = runTest {
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.CONTRACTIONS)
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.LABOR)
         val laborRepository = FakeLaborRepository()
         val contractionRepository = FakeContractionRepository()
         val waterBreakRepository = FakeWaterBreakRepository()
@@ -159,7 +221,7 @@ class LaborLifecycleUseCasesTest {
             birthHeightCm = 52
         )
 
-        assertEquals(AppStage.AT_HOSPITAL, settingsRepository.current.appStage)
+        assertEquals(AppStage.BABY_BORN, settingsRepository.current.appStage)
         assertEquals(timestamp, laborRepository.current.birthTime)
         assertEquals("Миша", laborRepository.current.babyName)
         assertEquals(3450, laborRepository.current.birthWeightGrams)
@@ -171,7 +233,7 @@ class LaborLifecycleUseCasesTest {
     @Test
     fun `mark birth preserves existing birth data and avoids duplicate event`() = runTest {
         val existingBirth = Instant.parse("2026-03-27T10:10:00Z")
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.CONTRACTIONS)
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.LABOR)
         val laborRepository = FakeLaborRepository(
             LaborSummary(
                 laborStartTime = Instant.parse("2026-03-27T08:00:00Z"),
@@ -203,7 +265,7 @@ class LaborLifecycleUseCasesTest {
             birthHeightCm = null
         )
 
-        assertEquals(AppStage.AT_HOSPITAL, settingsRepository.current.appStage)
+        assertEquals(AppStage.BABY_BORN, settingsRepository.current.appStage)
         assertEquals(existingBirth, laborRepository.current.birthTime)
         assertEquals("Анна", laborRepository.current.babyName)
         assertEquals(3300, laborRepository.current.birthWeightGrams)
@@ -213,7 +275,7 @@ class LaborLifecycleUseCasesTest {
 
     @Test
     fun `mark birth ignores blank optional baby name`() = runTest {
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.CONTRACTIONS)
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.LABOR)
         val laborRepository = FakeLaborRepository()
         val contractionRepository = FakeContractionRepository()
         val waterBreakRepository = FakeWaterBreakRepository()
@@ -243,7 +305,7 @@ class LaborLifecycleUseCasesTest {
     @Test
     fun `mark birth closes active contraction session and water break`() = runTest {
         val timestamp = Instant.parse("2026-03-27T10:45:00Z")
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.CONTRACTIONS)
+        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.LABOR)
         val laborRepository = FakeLaborRepository()
         val contractionRepository = FakeContractionRepository(
             initialState = ActiveContractionState(
@@ -306,61 +368,7 @@ class LaborLifecycleUseCasesTest {
         assertEquals(timestamp, waterBreakRepository.activeEvent.value?.closedAt)
     }
 
-    @Test
-    fun `mark arrived home requires birth and hospital stage`() = runTest {
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.CONTRACTIONS)
-        val laborRepository = FakeLaborRepository()
-        val timelineRepository = FakeTimelineRepository()
-        val useCase = MarkArrivedHomeUseCase(
-            settingsRepository = settingsRepository,
-            laborRepository = laborRepository,
-            stageTransitionManager = stageTransitionManager,
-            addTimelineEventUseCase = AddTimelineEventUseCase(timelineRepository)
-        )
-
-        val result = useCase(
-            userId = DEFAULT_USER_ID,
-            eventTitle = "Приехали домой",
-            eventDescription = ""
-        )
-
-        assertEquals(MarkArrivedHomeResult.BirthNotRecorded, result)
-        assertEquals(AppStage.CONTRACTIONS, settingsRepository.current.appStage)
-        assertTrue(timelineRepository.events.isEmpty())
-    }
-
-    @Test
-    fun `mark arrived home switches stage only from hospital flow`() = runTest {
-        val settingsRepository = FakeSettingsRepository(initialStage = AppStage.AT_HOSPITAL)
-        val laborRepository = FakeLaborRepository(
-            LaborSummary(
-                laborStartTime = Instant.parse("2026-03-27T08:00:00Z"),
-                birthTime = Instant.parse("2026-03-27T10:10:00Z"),
-                babyName = null,
-                birthWeightGrams = null,
-                birthHeightCm = null
-            )
-        )
-        val timelineRepository = FakeTimelineRepository()
-        val useCase = MarkArrivedHomeUseCase(
-            settingsRepository = settingsRepository,
-            laborRepository = laborRepository,
-            stageTransitionManager = stageTransitionManager,
-            addTimelineEventUseCase = AddTimelineEventUseCase(timelineRepository)
-        )
-
-        val result = useCase(
-            userId = DEFAULT_USER_ID,
-            eventTitle = "Приехали домой",
-            eventDescription = "Домой после выписки"
-        )
-
-        assertEquals(MarkArrivedHomeResult.Marked, result)
-        assertEquals(AppStage.AT_HOME, settingsRepository.current.appStage)
-        assertEquals(1, timelineRepository.events.size)
-    }
 }
-
 private class FakeSettingsRepository(
     initialStage: AppStage = AppStage.PREPARING
 ) : SettingsRepository {
@@ -433,7 +441,9 @@ private class FakeTimelineRepository : TimelineRepository {
         timestamp: Instant,
         title: String,
         description: String,
-        type: TimelineType
+        type: TimelineType,
+        stageAtCreation: AppStage,
+        entryType: TimelineEntryType
     ) {
         events += TimelineEvent(
             id = (events.size + 1).toLong(),
@@ -441,7 +451,9 @@ private class FakeTimelineRepository : TimelineRepository {
             type = type,
             timestamp = timestamp,
             title = title,
-            description = description
+            description = description,
+            stageAtCreation = stageAtCreation,
+            entryType = entryType
         )
     }
 }
@@ -455,6 +467,8 @@ private class FakeContractionRepository(
 ) : ContractionRepository {
 
     val activeState = MutableStateFlow(initialState)
+    private var nextSessionId = 100L
+    private var nextContractionId = 200L
     var finishedContractionAt: Instant? = null
     var finishedSessionAt: Instant? = null
 
@@ -464,7 +478,16 @@ private class FakeContractionRepository(
         activeState.value.session?.let(::listOf) ?: emptyList()
     )
 
-    override suspend fun startSession(userId: String, startedAt: Instant): Long = 1L
+    override suspend fun startSession(userId: String, startedAt: Instant): Long {
+        val session = ContractionSession(
+            id = nextSessionId++,
+            userId = userId,
+            startedAt = startedAt,
+            endedAt = null
+        )
+        activeState.value = activeState.value.copy(session = session)
+        return session.id
+    }
 
     override suspend fun finishSession(sessionId: Long, endedAt: Instant) {
         finishedSessionAt = endedAt
@@ -473,7 +496,20 @@ private class FakeContractionRepository(
         )
     }
 
-    override suspend fun startContraction(sessionId: Long, userId: String, startedAt: Instant): Long = 1L
+    override suspend fun startContraction(sessionId: Long, userId: String, startedAt: Instant): Long {
+        val contraction = Contraction(
+            id = nextContractionId++,
+            sessionId = sessionId,
+            userId = userId,
+            startedAt = startedAt,
+            endedAt = null
+        )
+        activeState.value = activeState.value.copy(
+            contractions = activeState.value.contractions + contraction,
+            activeContraction = contraction
+        )
+        return contraction.id
+    }
 
     override suspend fun finishContraction(contractionId: Long, endedAt: Instant) {
         finishedContractionAt = endedAt
@@ -484,6 +520,13 @@ private class FakeContractionRepository(
             activeContraction = null
         )
     }
+
+    override suspend fun deleteContraction(contractionId: Long) {
+        activeState.value = activeState.value.copy(
+            contractions = activeState.value.contractions.filterNot { it.id == contractionId },
+            activeContraction = activeState.value.activeContraction?.takeUnless { it.id == contractionId }
+        )
+    }
 }
 
 private class FakeWaterBreakRepository(
@@ -491,6 +534,7 @@ private class FakeWaterBreakRepository(
 ) : WaterBreakRepository {
 
     val activeEvent = MutableStateFlow(initialActiveEvent)
+    var createdEvent: WaterBreakEvent? = null
     var closedAt: Instant? = null
 
     override fun observeActiveEvent(userId: String): Flow<WaterBreakEvent?> = activeEvent
@@ -504,10 +548,34 @@ private class FakeWaterBreakRepository(
         happenedAt: Instant,
         color: WaterColor,
         notes: String
-    ): Long = 1L
+    ): Long {
+        createdEvent = WaterBreakEvent(
+            id = 1L,
+            userId = userId,
+            happenedAt = happenedAt,
+            color = color,
+            notes = notes,
+            closedAt = null
+        )
+        activeEvent.value = createdEvent
+        return 1L
+    }
 
     override suspend fun closeActiveEvent(userId: String, closedAt: Instant) {
         this.closedAt = closedAt
         activeEvent.value = activeEvent.value?.copy(closedAt = closedAt)
     }
+
+    override suspend fun deleteEvent(eventId: Long) {
+        if (activeEvent.value?.id == eventId) {
+            activeEvent.value = null
+        }
+        if (createdEvent?.id == eventId) {
+            createdEvent = null
+        }
+    }
 }
+
+
+
+

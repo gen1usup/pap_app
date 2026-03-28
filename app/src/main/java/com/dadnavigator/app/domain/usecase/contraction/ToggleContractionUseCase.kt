@@ -1,7 +1,10 @@
 package com.dadnavigator.app.domain.usecase.contraction
 
 import com.dadnavigator.app.domain.repository.ContractionRepository
+import com.dadnavigator.app.domain.repository.LaborRepository
+import com.dadnavigator.app.domain.repository.SettingsRepository
 import com.dadnavigator.app.domain.model.TimelineType
+import com.dadnavigator.app.domain.service.StageTransitionManager
 import com.dadnavigator.app.domain.usecase.timeline.AddTimelineEventUseCase
 import java.time.Duration
 import java.time.Instant
@@ -21,7 +24,10 @@ class ToggleContractionUseCase @Inject constructor(
     private val startContractionSessionUseCase: StartContractionSessionUseCase,
     private val startContractionUseCase: StartContractionUseCase,
     private val finishContractionUseCase: FinishContractionUseCase,
-    private val addTimelineEventUseCase: AddTimelineEventUseCase
+    private val addTimelineEventUseCase: AddTimelineEventUseCase,
+    private val settingsRepository: SettingsRepository,
+    private val laborRepository: LaborRepository,
+    private val stageTransitionManager: StageTransitionManager
 ) {
     suspend operator fun invoke(
         userId: String,
@@ -32,6 +38,11 @@ class ToggleContractionUseCase @Inject constructor(
 
         return if (activeContractionId == null) {
             startContractionUseCase(sessionId = resolvedSessionId, userId = userId)
+            val settings = settingsRepository.observeSettings().first()
+            val laborSummary = laborRepository.observeLaborSummary(userId).first()
+            settingsRepository.saveSettings(
+                settings.copy(appStage = stageTransitionManager.laborStarted(laborSummary))
+            )
             ToggleContractionResult.Started
         } else {
             val activeState = contractionRepository.observeActiveState(userId).first()
@@ -51,7 +62,8 @@ class ToggleContractionUseCase @Inject constructor(
                         .maxByOrNull { it.startedAt }
                         ?.startedAt
                 ),
-                type = TimelineType.CONTRACTION
+                type = TimelineType.CONTRACTION,
+                stageAtCreation = com.dadnavigator.app.domain.model.AppStage.LABOR
             )
             ToggleContractionResult.Stopped
         }
@@ -100,3 +112,5 @@ private fun Duration.toCompactString(): String {
     val seconds = totalSeconds % 60
     return "%02d:%02d".format(minutes, seconds)
 }
+
+

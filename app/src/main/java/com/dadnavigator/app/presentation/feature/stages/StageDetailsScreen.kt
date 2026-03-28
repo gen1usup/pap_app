@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.ChildCare
-import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material3.MaterialTheme
@@ -33,7 +32,6 @@ import com.dadnavigator.app.presentation.navigation.stageLabelRes
 fun StageDetailsScreen(
     stage: AppStage,
     currentStage: AppStage,
-    birthRecorded: Boolean,
     onBack: () -> Unit,
     onActivate: (AppStage) -> Unit
 ) {
@@ -59,9 +57,8 @@ fun StageDetailsScreen(
                         description = stringResource(id = stageDescriptionRes(stage)),
                         tone = when (stage) {
                             AppStage.PREPARING -> StatusTone.Calm
-                            AppStage.CONTRACTIONS -> StatusTone.Warning
-                            AppStage.AT_HOSPITAL,
-                            AppStage.AT_HOME -> StatusTone.Success
+                            AppStage.LABOR -> StatusTone.Warning
+                            AppStage.BABY_BORN -> StatusTone.Success
                         },
                         icon = stageIcon(stage),
                         headline = stringResource(id = R.string.stage_screen_overline)
@@ -104,28 +101,24 @@ fun StageDetailsScreen(
 
 private fun stageTitleRes(stage: AppStage): Int = when (stage) {
     AppStage.PREPARING -> R.string.stage_screen_preparing_title
-    AppStage.CONTRACTIONS -> R.string.stage_screen_contractions_title
-    AppStage.AT_HOSPITAL -> R.string.stage_screen_at_hospital_title
-    AppStage.AT_HOME -> R.string.stage_screen_at_home_title
+    AppStage.LABOR -> R.string.stage_screen_labor_title
+    AppStage.BABY_BORN -> R.string.stage_screen_baby_born_title
 }
 
 private fun stageDescriptionRes(stage: AppStage): Int = when (stage) {
     AppStage.PREPARING -> R.string.stage_screen_preparing_description
-    AppStage.CONTRACTIONS -> R.string.stage_screen_contractions_description
-    AppStage.AT_HOSPITAL -> R.string.stage_screen_at_hospital_description
-    AppStage.AT_HOME -> R.string.stage_screen_at_home_description
+    AppStage.LABOR -> R.string.stage_screen_labor_description
+    AppStage.BABY_BORN -> R.string.stage_screen_baby_born_description
 }
 
 private fun stageVisibilityRes(stage: AppStage): Int = when (stage) {
     AppStage.PREPARING -> R.string.stage_screen_preparing_visibility
-    AppStage.CONTRACTIONS -> R.string.stage_screen_contractions_visibility
-    AppStage.AT_HOSPITAL -> R.string.stage_screen_at_hospital_visibility
-    AppStage.AT_HOME -> R.string.stage_screen_at_home_visibility
+    AppStage.LABOR -> R.string.stage_screen_labor_visibility
+    AppStage.BABY_BORN -> R.string.stage_screen_baby_born_visibility
 }
 
 private fun stageIcon(stage: AppStage): ImageVector = when (stage) {
     AppStage.PREPARING -> Icons.Outlined.Checklist
-    AppStage.CONTRACTIONS -> Icons.Outlined.MonitorHeart
-    AppStage.AT_HOSPITAL -> Icons.Outlined.LocalHospital
-    AppStage.AT_HOME -> Icons.Outlined.ChildCare
+    AppStage.LABOR -> Icons.Outlined.MonitorHeart
+    AppStage.BABY_BORN -> Icons.Outlined.ChildCare
 }

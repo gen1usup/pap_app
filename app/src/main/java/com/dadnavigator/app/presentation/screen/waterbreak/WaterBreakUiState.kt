@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.presentation.screen.waterbreak
+package com.dadnavigator.app.presentation.screen.waterbreak
 
 import com.dadnavigator.app.domain.model.WaterBreakEvent
 import com.dadnavigator.app.domain.model.WaterColor
@@ -13,5 +13,6 @@ data class WaterBreakUiState(
     val elapsed: Duration = Duration.ZERO,
     val selectedColor: WaterColor = WaterColor.CLEAR,
     val notes: String = "",
+    val infoRes: Int? = null,
     val errorRes: Int? = null
 )

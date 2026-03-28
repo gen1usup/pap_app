@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.data.local
+package com.dadnavigator.app.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
@@ -48,7 +48,7 @@ import com.dadnavigator.app.data.local.entity.WaterBreakEventEntity
         LaborSummaryEntity::class,
         EmergencyContactEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(RoomConverters::class)

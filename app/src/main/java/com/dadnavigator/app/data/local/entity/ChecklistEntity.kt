@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.data.local.entity
+package com.dadnavigator.app.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.Index
@@ -20,7 +20,8 @@ data class ChecklistEntity(
     val category: String,
     val isSystem: Boolean,
     val sortOrder: Int,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val isDeleted: Boolean = false
 )
 
 /**

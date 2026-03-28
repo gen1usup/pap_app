@@ -71,6 +71,13 @@ object DatabaseModule {
         }
     }
 
+    private val migration6To7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            ensureTimelineMetadataColumns(db)
+            ensureChecklistsSupportSoftDelete(db)
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
@@ -84,7 +91,8 @@ object DatabaseModule {
             migration3To4,
             migration4To5,
             migration5To6,
-            migration4To6
+            migration4To6,
+            migration6To7
         ).build()
     }
 
@@ -334,6 +342,53 @@ object DatabaseModule {
         )
     }
 
+    private fun ensureTimelineMetadataColumns(db: SupportSQLiteDatabase) {
+        if (!db.hasColumn("timeline_events", "stageAtCreation")) {
+            db.execSQL("ALTER TABLE timeline_events ADD COLUMN stageAtCreation TEXT NOT NULL DEFAULT 'PREPARING'")
+        }
+        if (!db.hasColumn("timeline_events", "entryType")) {
+            db.execSQL("ALTER TABLE timeline_events ADD COLUMN entryType TEXT NOT NULL DEFAULT 'SYSTEM'")
+        }
+
+        db.execSQL(
+            """
+            UPDATE timeline_events
+            SET stageAtCreation = CASE
+                WHEN type IN ('CONTRACTION', 'WATER_BREAK', 'LABOR', 'LABOR_NOTE', 'HOSPITAL_NOTE') THEN 'LABOR'
+                WHEN type IN ('BIRTH', 'FEEDING', 'DIAPER', 'SLEEP', 'HOME_NOTE') THEN 'BABY_BORN'
+                ELSE 'PREPARING'
+            END
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            UPDATE timeline_events
+            SET entryType = CASE
+                WHEN type IN ('PREPARATION_NOTE', 'LABOR_NOTE', 'HOSPITAL_NOTE', 'HOME_NOTE', 'NOTE') THEN 'USER_NOTE'
+                ELSE 'SYSTEM'
+            END
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE INDEX IF NOT EXISTS index_timeline_events_stageAtCreation
+            ON timeline_events(stageAtCreation)
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE INDEX IF NOT EXISTS index_timeline_events_entryType
+            ON timeline_events(entryType)
+            """.trimIndent()
+        )
+    }
+
+    private fun ensureChecklistsSupportSoftDelete(db: SupportSQLiteDatabase) {
+        if (!db.hasColumn("checklists", "isDeleted")) {
+            db.execSQL("ALTER TABLE checklists ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
     private fun ensureChecklistItemsHaveExtendedFields(db: SupportSQLiteDatabase) {
         if (!db.hasColumn("checklist_items", "note")) {
             db.execSQL("ALTER TABLE checklist_items ADD COLUMN note TEXT")
@@ -364,3 +419,4 @@ object DatabaseModule {
         return false
     }
 }
+

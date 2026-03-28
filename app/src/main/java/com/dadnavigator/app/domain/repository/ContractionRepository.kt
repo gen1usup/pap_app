@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.domain.repository
+package com.dadnavigator.app.domain.repository
 
 import com.dadnavigator.app.domain.model.ActiveContractionState
 import com.dadnavigator.app.domain.model.ContractionSession
@@ -20,4 +20,6 @@ interface ContractionRepository {
     suspend fun startContraction(sessionId: Long, userId: String, startedAt: Instant): Long
 
     suspend fun finishContraction(contractionId: Long, endedAt: Instant)
+
+    suspend fun deleteContraction(contractionId: Long)
 }

@@ -1,4 +1,4 @@
-package com.dadnavigator.app.presentation.screen.help
+﻿package com.dadnavigator.app.presentation.screen.help
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.MonitorHeart
-import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -54,16 +54,16 @@ fun HelpScreen(
                 }
                 item {
                     InfoSectionCard(
-                        title = stringResource(id = R.string.app_stage_contractions),
+                        title = stringResource(id = R.string.app_stage_labor),
                         lines = labor,
                         icon = Icons.Outlined.MonitorHeart
                     )
                 }
                 item {
                     InfoSectionCard(
-                        title = stringResource(id = R.string.app_stage_at_hospital),
+                        title = stringResource(id = R.string.app_stage_baby_born),
                         lines = afterBirth,
-                        icon = Icons.Outlined.Route
+                        icon = Icons.Outlined.ChildCare
                     )
                 }
                 item {
@@ -81,3 +81,4 @@ fun HelpScreen(
         }
     }
 }
+

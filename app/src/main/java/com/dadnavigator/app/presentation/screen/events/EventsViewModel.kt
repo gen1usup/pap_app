@@ -14,8 +14,6 @@ import com.dadnavigator.app.domain.service.StageManager
 import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUseCase
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionResult
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionUseCase
-import com.dadnavigator.app.domain.usecase.labor.MarkArrivedHomeResult
-import com.dadnavigator.app.domain.usecase.labor.MarkArrivedHomeUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkBirthUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedResult
 import com.dadnavigator.app.domain.usecase.labor.MarkLaborStartedUseCase
@@ -50,7 +48,6 @@ class EventsViewModel @Inject constructor(
     private val addTimelineEventUseCase: AddTimelineEventUseCase,
     private val markLaborStartedUseCase: MarkLaborStartedUseCase,
     private val markBirthUseCase: MarkBirthUseCase,
-    private val markArrivedHomeUseCase: MarkArrivedHomeUseCase,
     private val toggleContractionUseCase: ToggleContractionUseCase,
     private val stageManager: StageManager,
     private val eventsProvider: EventsProvider,
@@ -182,30 +179,6 @@ class EventsViewModel @Inject constructor(
                     type = TimelineType.LABOR
                 )
                 infoState.value = R.string.timeline_event_saved
-            }.onFailure {
-                errorState.value = R.string.error_generic
-            }
-        }
-    }
-
-    fun markArrivedHome(eventTitle: String, eventDescription: String = "") {
-        val userId = userIdState.value
-        if (userId.isBlank()) return
-
-        viewModelScope.launch(ioDispatcher) {
-            runCatching {
-                infoState.value = when (
-                    markArrivedHomeUseCase(
-                        userId = userId,
-                        eventTitle = eventTitle,
-                        eventDescription = eventDescription
-                    )
-                ) {
-                    MarkArrivedHomeResult.Marked -> R.string.events_arrived_home_saved
-                    MarkArrivedHomeResult.AlreadyHome -> R.string.events_arrived_home_already_saved
-                    MarkArrivedHomeResult.BirthNotRecorded -> R.string.events_arrived_home_requires_birth
-                    MarkArrivedHomeResult.NotAtHospital -> R.string.events_arrived_home_requires_hospital
-                }
             }.onFailure {
                 errorState.value = R.string.error_generic
             }
@@ -398,8 +371,8 @@ class EventsViewModel @Inject constructor(
             defaultTitle = "",
             titleEditable = true
         )
-        EventAction.RecordHospitalNote -> QuickRecordConfig(
-            timelineType = TimelineType.HOSPITAL_NOTE,
+        EventAction.RecordBabyNote -> QuickRecordConfig(
+            timelineType = TimelineType.BABY_NOTE,
             defaultTitle = "",
             titleEditable = true
         )
@@ -431,11 +404,6 @@ class EventsViewModel @Inject constructor(
             timelineType = TimelineType.NOTE,
             defaultTitle = "Вес"
         )
-        EventAction.RecordHomeNote -> QuickRecordConfig(
-            timelineType = TimelineType.HOME_NOTE,
-            defaultTitle = "",
-            titleEditable = true
-        )
         else -> QuickRecordConfig(
             timelineType = TimelineType.NOTE,
             defaultTitle = "Заметка"
@@ -446,8 +414,7 @@ class EventsViewModel @Inject constructor(
 private fun EventAction.isNoteAction(): Boolean = when (this) {
     EventAction.RecordPreparationNote,
     EventAction.RecordLaborNote,
-    EventAction.RecordHospitalNote,
-    EventAction.RecordHomeNote -> true
+    EventAction.RecordBabyNote -> true
     else -> false
 }
 

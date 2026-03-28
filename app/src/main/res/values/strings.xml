@@ -5,17 +5,15 @@
     <string name="nav_home">Главная</string>
     <string name="nav_events">События</string>
     <string name="nav_checklists">Чек-листы</string>
+    <string name="nav_contacts">Контакты</string>
     <string name="nav_journal">Журнал</string>
     <string name="drawer_stage_title">Текущий этап</string>
     <string name="drawer_stages_group">Этапы</string>
     <string name="drawer_services_group">Сервис</string>
     <string name="drawer_active_stage_badge">Сейчас</string>
     <string name="app_stage_preparing">До родов</string>
-    <string name="app_stage_labor">Роды</string>
-    <string name="app_stage_after_birth">После родов</string>
-    <string name="app_stage_contractions">Схватки</string>
-    <string name="app_stage_at_hospital">В роддоме</string>
-    <string name="app_stage_at_home">Дома</string>
+    <string name="app_stage_labor">Активные роды</string>
+    <string name="app_stage_baby_born">Ребенок родился</string>
 
     <string name="dashboard_title">Что делать сейчас</string>
     <string name="dashboard_subtitle">Короткие действия для спокойного и быстрого реагирования</string>
@@ -25,7 +23,7 @@
     <string name="dashboard_focus_title">Спокойно и по шагам</string>
     <string name="dashboard_focus_title_named">%1$s, спокойно и по шагам</string>
     <string name="dashboard_start_contraction_cta">Схватка началась</string>
-    <string name="dashboard_open_contraction_cta">Открыть счетчик схваток</string>
+    <string name="dashboard_open_contraction_cta">Открыть активные роды</string>
     <string name="dashboard_checklist_overline">Готовность к выезду</string>
     <string name="dashboard_checklist_title">Прогресс чек-листов</string>
     <string name="dashboard_checklist_description">Выполнено %1$d из %2$d пунктов</string>
@@ -66,6 +64,18 @@
     <string name="dashboard_live_contraction_status_label">Схватка</string>
     <string name="dashboard_live_contraction_interval_label">Интервал</string>
     <string name="dashboard_live_contraction_recommendation_label">Рекомендация</string>
+    <string name="active_labor_recommendation_overline">Что делать сейчас</string>
+    <string name="active_labor_recommendation_birth_title">Ребенок уже родился</string>
+    <string name="active_labor_recommendation_birth_text">Родовой сценарий завершен. Здесь можно посмотреть историю схваток и записи, а основные действия уже сместились в этап после рождения.</string>
+    <string name="active_labor_recommendation_water_title">Воды отошли</string>
+    <string name="active_labor_recommendation_water_text">Свяжитесь с врачом или роддомом и продолжайте наблюдение по схваткам.</string>
+    <string name="active_labor_recommendation_urgent_title">Нужен срочный контакт</string>
+    <string name="active_labor_recommendation_urgent_text">Если воды не прозрачные, сразу свяжитесь с роддомом или вызывайте скорую помощь.</string>
+    <string name="active_labor_water_title">Статус вод</string>
+    <string name="active_labor_water_not_broken">Воды не отходили</string>
+    <string name="active_labor_water_broke_at">%1$s воды отошли %2$s</string>
+    <string name="active_labor_water_elapsed">Прошло с момента: %1$s</string>
+    <string name="active_labor_record_water_break">Зафиксировать воды</string>
     <string name="dashboard_labor_quick_actions_overline">Выезд и связь</string>
     <string name="dashboard_labor_quick_actions_title">Контакты под рукой</string>
     <string name="dashboard_labor_quick_actions_description">Откройте контакты, чтобы быстро позвонить или проверить адрес роддома.</string>
@@ -75,7 +85,7 @@
     <string name="dashboard_preparing_calm_title">Спокойная подготовка</string>
     <string name="dashboard_preparing_calm_description">Завершайте чек-листы, держите документы в одном месте и не перегружайте себя лишним.</string>
     <string name="dashboard_labor_title">Сейчас важны быстрые действия</string>
-    <string name="dashboard_labor_description">На главной оставлены только те действия, которые нужны прямо в родах: события, схватки, воды и SOS.</string>
+    <string name="dashboard_labor_description">На главной оставлены только те действия, которые нужны прямо в активных родах: события, схватки, воды и контакты.</string>
     <string name="dashboard_labor_water_description">Таймер вод уже активен, поэтому фокус на быстрых действиях, экстренных контактах и фиксации ключевых событий.</string>
     <string name="stage_screen_overline">Сценарий</string>
     <string name="stage_screen_subtitle">Выберите этап, который лучше всего описывает текущую ситуацию.</string>
@@ -88,25 +98,23 @@
     <string name="stage_screen_preparing_title">Подготовка без лишней тревоги</string>
     <string name="stage_screen_preparing_description">Используйте этот этап, пока роды не начались. Главная держит в фокусе ПДР, подготовку, документы и спокойные действия.</string>
     <string name="stage_screen_preparing_visibility">На главной остаются подготовительные блоки. Ближе к сроку появятся готовность к роддому и быстрый вход в сценарий схваток.</string>
+    <string name="stage_screen_labor_title">Активные роды</string>
+    <string name="stage_screen_labor_description">Включайте этот этап, когда начались регулярные схватки, отошли воды или нужно перейти в родовой сценарий вручную.</string>
+    <string name="stage_screen_labor_visibility">Главная перестраивается вокруг активных родов: рекомендации, схватки, воды, нужные действия и журнал.</string>
+    <string name="stage_screen_baby_born_title">Ребенок родился</string>
+    <string name="stage_screen_baby_born_description">Используйте этот этап после фиксации рождения. На первый план выходят карточка ребенка, документы и послеродовые записи.</string>
+    <string name="stage_screen_baby_born_visibility">Счетчик схваток уходит из приоритета. На главной наверх поднимаются карточка ребенка, документы и последние важные события.</string>
     <string name="stage_screen_contractions_title">Режим быстрых действий</string>
     <string name="stage_screen_contractions_description">Включайте этот этап, когда начались регулярные схватки, отошли воды или нужно перейти в сценарий родов вручную.</string>
     <string name="stage_screen_contractions_visibility">Счетчик схваток поднимается выше, рядом появляются логистика, контакты и быстрые действия для выезда.</string>
-    <string name="stage_screen_at_hospital_title">Первые часы после рождения</string>
-    <string name="stage_screen_at_hospital_description">Используйте этот этап после рождения, когда семья еще находится в роддоме и важны данные родов и ближайшие шаги.</string>
-    <string name="stage_screen_at_hospital_visibility">Счетчик схваток уходит с главной. Наверх поднимаются данные родов, ближайшие записи и нужные чек-листы для роддома.</string>
-    <string name="stage_screen_at_home_title">Домашний ритм после выписки</string>
-    <string name="stage_screen_at_home_description">Переключайте после возвращения домой, когда в фокусе помощь маме, документы, уход за ребенком и домашние трекеры.</string>
-    <string name="stage_screen_at_home_visibility">Главная перестраивается под жизнь дома: помощь маме, уход за ребенком, документы и спокойные бытовые сценарии.</string>
 
     <string name="events_title">События</string>
     <string name="events_subtitle">Отмечайте важные действия и быстро открывайте нужные инструменты</string>
     <string name="events_stage_overline">Сценарий приложения</string>
     <string name="events_stage_preparing_description">Подготовьте стартовые сценарии заранее и держите нужные инструменты под рукой, но без лишней тревоги.</string>
     <string name="events_stage_labor_description">Наверх подняты все действия, которые действительно нужны во время родов: схватки, воды, журнал и выезд.</string>
-    <string name="events_stage_after_birth_description">Боевые родовые инструменты уходят на второй план, а фокус смещается на восстановление, документы и первые дни дома.</string>
+    <string name="events_stage_baby_born_description">После рождения на первом плане остаются данные ребенка, записи, документы и послеродовые действия.</string>
     <string name="events_stage_contractions_description">Наверх подняты все действия, которые действительно нужны во время схваток и выезда: счетчик, воды, логистика и журнал.</string>
-    <string name="events_stage_at_hospital_description">После рождения здесь остаются только ближайшие события: данные родов, заметки и важные отметки из роддома.</string>
-    <string name="events_stage_at_home_description">Когда семья уже дома, события смещаются к уходу за ребенком, заметкам и домашнему ритму.</string>
     <string name="events_main_tools_title">Быстрый доступ к инструментам</string>
     <string name="events_main_tools_description">Откройте нужный раздел одним нажатием, без лишнего поиска.</string>
     <string name="events_action_labor_started">Начались схватки</string>
@@ -116,8 +124,6 @@
     <string name="events_action_arrived">Приехали в роддом</string>
     <string name="events_action_arrived_desc">Сохранить отметку времени прибытия.</string>
     <string name="events_action_birth">Ребенок родился</string>
-    <string name="events_action_arrived_home">Приехали домой</string>
-    <string name="events_action_arrived_home_desc">Сохранить момент возвращения домой и переключить приложение на домашний сценарий.</string>
     <string name="events_notes_card_title">Мои заметки</string>
     <string name="events_notes_card_description">Короткая заметка сохраняется в журнал именно того этапа, на котором вы сейчас находитесь.</string>
     <string name="events_logistics_title">Логистика родов</string>
@@ -137,10 +143,6 @@
     <string name="events_labor_started_already_saved">Начало схваток уже было зафиксировано ранее</string>
     <string name="events_labor_start_blocked_after_birth">После рождения нельзя снова запускать сценарий схваток</string>
     <string name="events_birth_saved">Рождение зафиксировано</string>
-    <string name="events_arrived_home_saved">Домашний этап активирован</string>
-    <string name="events_arrived_home_already_saved">Домашний этап уже активен</string>
-    <string name="events_arrived_home_requires_birth">Сначала нужно зафиксировать рождение ребенка</string>
-    <string name="events_arrived_home_requires_hospital">Вернуться домой можно отмечать только из этапа «В роддоме»</string>
     <string name="events_contraction_started">Схватка начата</string>
     <string name="events_contraction_stopped">Схватка завершена</string>
     <string name="events_status_contraction_running">Схватка идет прямо сейчас. Можно завершить ее одним нажатием ниже.</string>
@@ -156,12 +158,8 @@
     <string name="events_section_live_labor_description">Главные действия во время схваток: старт или стоп, воды и ориентир по выезду.</string>
     <string name="events_section_logistics_title">Дорога и важные отметки</string>
     <string name="events_section_logistics_description">Зафиксируйте выезд, приезд и ключевые заметки во время родов.</string>
-    <string name="events_section_hospital_title">Первые часы в роддоме</string>
-    <string name="events_section_hospital_description">Сохраните рождение, важные заметки и переключитесь на домашний этап, когда будете готовы.</string>
-    <string name="events_section_home_trackers_title">Первые записи дома</string>
-    <string name="events_section_home_trackers_description">Быстрые отметки по базовому уходу за ребенком и домашнему ритму.</string>
-    <string name="events_section_home_notes_title">Заметки и значения</string>
-    <string name="events_section_home_notes_description">Сюда удобно быстро сохранить вес, температуру и любые домашние наблюдения.</string>
+    <string name="events_section_baby_born_title">После рождения</string>
+    <string name="events_section_baby_born_description">Здесь остаются карточка ребенка, заметки, документы и первые записи после рождения.</string>
     <string name="events_action_bag_ready">Сумка собрана</string>
     <string name="events_action_test_drive">Пробный выезд</string>
     <string name="events_action_note">Добавить заметку</string>
@@ -194,11 +192,10 @@
     <string name="events_quick_record_weight_title">Сохранить вес</string>
     <string name="events_quick_record_weight_description">Запишите значение веса или любую связанную заметку.</string>
 
-    <string name="action_contraction_counter">Счетчик схваток</string>
+    <string name="action_contraction_counter">Активные роды</string>
     <string name="action_water_break_timer">Таймер после отхождения вод</string>
     <string name="action_when_go_hospital">Когда ехать в роддом</string>
     <string name="action_checklists">Чек-листы</string>
-    <string name="action_sos">SOS</string>
     <string name="action_help_mom">Помощь маме</string>
     <string name="action_labor">В родах</string>
     <string name="action_postpartum">После родов</string>
@@ -206,8 +203,8 @@
     <string name="action_trackers">Трекеры</string>
     <string name="action_settings">Настройки</string>
 
-    <string name="contraction_title">Счетчик схваток</string>
-    <string name="contraction_subtitle">Нажмите на большой круг в начале и в конце схватки</string>
+    <string name="contraction_title">Активные роды</string>
+    <string name="contraction_subtitle">Схватки, воды и ключевые действия в одном экране</string>
     <string name="contraction_stage_label">Текущая стадия</string>
     <string name="contraction_stage_monitor">Наблюдаем</string>
     <string name="contraction_stage_prepare">Готовимся к выезду</string>
@@ -311,8 +308,6 @@
     <string name="custom_item_hint">Новый пункт</string>
     <string name="save_item">Сохранить</string>
     <string name="no_items">Список пуст</string>
-
-    <string name="sos_title">SOS</string>
     <string name="sos_screen_subtitle">Короткие действия на случай тревожных симптомов</string>
     <string name="sos_immediate_title">Действуйте без промедления</string>
     <string name="sos_immediate">Немедленно вызывайте скорую помощь при опасных симптомах</string>
@@ -323,8 +318,6 @@
     <string name="sos_manage_contacts">Открыть экстренные контакты</string>
     <string name="sos_signs_title">Тревожные признаки</string>
     <string name="sos_actions_title">Что делать прямо сейчас</string>
-
-    <string name="mom_support_title">Помощь маме</string>
     <string name="mom_support_subtitle">Простые подсказки, которые помогают быть рядом и не теряться</string>
     <string name="mom_support_contractions">Поддержка в схватках</string>
     <string name="mom_support_breathing">Дыхание</string>
@@ -332,7 +325,17 @@
     <string name="mom_support_massage">Массаж</string>
     <string name="mom_support_presence">Эмоциональная поддержка</string>
 
-    <string name="labor_title">В родах</string>
+    <string name="baby_title">Ребенок</string>
+    <string name="baby_subtitle">Имя и основные данные ребенка без обязательных полей</string>
+    <string name="baby_card_overline">Карточка ребенка</string>
+    <string name="baby_card_title_empty">Карточка ребенка</string>
+    <string name="baby_birth_unknown">Время рождения еще не записано</string>
+    <string name="baby_metrics_value">Вес: %1$s г • Рост: %2$s см</string>
+    <string name="baby_open_action">Открыть карточку ребенка</string>
+    <string name="baby_edit_title">Данные ребенка</string>
+    <string name="baby_edit_description">Имя, вес и рост можно заполнить сейчас или позже.</string>
+    <string name="baby_save">Сохранить карточку ребенка</string>
+    <string name="baby_saved">Карточка ребенка сохранена</string>
     <string name="labor_subtitle">Фиксация ключевых моментов родов и важных заметок</string>
     <string name="labor_description">Здесь удобно отмечать начало родов, рождение ребёнка и собирать базовую информацию.</string>
     <string name="labor_start_display">Начало родов: %1$s</string>
@@ -349,15 +352,11 @@
     <string name="labor_note_hint">Заметка</string>
     <string name="add_timeline_event">Добавить событие</string>
     <string name="no_timeline">Событий пока нет</string>
-
-    <string name="postpartum_title">После родов</string>
     <string name="postpartum_subtitle">Что держать в фокусе в первые часы и дни после рождения ребёнка</string>
     <string name="postpartum_for_father">Что делать отцу</string>
     <string name="postpartum_for_mother">Наблюдение за мамой</string>
     <string name="postpartum_for_baby">Наблюдение за ребенком</string>
     <string name="postpartum_medical">Когда обращаться к врачу</string>
-
-    <string name="trackers_title">Трекеры</string>
     <string name="trackers_subtitle">Быстрые записи по кормлению, подгузникам, сну и заметкам</string>
     <string name="trackers_feeding_title">Быстро добавить кормление</string>
     <string name="trackers_feeding_description">Выберите сторону или бутылочку и сразу зафиксируйте длительность.</string>
@@ -392,8 +391,9 @@
     <string name="timeline_title_field">Короткий заголовок</string>
     <string name="timeline_description_field">Описание или детали</string>
     <string name="timeline_filter_all">Все</string>
-    <string name="timeline_filter_labor">Роды</string>
-    <string name="timeline_filter_postpartum">После родов</string>
+    <string name="timeline_filter_preparing">Подготовка</string>
+    <string name="timeline_filter_labor">Активные роды</string>
+    <string name="timeline_filter_baby_born">Ребенок родился</string>
     <string name="timeline_filter_notes">Мои заметки</string>
     <string name="timeline_item_expand_hint">Нажмите, чтобы открыть детали</string>
 
@@ -467,8 +467,7 @@
     <string name="timeline_type_birth">Рождение ребенка</string>
     <string name="timeline_type_preparation_note">Подготовка</string>
     <string name="timeline_type_labor_note">Заметка в родах</string>
-    <string name="timeline_type_hospital_note">Заметка из роддома</string>
-    <string name="timeline_type_home_note">Домашняя заметка</string>
+    <string name="timeline_type_baby_note">Заметка после рождения</string>
     <string name="timeline_type_feeding">Кормление</string>
     <string name="timeline_type_diaper">Подгузник</string>
     <string name="timeline_type_sleep">Сон</string>
@@ -524,11 +523,10 @@
     <string name="nav_back">Назад</string>
 
     <string name="stat_count">Количество: %1$d</string>
-    <string name="action_contraction_counter_desc">Запуск/остановка схваток, интервалы и динамика</string>
+    <string name="action_contraction_counter_desc">Схватки, воды и рекомендации в одном экране</string>
     <string name="action_water_break_timer_desc">Отметка времени, цвета и напоминания</string>
     <string name="action_when_go_hospital_desc">Алгоритм принятия решения в критический момент</string>
     <string name="action_checklists_desc">Сумка, документы, выезд, послеродовые дела</string>
-    <string name="action_sos_desc">Экстренные симптомы и быстрые действия</string>
     <string name="action_help_mom_desc">Поддержка мамы в схватках и родах</string>
     <string name="action_labor_desc">Фиксация ключевых событий и параметров родов</string>
     <string name="action_postpartum_desc">Что контролировать сразу после рождения</string>
@@ -554,7 +552,19 @@
     <string name="trend_more_intense">Становятся интенсивнее</string>
     <string name="trend_weaker">Становятся реже и слабее</string>
     <string name="trend_insufficient">Недостаточно данных</string>
+    <string name="delete_confirm_title">Подтвердите удаление</string>
+    <string name="contraction_delete_confirm_message">Удалить эту схватку из истории и пересчитать интервалы?</string>
+    <string name="contraction_deleted">Схватка удалена</string>
+    <string name="water_break_delete_confirm_message">Удалить это событие вод из истории?</string>
+    <string name="water_break_deleted">Событие вод удалено</string>
 </resources>
+
+
+
+
+
+
+
 
 
 

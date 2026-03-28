@@ -1,14 +1,16 @@
-﻿package com.dadnavigator.app.presentation.screen.waterbreak
+package com.dadnavigator.app.presentation.screen.waterbreak
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dadnavigator.app.R
+import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.domain.model.WaterBreakEvent
 import com.dadnavigator.app.domain.model.WaterColor
 import com.dadnavigator.app.domain.usecase.timeline.AddTimelineEventUseCase
 import com.dadnavigator.app.domain.usecase.waterbreak.AddWaterBreakEventUseCase
 import com.dadnavigator.app.domain.usecase.waterbreak.CloseWaterBreakEventUseCase
+import com.dadnavigator.app.domain.usecase.waterbreak.DeleteWaterBreakEventUseCase
 import com.dadnavigator.app.domain.usecase.waterbreak.ObserveActiveWaterBreakUseCase
 import com.dadnavigator.app.domain.usecase.waterbreak.ObserveWaterBreakHistoryUseCase
 import com.dadnavigator.app.di.IoDispatcher
@@ -17,6 +19,7 @@ import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,12 +32,14 @@ import kotlinx.coroutines.launch
 /**
  * ViewModel for water break tracking.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class WaterBreakViewModel @Inject constructor(
     private val observeActiveWaterBreakUseCase: ObserveActiveWaterBreakUseCase,
     private val observeWaterBreakHistoryUseCase: ObserveWaterBreakHistoryUseCase,
     private val addWaterBreakEventUseCase: AddWaterBreakEventUseCase,
     private val closeWaterBreakEventUseCase: CloseWaterBreakEventUseCase,
+    private val deleteWaterBreakEventUseCase: DeleteWaterBreakEventUseCase,
     private val addTimelineEventUseCase: AddTimelineEventUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -42,6 +47,7 @@ class WaterBreakViewModel @Inject constructor(
     private val userIdState = MutableStateFlow("")
     private val selectedColorState = MutableStateFlow(WaterColor.CLEAR)
     private val notesState = MutableStateFlow("")
+    private val infoState = MutableStateFlow<Int?>(null)
     private val errorState = MutableStateFlow<Int?>(null)
 
     private val ticker = flow {
@@ -66,7 +72,9 @@ class WaterBreakViewModel @Inject constructor(
                 notes = notes,
                 now = now
             )
-        }.combine(errorState) { partial, errorRes ->
+        }.combine(infoState) { partial, infoRes ->
+            partial to infoRes
+        }.combine(errorState) { (partial, infoRes), errorRes ->
             WaterBreakUiState(
                 activeEvent = partial.activeEvent,
                 history = partial.history,
@@ -75,6 +83,7 @@ class WaterBreakViewModel @Inject constructor(
                 } ?: Duration.ZERO,
                 selectedColor = partial.selectedColor,
                 notes = partial.notes,
+                infoRes = infoRes,
                 errorRes = errorRes
             )
         }
@@ -116,9 +125,11 @@ class WaterBreakViewModel @Inject constructor(
                     timestamp = now,
                     title = "",
                     description = notesState.value,
-                    type = TimelineType.WATER_BREAK
+                    type = TimelineType.WATER_BREAK,
+                    stageAtCreation = AppStage.LABOR
                 )
                 notesState.value = ""
+                infoState.value = R.string.timeline_event_saved
             }.onFailure {
                 errorState.value = R.string.error_generic
             }
@@ -132,6 +143,18 @@ class WaterBreakViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             runCatching {
                 closeWaterBreakEventUseCase(userId = userId)
+                infoState.value = R.string.saved
+            }.onFailure {
+                errorState.value = R.string.error_generic
+            }
+        }
+    }
+
+    fun deleteEvent(eventId: Long) {
+        viewModelScope.launch(ioDispatcher) {
+            runCatching {
+                deleteWaterBreakEventUseCase(eventId)
+                infoState.value = R.string.water_break_deleted
             }.onFailure {
                 errorState.value = R.string.error_generic
             }
@@ -139,6 +162,7 @@ class WaterBreakViewModel @Inject constructor(
     }
 
     fun dismissError() {
+        infoState.value = null
         errorState.value = null
     }
 }

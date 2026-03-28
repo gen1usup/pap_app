@@ -1,189 +1,93 @@
-﻿# Архитектура проекта
+﻿# Архитектура
 
-## Общая схема
+## Слои
+### Presentation
+Compose-экраны, view model и navigation shell.
 
-Проект построен по слоям:
+Ключевые экраны:
+- `DashboardScreen`
+- `EventsScreen`
+- `ContractionScreen` как экран `Активные роды`
+- `ChecklistScreen`
+- `EmergencyContactsScreen`
+- `TimelineScreen`
+- `BabyScreen`
 
-- `presentation` — Compose UI, screen/view state, navigation shell
-- `domain` — модели, сервисы оркестрации, use case, контракты репозиториев
-- `data` — Room, DataStore, entity, mapper, repository implementation
-- `di` — Hilt modules
+### Domain
+Здесь живут:
+- модели этапов и событий
+- use case
+- policy и builder-слой
 
-## Presentation
+Ключевые сервисы:
+- `StageManager`
+- `StageTransitionManager`
+- `HomeContentBuilder`
+- `EventsProvider`
+- `ActiveLaborRecommendationPolicy`
+- `LiveContractionSnapshotBuilder`
 
-Текущая структура эволюционно движется от screen-centric к feature-first, но без разрушения рабочего приложения.
+### Data
+- `Room`
+- `DataStore`
+- repository-реализации
+- mapper-ы
 
-Ключевые зоны:
-
-- `presentation/navigation` — shell, drawer, bottom navigation, nav graph
-- `presentation/screen/*` — основные экраны
-- `presentation/feature/stages` — отдельный stage screen
-- `presentation/component` — reusable UI-компоненты
-
-### Navigation shell
-
-Основные файлы:
-
-- [AppNavHost.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppNavHost.kt)
-- [AppNavGraph.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppNavGraph.kt)
-- [AppDestination.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppDestination.kt)
-- [BottomNavigationConfig.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/BottomNavigationConfig.kt)
-- [DrawerNavigationConfig.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/DrawerNavigationConfig.kt)
-- [AppDrawerContent.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppDrawerContent.kt)
-
-Bottom navigation:
-
-- `dashboard`
-- `events`
-- `checklist`
-
-Secondary destination через top bar:
-
-- `journal`
-
-## App-level state
-
-Главный app-level state собирается в [AppViewModel.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/presentation/navigation/AppViewModel.kt).
-
-Ключевые поля:
-
-- `userId`
-- `themeMode`
-- `dueDate`
-- `appStage`
-- `birthRecorded`
-
-Источники правды:
-
-- `DataStore` для живых пользовательских настроек
-- Room snapshot для устойчивых миграций и связанного оффлайн-поведения
-
-## Domain orchestration
-
-Ключевая логика вынесена из composable в сервисы:
-
-- [StageManager.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/StageManager.kt)
-- [StageTransitionManager.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/StageTransitionManager.kt)
-- [HomeContentBuilder.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/HomeContentBuilder.kt)
-- [EventsProvider.kt](c:/PROJECTS/pap_app/app/src/main/java/com/dadnavigator/app/domain/service/EventsProvider.kt)
-
-Роли:
-
-- `StageManager` вычисляет derived-info по ПДР и текущему этапу
-- `StageTransitionManager` содержит правила допустимых переходов и доменные guard’ы
-- `HomeContentBuilder` определяет, какие секции `Главной` показывать в текущем состоянии
-- `EventsProvider` собирает секции и действия экрана `События`
-
-## Stage model
-
-Актуальная модель:
-
+## Stage architecture
+Текущая модель этапов:
 - `PREPARING`
-- `CONTRACTIONS`
-- `AT_HOSPITAL`
-- `AT_HOME`
+- `LABOR`
+- `BABY_BORN`
 
-Совместимость со старыми данными:
+Legacy mapping для старых данных:
+- `CONTRACTIONS` и `LABOR` -> `LABOR`
+- `AT_HOSPITAL`, `AT_HOME`, `AFTER_BIRTH` -> `BABY_BORN`
 
-- `LABOR -> CONTRACTIONS`
-- `AFTER_BIRTH -> AT_HOME`
+`StageTransitionManager` централизует правила:
+- схватка стартовала -> `LABOR`
+- воды записаны -> `LABOR`
+- рождение записано -> `BABY_BORN`
+- ручной переход через preview screen остается доступным
 
-Дополнительно действуют guard’ы:
+## Active labor architecture
+Единый экран `Активные роды` не дублирует расчет.
 
-- после сохранения рождения нельзя вручную вернуться в `PREPARING` или `CONTRACTIONS`
-- `Начались роды` блокируется после сохранения рождения
-- `Приехали домой` разрешено только после рождения и только из `AT_HOSPITAL`
+Источник правды:
+- `ToggleContractionUseCase` — старт или стоп схватки
+- `CalculateContractionStatsUseCase` — расчет статистики
+- `LiveContractionSnapshotBuilder` — подготовка live-состояния
+- `ActiveLaborRecommendationPolicy` — объединение схваток, вод и рождения
 
-## Persistence
+Главная и экран `Активные роды` используют одну и ту же recommendation policy.
 
-### DataStore
+## Journal architecture
+Модель журнала теперь хранит:
+- `timestamp`
+- `stageAtCreation`
+- `entryType`
+- `type`
+- `title`
+- `description`
 
-Используется для:
-
-- темы
-- ПДР
-- app stage
-- других пользовательских настроек
-
-### Room
-
-Используется для:
-
-- сессий и истории схваток
-- событий по водам
-- timeline / journal
-- чек-листов и их пунктов
-- labor summary
-- контактов
-- трекеров
-
-Актуальные миграции:
-
-- legacy `1 -> 3`
-- legacy `2 -> 3`
-- `3 -> 4`
-- `4 -> 5`
-- `5 -> 6`
-- прямой safe-path `4 -> 6`
-
-Последняя миграция переводит контакты на динамическую user-managed модель и сохраняет совместимость старых данных.
-
-## Contacts architecture
-
-Контакты больше не завязаны на фиксированные слоты экрана.
-
-Актуальная модель:
-
-- `EmergencyContactType`
-- `EmergencyContact`
-- `EmergencyContactRepository`
-
-Поддерживаются роли:
-
-- `EMERGENCY`
-- `WIFE`
-- `DOCTOR`
-- `HOSPITAL`
-- `TAXI`
-- `RELATIVE`
-- `CUSTOM`
-
-`Home`, `SOS` и экран контактов используют одну и ту же контактную модель.
+Фильтрация вынесена в `TimelineFilterPolicy`.
+Это позволяет:
+- фильтровать по этапу создания
+- отдельно показывать только пользовательские заметки
 
 ## Checklist architecture
+Системные и пользовательские чек-листы живут в одной структуре.
 
-Чек-листы состоят из:
+Ключевые правила:
+- у чек-листа есть stage-привязка
+- удаление системного чек-листа — soft delete
+- seed дефолтных чек-листов больше не восстанавливает удаленные записи автоматически
 
-- корневого списка `Checklist`
-- пунктов `ChecklistItem`
-- агрегата `ChecklistWithItems`
+## Contacts architecture
+Контакты — top-level feature.
 
-Поддерживаются:
+Содержимое:
+- обязательные базовые записи
+- пользовательские контакты
+- роддом с адресом и телефоном
 
-- системные списки
-- пользовательские списки
-
-В item-модели уже предусмотрены расширяемые поля:
-
-- `note`
-- `quantity`
-- `priority`
-- `metadataJson`
-
-## Testing
-
-Unit tests:
-
-- stage rules
-- home builder
-- labor lifecycle guards
-- checklist use cases
-- contractions analytics
-
-Instrumented tests:
-
-- shell navigation
-- stage-aware home/events flows
-- help / SOS
-- settings validation
-- contraction analytics on seeded data
+`Home` открывает `Contacts`, а сами действия звонка и маршрута остаются внутри feature-кода контактов.

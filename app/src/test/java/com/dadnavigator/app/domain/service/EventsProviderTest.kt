@@ -53,15 +53,15 @@ class EventsProviderTest {
     }
 
     @Test
-    fun `contractions stage swaps start and stop action`() {
+    fun `labor stage swaps start and stop action`() {
         val startedContent = provider.build(
-            stageInfo = stageInfo(currentStage = AppStage.CONTRACTIONS),
+            stageInfo = stageInfo(currentStage = AppStage.LABOR),
             isContractionRunning = false,
             hasActiveWaterBreak = false,
             laborSummary = emptyLaborSummary()
         )
         val runningContent = provider.build(
-            stageInfo = stageInfo(currentStage = AppStage.CONTRACTIONS),
+            stageInfo = stageInfo(currentStage = AppStage.LABOR),
             isContractionRunning = true,
             hasActiveWaterBreak = true,
             laborSummary = emptyLaborSummary()
@@ -73,10 +73,10 @@ class EventsProviderTest {
     }
 
     @Test
-    fun `hospital stage exposes birth details and arrived home`() {
+    fun `baby born stage exposes birth details and newborn records`() {
         val content = provider.build(
             stageInfo = stageInfo(
-                currentStage = AppStage.AT_HOSPITAL,
+                currentStage = AppStage.BABY_BORN,
                 birthRecorded = true
             ),
             isContractionRunning = false,
@@ -88,21 +88,23 @@ class EventsProviderTest {
 
         assertTrue(content.showBirthSummary)
         assertTrue(content.sections.single().actions.contains(EventAction.OpenBirthDetails))
-        assertTrue(content.sections.single().actions.contains(EventAction.MarkArrivedHome))
+        assertTrue(content.sections.single().actions.contains(EventAction.RecordFeeding))
+        assertTrue(content.sections.single().actions.contains(EventAction.RecordWeight))
     }
 
     @Test
-    fun `at home stage shows trackers without labor controls`() {
+    fun `baby born stage keeps optional water timer access without labor controls`() {
         val content = provider.build(
-            stageInfo = stageInfo(currentStage = AppStage.AT_HOME, birthRecorded = true),
+            stageInfo = stageInfo(currentStage = AppStage.BABY_BORN, birthRecorded = true),
             isContractionRunning = false,
-            hasActiveWaterBreak = false,
+            hasActiveWaterBreak = true,
             laborSummary = emptyLaborSummary().copy(
                 birthTime = Instant.parse("2026-03-27T10:00:00Z")
             )
         )
 
         val actions = content.sections.flatMap { it.actions }
+        assertTrue(actions.contains(EventAction.OpenWaterBreakTimer))
         assertTrue(actions.contains(EventAction.RecordFeeding))
         assertTrue(actions.contains(EventAction.RecordSleep))
         assertTrue(actions.contains(EventAction.RecordDiaper))

@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.domain.model
+package com.dadnavigator.app.domain.model
 
 import java.time.Instant
 
@@ -12,12 +12,24 @@ enum class TimelineType {
     BIRTH,
     PREPARATION_NOTE,
     LABOR_NOTE,
-    HOSPITAL_NOTE,
-    HOME_NOTE,
+    BABY_NOTE,
     FEEDING,
     DIAPER,
     SLEEP,
     NOTE
+}
+
+enum class TimelineEntryType {
+    SYSTEM,
+    USER_NOTE
+}
+
+fun TimelineType.defaultEntryType(): TimelineEntryType = when (this) {
+    TimelineType.PREPARATION_NOTE,
+    TimelineType.LABOR_NOTE,
+    TimelineType.BABY_NOTE,
+    TimelineType.NOTE -> TimelineEntryType.USER_NOTE
+    else -> TimelineEntryType.SYSTEM
 }
 
 /**
@@ -29,5 +41,7 @@ data class TimelineEvent(
     val type: TimelineType,
     val timestamp: Instant,
     val title: String,
-    val description: String
+    val description: String,
+    val stageAtCreation: AppStage = AppStage.PREPARING,
+    val entryType: TimelineEntryType = type.defaultEntryType()
 )

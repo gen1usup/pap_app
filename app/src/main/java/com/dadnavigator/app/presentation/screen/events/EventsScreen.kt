@@ -1,4 +1,4 @@
-package com.dadnavigator.app.presentation.screen.events
+﻿package com.dadnavigator.app.presentation.screen.events
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -79,8 +79,6 @@ fun EventsScreen(
     val arrivedTitle = stringResource(id = R.string.events_action_arrived)
     val arrivedDescription = stringResource(id = R.string.events_action_arrived_desc)
     val birthTitle = stringResource(id = R.string.events_action_birth)
-    val homeTitle = stringResource(id = R.string.events_action_arrived_home)
-    val homeDescription = stringResource(id = R.string.events_action_arrived_home_desc)
 
     LaunchedEffect(message) {
         if (message != null) {
@@ -116,23 +114,18 @@ fun EventsScreen(
                     description = arrivedDescription
                 )
                 EventAction.ShowBirthSheet -> viewModel.showBirthSheet(state.laborSummary)
-                EventAction.MarkArrivedHome -> viewModel.markArrivedHome(
-                    eventTitle = homeTitle,
-                    eventDescription = homeDescription
-                )
                 EventAction.RecordBagReady,
                 EventAction.RecordTestDrive,
                 EventAction.RecordPreparationNote,
                 EventAction.RecordLaborNote,
-                EventAction.RecordHospitalNote,
+                EventAction.RecordBabyNote,
                 EventAction.RecordSupportAction,
                 EventAction.RecordPhotoNote,
                 EventAction.RecordFeeding,
                 EventAction.RecordSleep,
                 EventAction.RecordDiaper,
                 EventAction.RecordTemperature,
-                EventAction.RecordWeight,
-                EventAction.RecordHomeNote -> viewModel.showQuickRecordSheet(action)
+                EventAction.RecordWeight -> viewModel.showQuickRecordSheet(action)
             }
         },
         onHideBirthSheet = viewModel::hideBirthSheet,
@@ -208,7 +201,7 @@ private fun EventsContent(
                                     text = stringResource(id = R.string.events_status_contraction_running),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
-                            } else if (state.appStage == AppStage.CONTRACTIONS) {
+                            } else if (state.appStage == AppStage.LABOR) {
                                 Text(
                                     text = stringResource(id = R.string.events_status_contraction_waiting),
                                     style = MaterialTheme.typography.bodyMedium
@@ -225,7 +218,7 @@ private fun EventsContent(
                     }
                 }
 
-                noteActionForStage(state.appStage)?.let { noteAction ->
+                noteActionForStage(state.appStage).let { noteAction ->
                     item {
                         InfoCard(
                             title = stringResource(id = R.string.events_notes_card_title),
@@ -460,19 +453,9 @@ private fun sectionMetadata(type: EventsSectionType): SectionMetadata = when (ty
         descriptionRes = R.string.events_section_logistics_description,
         icon = Icons.Outlined.DirectionsCar
     )
-    EventsSectionType.HospitalActions -> SectionMetadata(
-        titleRes = R.string.events_section_hospital_title,
-        descriptionRes = R.string.events_section_hospital_description,
-        icon = Icons.Outlined.BabyChangingStation
-    )
-    EventsSectionType.HomeTrackers -> SectionMetadata(
-        titleRes = R.string.events_section_home_trackers_title,
-        descriptionRes = R.string.events_section_home_trackers_description,
-        icon = Icons.Outlined.ChildCare
-    )
-    EventsSectionType.HomeNotes -> SectionMetadata(
-        titleRes = R.string.events_section_home_notes_title,
-        descriptionRes = R.string.events_section_home_notes_description,
+    EventsSectionType.BabyBornActions -> SectionMetadata(
+        titleRes = R.string.events_section_baby_born_title,
+        descriptionRes = R.string.events_section_baby_born_description,
         icon = Icons.Outlined.EditNote
     )
 }
@@ -482,7 +465,6 @@ private fun actionIsPrimary(action: EventAction): Boolean = when (action) {
     EventAction.StartContraction,
     EventAction.StopContraction,
     EventAction.ShowBirthSheet,
-    EventAction.MarkArrivedHome,
     EventAction.RecordFeeding -> true
     else -> false
 }
@@ -498,12 +480,11 @@ private fun actionLabelRes(action: EventAction): Int = when (action) {
     EventAction.MarkLeftHome -> R.string.events_action_departed
     EventAction.MarkArrivedHospital -> R.string.events_action_arrived
     EventAction.ShowBirthSheet -> R.string.events_action_birth
-    EventAction.MarkArrivedHome -> R.string.events_action_arrived_home
     EventAction.RecordBagReady -> R.string.events_action_bag_ready
     EventAction.RecordTestDrive -> R.string.events_action_test_drive
     EventAction.RecordPreparationNote -> R.string.events_action_note
     EventAction.RecordLaborNote -> R.string.events_action_note
-    EventAction.RecordHospitalNote -> R.string.events_action_note
+    EventAction.RecordBabyNote -> R.string.events_action_note
     EventAction.RecordSupportAction -> R.string.events_action_support
     EventAction.RecordPhotoNote -> R.string.events_action_photo
     EventAction.RecordFeeding -> R.string.events_action_feeding
@@ -511,7 +492,6 @@ private fun actionLabelRes(action: EventAction): Int = when (action) {
     EventAction.RecordDiaper -> R.string.events_action_diaper
     EventAction.RecordTemperature -> R.string.events_action_temperature
     EventAction.RecordWeight -> R.string.events_action_weight
-    EventAction.RecordHomeNote -> R.string.events_action_note
 }
 
 private fun actionIcon(action: EventAction): ImageVector = when (action) {
@@ -526,15 +506,13 @@ private fun actionIcon(action: EventAction): ImageVector = when (action) {
     EventAction.ShowBirthSheet,
     EventAction.RecordDiaper -> Icons.Outlined.BabyChangingStation
     EventAction.MarkLeftHome,
-    EventAction.MarkArrivedHome,
     EventAction.RecordTestDrive -> Icons.Outlined.DirectionsCar
     EventAction.RecordBagReady -> Icons.Outlined.CheckCircle
     EventAction.RecordPreparationNote,
     EventAction.RecordLaborNote,
-    EventAction.RecordHospitalNote,
+    EventAction.RecordBabyNote,
     EventAction.RecordTemperature,
-    EventAction.RecordWeight,
-    EventAction.RecordHomeNote -> Icons.Outlined.EditNote
+    EventAction.RecordWeight -> Icons.Outlined.EditNote
     EventAction.RecordSupportAction,
     EventAction.RecordFeeding -> Icons.Outlined.FavoriteBorder
     EventAction.RecordPhotoNote -> Icons.Outlined.EditNote
@@ -543,37 +521,32 @@ private fun actionIcon(action: EventAction): ImageVector = when (action) {
 
 private fun stageTitleRes(stage: AppStage): Int = when (stage) {
     AppStage.PREPARING -> R.string.app_stage_preparing
-    AppStage.CONTRACTIONS -> R.string.app_stage_contractions
-    AppStage.AT_HOSPITAL -> R.string.app_stage_at_hospital
-    AppStage.AT_HOME -> R.string.app_stage_at_home
+    AppStage.LABOR -> R.string.app_stage_labor
+    AppStage.BABY_BORN -> R.string.app_stage_baby_born
 }
 
 private fun stageDescriptionRes(stage: AppStage): Int = when (stage) {
     AppStage.PREPARING -> R.string.events_stage_preparing_description
-    AppStage.CONTRACTIONS -> R.string.events_stage_contractions_description
-    AppStage.AT_HOSPITAL -> R.string.events_stage_at_hospital_description
-    AppStage.AT_HOME -> R.string.events_stage_at_home_description
+    AppStage.LABOR -> R.string.events_stage_labor_description
+    AppStage.BABY_BORN -> R.string.events_stage_baby_born_description
 }
 
 private fun stageTone(stage: AppStage): StatusTone = when (stage) {
     AppStage.PREPARING -> StatusTone.Calm
-    AppStage.CONTRACTIONS -> StatusTone.Warning
-    AppStage.AT_HOSPITAL,
-    AppStage.AT_HOME -> StatusTone.Success
+    AppStage.LABOR -> StatusTone.Warning
+    AppStage.BABY_BORN -> StatusTone.Success
 }
 
 private fun stageIcon(stage: AppStage): ImageVector = when (stage) {
     AppStage.PREPARING -> Icons.Outlined.CheckCircle
-    AppStage.CONTRACTIONS -> Icons.Outlined.MonitorHeart
-    AppStage.AT_HOSPITAL -> Icons.Outlined.LocalHospital
-    AppStage.AT_HOME -> Icons.Outlined.ChildCare
+    AppStage.LABOR -> Icons.Outlined.MonitorHeart
+    AppStage.BABY_BORN -> Icons.Outlined.ChildCare
 }
 
 private fun quickRecordTitleEditable(action: EventAction): Boolean = when (action) {
     EventAction.RecordPreparationNote,
     EventAction.RecordLaborNote,
-    EventAction.RecordHospitalNote,
-    EventAction.RecordHomeNote -> true
+    EventAction.RecordBabyNote -> true
     else -> false
 }
 
@@ -582,7 +555,7 @@ private fun quickRecordSheetTitleRes(action: EventAction): Int = when (action) {
     EventAction.RecordTestDrive -> R.string.events_quick_record_test_drive_title
     EventAction.RecordPreparationNote -> R.string.events_quick_record_note_title
     EventAction.RecordLaborNote -> R.string.events_quick_record_note_title
-    EventAction.RecordHospitalNote -> R.string.events_quick_record_note_title
+    EventAction.RecordBabyNote -> R.string.events_quick_record_note_title
     EventAction.RecordSupportAction -> R.string.events_quick_record_support_title
     EventAction.RecordPhotoNote -> R.string.events_quick_record_photo_title
     EventAction.RecordFeeding -> R.string.events_quick_record_feeding_title
@@ -590,7 +563,6 @@ private fun quickRecordSheetTitleRes(action: EventAction): Int = when (action) {
     EventAction.RecordDiaper -> R.string.events_quick_record_diaper_title
     EventAction.RecordTemperature -> R.string.events_quick_record_temperature_title
     EventAction.RecordWeight -> R.string.events_quick_record_weight_title
-    EventAction.RecordHomeNote -> R.string.events_quick_record_note_title
     else -> R.string.events_quick_record_note_title
 }
 
@@ -599,8 +571,7 @@ private fun quickRecordSheetDescriptionRes(action: EventAction): Int = when (act
     EventAction.RecordTestDrive -> R.string.events_quick_record_test_drive_description
     EventAction.RecordPreparationNote,
     EventAction.RecordLaborNote,
-    EventAction.RecordHospitalNote,
-    EventAction.RecordHomeNote -> R.string.events_quick_record_note_description
+    EventAction.RecordBabyNote -> R.string.events_quick_record_note_description
     EventAction.RecordSupportAction -> R.string.events_quick_record_support_description
     EventAction.RecordPhotoNote -> R.string.events_quick_record_photo_description
     EventAction.RecordFeeding -> R.string.events_quick_record_feeding_description
@@ -613,7 +584,7 @@ private fun quickRecordSheetDescriptionRes(action: EventAction): Int = when (act
 
 private fun noteActionForStage(stage: AppStage): EventAction = when (stage) {
     AppStage.PREPARING -> EventAction.RecordPreparationNote
-    AppStage.CONTRACTIONS -> EventAction.RecordLaborNote
-    AppStage.AT_HOSPITAL -> EventAction.RecordHospitalNote
-    AppStage.AT_HOME -> EventAction.RecordHomeNote
+    AppStage.LABOR -> EventAction.RecordLaborNote
+    AppStage.BABY_BORN -> EventAction.RecordBabyNote
 }
+

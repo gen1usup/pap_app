@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.data.local.dao
+package com.dadnavigator.app.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -20,7 +20,7 @@ interface ChecklistDao {
     @Query(
         """
         SELECT * FROM checklists
-        WHERE userId = :userId
+        WHERE userId = :userId AND isDeleted = 0
         ORDER BY sortOrder ASC, createdAt ASC
         """
     )
@@ -39,7 +39,7 @@ interface ChecklistDao {
         """
         UPDATE checklists
         SET title = :title
-        WHERE id = :checklistId AND userId = :userId AND isSystem = 0
+        WHERE id = :checklistId AND userId = :userId AND isSystem = 0 AND isDeleted = 0
         """
     )
     suspend fun renameChecklist(userId: String, checklistId: Long, title: String)
@@ -53,17 +53,26 @@ interface ChecklistDao {
     @Query("DELETE FROM checklist_items WHERE checklistId = :checklistId AND userId = :userId")
     suspend fun deleteItemsByChecklist(userId: String, checklistId: Long)
 
-    @Query("DELETE FROM checklists WHERE id = :checklistId AND userId = :userId AND isSystem = 0")
-    suspend fun deleteCustomChecklist(userId: String, checklistId: Long)
+    @Query(
+        """
+        UPDATE checklists
+        SET isDeleted = 1
+        WHERE id = :checklistId AND userId = :userId
+        """
+    )
+    suspend fun softDeleteChecklist(userId: String, checklistId: Long)
 
     @Transaction
-    suspend fun deleteCustomChecklistWithItems(userId: String, checklistId: Long) {
+    suspend fun deleteChecklistWithItems(userId: String, checklistId: Long) {
         deleteItemsByChecklist(userId, checklistId)
-        deleteCustomChecklist(userId, checklistId)
+        softDeleteChecklist(userId, checklistId)
     }
 
+    @Query("SELECT COUNT(*) FROM checklists WHERE userId = :userId AND isDeleted = 0")
+    suspend fun countActiveChecklists(userId: String): Int
+
     @Query("SELECT COUNT(*) FROM checklists WHERE userId = :userId")
-    suspend fun countChecklists(userId: String): Int
+    suspend fun countAllChecklists(userId: String): Int
 
     @Query("DELETE FROM checklists")
     suspend fun clearChecklists()

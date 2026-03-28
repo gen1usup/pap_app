@@ -13,7 +13,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
 /**
- * Marks the birth event, updates birth details and switches the app into after-birth mode.
+ * Marks the birth event, updates baby details and switches the app into BABY_BORN stage.
  */
 class MarkBirthUseCase @Inject constructor(
     private val settingsRepository: SettingsRepository,
@@ -63,8 +63,10 @@ class MarkBirthUseCase @Inject constructor(
                 timestamp = updatedSummary.birthTime ?: timestamp,
                 title = eventTitle.trim(),
                 description = eventDescription.trim(),
-                type = TimelineType.BIRTH
+                type = TimelineType.BIRTH,
+                stageAtCreation = AppStage.BABY_BORN
             )
         }
     }
 }
+

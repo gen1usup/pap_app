@@ -1,15 +1,17 @@
-﻿package com.dadnavigator.app.presentation.screen.contraction
+package com.dadnavigator.app.presentation.screen.contraction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dadnavigator.app.R
-import com.dadnavigator.app.domain.model.Contraction
-import com.dadnavigator.app.domain.usecase.contraction.CalculateContractionStatsUseCase
+import com.dadnavigator.app.domain.service.ActiveLaborRecommendationPolicy
+import com.dadnavigator.app.domain.service.LiveContractionSnapshotBuilder
+import com.dadnavigator.app.domain.usecase.contraction.DeleteContractionUseCase
 import com.dadnavigator.app.domain.usecase.contraction.FinishContractionSessionUseCase
 import com.dadnavigator.app.domain.usecase.contraction.ObserveContractionStateUseCase
-import com.dadnavigator.app.domain.usecase.contraction.StartContractionSessionUseCase
 import com.dadnavigator.app.domain.usecase.contraction.ToggleContractionUseCase
 import com.dadnavigator.app.domain.usecase.labor.MarkBirthUseCase
+import com.dadnavigator.app.domain.usecase.timeline.ObserveLaborSummaryUseCase
+import com.dadnavigator.app.domain.usecase.waterbreak.ObserveWaterBreakHistoryUseCase
 import com.dadnavigator.app.di.IoDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Duration
@@ -27,15 +29,18 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel for contraction tracker and analytics.
+ * ViewModel for the unified active labor screen.
  */
 @HiltViewModel
 class ContractionViewModel @Inject constructor(
     private val observeContractionStateUseCase: ObserveContractionStateUseCase,
-    private val startContractionSessionUseCase: StartContractionSessionUseCase,
     private val finishContractionSessionUseCase: FinishContractionSessionUseCase,
+    private val deleteContractionUseCase: DeleteContractionUseCase,
     private val toggleContractionUseCase: ToggleContractionUseCase,
-    private val calculateContractionStatsUseCase: CalculateContractionStatsUseCase,
+    private val observeWaterBreakHistoryUseCase: ObserveWaterBreakHistoryUseCase,
+    private val observeLaborSummaryUseCase: ObserveLaborSummaryUseCase,
+    private val liveContractionSnapshotBuilder: LiveContractionSnapshotBuilder,
+    private val activeLaborRecommendationPolicy: ActiveLaborRecommendationPolicy,
     private val markBirthUseCase: MarkBirthUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -55,26 +60,38 @@ class ContractionViewModel @Inject constructor(
         .flatMapLatest { userId ->
             combine(
                 observeContractionStateUseCase(userId),
-                ticker,
-                infoState,
-                errorState
-            ) { activeState, now, infoRes, errorRes ->
-                val stats = calculateContractionStatsUseCase(activeState.contractions)
-                val sessionDuration = activeState.session?.let { Duration.between(it.startedAt, now) } ?: Duration.ZERO
-                val currentDuration = activeState.activeContraction?.let {
-                    Duration.between(it.startedAt, now)
-                } ?: Duration.ZERO
-                ContractionUiState(
-                    isSessionActive = activeState.session?.isActive == true,
-                    sessionId = activeState.session?.id,
-                    activeContractionId = activeState.activeContraction?.id,
-                    sessionDuration = sessionDuration,
-                    currentContractionDuration = currentDuration,
-                    stats = stats,
-                    contractions = activeState.contractions,
-                    infoRes = infoRes,
-                    errorRes = errorRes
+                observeWaterBreakHistoryUseCase(userId),
+                observeLaborSummaryUseCase(userId),
+                ticker
+            ) { activeState, waterHistory, laborSummary, now ->
+                val snapshot = liveContractionSnapshotBuilder.build(activeState, now)
+                val latestWaterBreak = waterHistory.maxByOrNull { it.happenedAt }
+                val recommendation = activeLaborRecommendationPolicy.resolve(
+                    contractionStats = snapshot.stats,
+                    latestWaterBreak = latestWaterBreak,
+                    birthRecorded = laborSummary.birthTime != null
                 )
+
+                ContractionUiState(
+                    isSessionActive = snapshot.isSessionActive,
+                    sessionId = snapshot.sessionId,
+                    activeContractionId = snapshot.activeContractionId,
+                    sessionDuration = snapshot.sessionDuration,
+                    currentContractionDuration = snapshot.currentContractionDuration,
+                    currentInterval = snapshot.currentInterval,
+                    stats = snapshot.stats,
+                    recommendation = recommendation,
+                    latestWaterBreak = latestWaterBreak,
+                    waterBreakElapsed = latestWaterBreak?.takeIf { it.isActive }?.let {
+                        Duration.between(it.happenedAt, now)
+                    },
+                    birthRecorded = laborSummary.birthTime != null,
+                    contractions = snapshot.contractions
+                )
+            }.combine(infoState) { partial, infoRes ->
+                partial.copy(infoRes = infoRes)
+            }.combine(errorState) { partial, errorRes ->
+                partial.copy(errorRes = errorRes)
             }
         }
         .stateIn(
@@ -86,20 +103,6 @@ class ContractionViewModel @Inject constructor(
     fun setUserId(userId: String) {
         if (userId.isNotBlank() && userIdState.value != userId) {
             userIdState.value = userId
-        }
-    }
-
-    fun startSession() {
-        val userId = userIdState.value
-        if (userId.isBlank()) return
-
-        viewModelScope.launch(ioDispatcher) {
-            runCatching {
-                startContractionSessionUseCase(userId)
-                infoState.value = R.string.saved
-            }.onFailure {
-                errorState.value = R.string.error_generic
-            }
         }
     }
 
@@ -135,6 +138,17 @@ class ContractionViewModel @Inject constructor(
         }
     }
 
+    fun deleteContraction(contractionId: Long) {
+        viewModelScope.launch(ioDispatcher) {
+            runCatching {
+                deleteContractionUseCase(contractionId)
+                infoState.value = R.string.contraction_deleted
+            }.onFailure {
+                errorState.value = R.string.error_generic
+            }
+        }
+    }
+
     fun markBirthNow(eventTitle: String) {
         val userId = userIdState.value
         if (userId.isBlank()) return
@@ -157,8 +171,5 @@ class ContractionViewModel @Inject constructor(
         infoState.value = null
         errorState.value = null
     }
-
-    fun completedContractions(): List<Contraction> {
-        return uiState.value.contractions.filter { it.endedAt != null }
-    }
 }
+

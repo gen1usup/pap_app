@@ -1,4 +1,4 @@
-package com.dadnavigator.app.domain.usecase
+﻿package com.dadnavigator.app.domain.usecase
 
 import com.dadnavigator.app.domain.model.AppStage
 import com.dadnavigator.app.domain.model.ChecklistWithItems
@@ -39,11 +39,11 @@ class ChecklistUseCasesTest {
 
     @Test
     fun `creates trimmed checklist for selected stage`() = runBlocking {
-        val createdId = createChecklistUseCase("user", "  Документы в машину  ", AppStage.CONTRACTIONS)
+        val createdId = createChecklistUseCase("user", "  Документы в машину  ", AppStage.LABOR)
 
         assertEquals(77L, createdId)
         assertEquals("Документы в машину", fakeRepository.createdChecklistTitle)
-        assertEquals(AppStage.CONTRACTIONS, fakeRepository.createdChecklistStage)
+        assertEquals(AppStage.LABOR, fakeRepository.createdChecklistStage)
     }
 
     @Test
@@ -132,3 +132,4 @@ private class FakeChecklistRepository : ChecklistRepository {
         lastDeletedItemId = itemId
     }
 }
+

@@ -385,7 +385,6 @@ private fun ChecklistGroupCard(
 
 private fun stageLabelRes(stage: AppStage): Int = when (stage) {
     AppStage.PREPARING -> R.string.app_stage_preparing
-    AppStage.CONTRACTIONS -> R.string.app_stage_contractions
-    AppStage.AT_HOSPITAL -> R.string.app_stage_at_hospital
-    AppStage.AT_HOME -> R.string.app_stage_at_home
+    AppStage.LABOR -> R.string.app_stage_labor
+    AppStage.BABY_BORN -> R.string.app_stage_baby_born
 }

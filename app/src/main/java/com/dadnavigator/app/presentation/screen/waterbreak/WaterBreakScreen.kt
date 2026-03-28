@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,18 +13,27 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Alarm
-import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -58,11 +68,12 @@ fun WaterBreakScreen(
 
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val snackbarHostState = remember { SnackbarHostState() }
-    val errorMessage = state.errorRes?.let { stringResource(id = it) }
+    val message = state.errorRes?.let { stringResource(id = it) }
+        ?: state.infoRes?.let { stringResource(id = it) }
 
-    LaunchedEffect(errorMessage) {
-        if (errorMessage != null) {
-            snackbarHostState.showSnackbar(errorMessage)
+    LaunchedEffect(message) {
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
             viewModel.dismissError()
         }
     }
@@ -74,7 +85,8 @@ fun WaterBreakScreen(
         onColorSelected = viewModel::setColor,
         onNotesChanged = viewModel::setNotes,
         onSave = viewModel::saveEvent,
-        onCloseActive = viewModel::closeActiveEvent
+        onCloseActive = viewModel::closeActiveEvent,
+        onDeleteEvent = viewModel::deleteEvent
     )
 }
 
@@ -86,9 +98,11 @@ private fun WaterBreakContent(
     onColorSelected: (WaterColor) -> Unit,
     onNotesChanged: (String) -> Unit,
     onSave: () -> Unit,
-    onCloseActive: () -> Unit
+    onCloseActive: () -> Unit,
+    onDeleteEvent: (Long) -> Unit
 ) {
     val spacing = DadTheme.spacing
+    var pendingDeleteId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     ScreenScaffold(
         title = stringResource(id = R.string.water_break_title),
@@ -218,7 +232,7 @@ private fun WaterBreakContent(
                         )
                     }
                 } else {
-                    items(state.history) { event ->
+                    items(state.history, key = { it.id }) { event ->
                         Card(
                             shape = DadTheme.shapes.card,
                             colors = CardDefaults.cardColors(
@@ -229,10 +243,22 @@ private fun WaterBreakContent(
                                 modifier = Modifier.padding(spacing.lg),
                                 verticalArrangement = Arrangement.spacedBy(spacing.xs)
                             ) {
-                                Text(
-                                    text = event.happenedAt.toReadableDateTime(),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = event.happenedAt.toReadableDateTime(),
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    IconButton(onClick = { pendingDeleteId = event.id }) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.DeleteOutline,
+                                            contentDescription = stringResource(id = R.string.action_delete)
+                                        )
+                                    }
+                                }
                                 Text(
                                     text = stringResource(id = colorLabelRes(event.color)),
                                     style = MaterialTheme.typography.bodyLarge
@@ -250,6 +276,30 @@ private fun WaterBreakContent(
                 }
             }
         }
+    }
+
+    if (pendingDeleteId != null) {
+        AlertDialog(
+            onDismissRequest = { pendingDeleteId = null },
+            title = { Text(text = stringResource(id = R.string.delete_confirm_title)) },
+            text = { Text(text = stringResource(id = R.string.water_break_delete_confirm_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val eventId = pendingDeleteId ?: return@TextButton
+                        pendingDeleteId = null
+                        onDeleteEvent(eventId)
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteId = null }) {
+                    Text(text = stringResource(id = R.string.cancel))
+                }
+            }
+        )
     }
 }
 
@@ -294,7 +344,8 @@ private fun WaterBreakPreview() {
             onColorSelected = {},
             onNotesChanged = {},
             onSave = {},
-            onCloseActive = {}
+            onCloseActive = {},
+            onDeleteEvent = {}
         )
     }
 }

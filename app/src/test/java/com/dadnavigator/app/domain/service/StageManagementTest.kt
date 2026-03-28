@@ -21,9 +21,9 @@ class StageManagementTest {
     @Test
     fun `fromStorage keeps compatibility with legacy values`() {
         assertEquals(AppStage.PREPARING, AppStage.fromStorage("PREPARING"))
-        assertEquals(AppStage.CONTRACTIONS, AppStage.fromStorage("LABOR"))
-        assertEquals(AppStage.AT_HOME, AppStage.fromStorage("AFTER_BIRTH"))
-        assertEquals(AppStage.AT_HOME, AppStage.fromStorage("AT_HOME"))
+        assertEquals(AppStage.LABOR, AppStage.fromStorage("LABOR"))
+        assertEquals(AppStage.BABY_BORN, AppStage.fromStorage("AFTER_BIRTH"))
+        assertEquals(AppStage.BABY_BORN, AppStage.fromStorage("AT_HOME"))
     }
 
     @Test
@@ -58,14 +58,13 @@ class StageManagementTest {
     }
 
     @Test
-    fun `transition manager returns hospital stage after birth`() {
-        assertEquals(AppStage.CONTRACTIONS, transitionManager.laborStarted(emptyLaborSummary()))
+    fun `transition manager returns baby born stage after birth`() {
+        assertEquals(AppStage.LABOR, transitionManager.laborStarted(emptyLaborSummary()))
         assertEquals(
-            AppStage.AT_HOSPITAL,
+            AppStage.BABY_BORN,
             transitionManager.laborStarted(emptyLaborSummary().copy(birthTime = Instant.parse("2026-03-27T10:00:00Z")))
         )
-        assertEquals(AppStage.AT_HOSPITAL, transitionManager.babyBorn())
-        assertEquals(AppStage.AT_HOME, transitionManager.arrivedHome())
+        assertEquals(AppStage.BABY_BORN, transitionManager.babyBorn())
     }
 
     @Test
@@ -75,18 +74,18 @@ class StageManagementTest {
         )
 
         assertTrue(transitionManager.canSelectStage(AppStage.PREPARING, summary))
-        assertTrue(transitionManager.canSelectStage(AppStage.CONTRACTIONS, summary))
-        assertTrue(transitionManager.canSelectStage(AppStage.AT_HOSPITAL, summary))
-        assertTrue(transitionManager.canSelectStage(AppStage.AT_HOME, summary))
+        assertTrue(transitionManager.canSelectStage(AppStage.LABOR, summary))
+        assertTrue(transitionManager.canSelectStage(AppStage.BABY_BORN, summary))
+        assertTrue(transitionManager.canSelectStage(AppStage.BABY_BORN, summary))
 
         val decision = transitionManager.manualSelection(
-            targetStage = AppStage.CONTRACTIONS,
-            currentStage = AppStage.AT_HOSPITAL,
+            targetStage = AppStage.LABOR,
+            currentStage = AppStage.BABY_BORN,
             currentSummary = summary
         )
 
         assertFalse(decision.blockedByBirthRecord)
-        assertEquals(AppStage.CONTRACTIONS, decision.stage)
+        assertEquals(AppStage.LABOR, decision.stage)
     }
 
     @Test
@@ -133,10 +132,10 @@ class StageManagementTest {
     }
 
     @Test
-    fun `home content hides contraction shortcut in hospital stage`() {
+    fun `home content hides contraction shortcut in baby born stage`() {
         val settings = baseSettings(
             dueDate = LocalDate.of(2026, 3, 27),
-            appStage = AppStage.AT_HOSPITAL
+            appStage = AppStage.BABY_BORN
         )
         val content = homeContentBuilder.build(
             settings = settings,
@@ -179,3 +178,8 @@ class StageManagementTest {
         birthHeightCm = null
     )
 }
+
+
+
+
+

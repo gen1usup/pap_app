@@ -1,4 +1,4 @@
-﻿package com.dadnavigator.app.domain.repository
+package com.dadnavigator.app.domain.repository
 
 import com.dadnavigator.app.domain.model.WaterBreakEvent
 import com.dadnavigator.app.domain.model.WaterColor
@@ -21,4 +21,6 @@ interface WaterBreakRepository {
     ): Long
 
     suspend fun closeActiveEvent(userId: String, closedAt: Instant)
+
+    suspend fun deleteEvent(eventId: Long)
 }

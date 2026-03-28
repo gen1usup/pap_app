@@ -148,8 +148,9 @@ private fun TimelineContent(
                                         text = stringResource(
                                             id = when (filter) {
                                                 TimelineFilter.ALL -> R.string.timeline_filter_all
+                                                TimelineFilter.PREPARING -> R.string.timeline_filter_preparing
                                                 TimelineFilter.LABOR -> R.string.timeline_filter_labor
-                                                TimelineFilter.POSTPARTUM -> R.string.timeline_filter_postpartum
+                                                TimelineFilter.BABY_BORN -> R.string.timeline_filter_baby_born
                                                 TimelineFilter.NOTES -> R.string.timeline_filter_notes
                                             }
                                         )
@@ -217,11 +218,10 @@ private fun TimelineContent(
                     verticalArrangement = Arrangement.spacedBy(spacing.sm)
                 ) {
                     listOf(
-                        TimelineType.LABOR,
-                        TimelineType.BIRTH,
                         TimelineType.NOTE,
-                        TimelineType.WATER_BREAK,
-                        TimelineType.FEEDING
+                        TimelineType.PREPARATION_NOTE,
+                        TimelineType.LABOR_NOTE,
+                        TimelineType.BABY_NOTE
                     ).forEach { type ->
                         FilterChip(
                             selected = state.selectedType == type,
@@ -262,8 +262,7 @@ private fun timelineTypeLabel(type: TimelineType): Int = when (type) {
     TimelineType.BIRTH -> R.string.timeline_type_birth
     TimelineType.PREPARATION_NOTE -> R.string.timeline_type_preparation_note
     TimelineType.LABOR_NOTE -> R.string.timeline_type_labor_note
-    TimelineType.HOSPITAL_NOTE -> R.string.timeline_type_hospital_note
-    TimelineType.HOME_NOTE -> R.string.timeline_type_home_note
+    TimelineType.BABY_NOTE -> R.string.timeline_type_baby_note
     TimelineType.FEEDING -> R.string.timeline_type_feeding
     TimelineType.DIAPER -> R.string.timeline_type_diaper
     TimelineType.SLEEP -> R.string.timeline_type_sleep
@@ -277,8 +276,7 @@ private fun timelineTypeIcon(type: TimelineType): ImageVector = when (type) {
     TimelineType.BIRTH -> Icons.Outlined.ChildCare
     TimelineType.PREPARATION_NOTE,
     TimelineType.LABOR_NOTE,
-    TimelineType.HOSPITAL_NOTE,
-    TimelineType.HOME_NOTE -> Icons.Outlined.EditNote
+    TimelineType.BABY_NOTE -> Icons.Outlined.EditNote
     TimelineType.FEEDING -> Icons.Outlined.FavoriteBorder
     TimelineType.DIAPER -> Icons.Outlined.BabyChangingStation
     TimelineType.SLEEP -> Icons.Outlined.NightlightRound
@@ -310,3 +308,4 @@ private fun TimelinePreview() {
         )
     }
 }
+

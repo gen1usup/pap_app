@@ -3,6 +3,8 @@ package com.dadnavigator.app.presentation.screen.timeline
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dadnavigator.app.R
+import com.dadnavigator.app.domain.model.AppStage
+import com.dadnavigator.app.domain.model.TimelineEntryType
 import com.dadnavigator.app.domain.model.TimelineType
 import com.dadnavigator.app.domain.usecase.timeline.AddTimelineEventUseCase
 import com.dadnavigator.app.domain.usecase.timeline.ObserveTimelineUseCase
@@ -42,32 +44,7 @@ class TimelineViewModel @Inject constructor(
         ) { events, filter, expandedEventIds, form ->
             TimelineUiState(
                 filter = filter,
-                events = when (filter) {
-                    TimelineFilter.ALL -> events
-                    TimelineFilter.LABOR -> events.filter {
-                        it.type == TimelineType.LABOR ||
-                            it.type == TimelineType.BIRTH ||
-                            it.type == TimelineType.CONTRACTION ||
-                            it.type == TimelineType.WATER_BREAK ||
-                            it.type == TimelineType.LABOR_NOTE ||
-                            it.type == TimelineType.HOSPITAL_NOTE ||
-                            it.type == TimelineType.NOTE
-                    }
-                    TimelineFilter.POSTPARTUM -> events.filter {
-                        it.type == TimelineType.FEEDING ||
-                            it.type == TimelineType.DIAPER ||
-                            it.type == TimelineType.SLEEP ||
-                            it.type == TimelineType.HOME_NOTE ||
-                            it.type == TimelineType.NOTE
-                    }
-                    TimelineFilter.NOTES -> events.filter {
-                        it.type == TimelineType.NOTE ||
-                            it.type == TimelineType.PREPARATION_NOTE ||
-                            it.type == TimelineType.LABOR_NOTE ||
-                            it.type == TimelineType.HOSPITAL_NOTE ||
-                            it.type == TimelineType.HOME_NOTE
-                    }
-                },
+                events = events.filterForTimeline(filter),
                 expandedEventIds = expandedEventIds,
                 showAddSheet = form.showAddSheet,
                 selectedType = form.selectedType,
@@ -128,7 +105,7 @@ class TimelineViewModel @Inject constructor(
         val userId = userIdState.value
         val form = formState.value
         if (userId.isBlank()) return
-        if (form.title.isBlank() && form.selectedType == TimelineType.LABOR) {
+        if (form.title.isBlank() && form.description.isBlank()) {
             errorState.value = R.string.input_required
             return
         }
@@ -140,7 +117,8 @@ class TimelineViewModel @Inject constructor(
                     timestamp = Instant.now(),
                     title = form.title,
                     description = form.description,
-                    type = form.selectedType
+                    type = form.selectedType,
+                    entryType = TimelineEntryType.USER_NOTE
                 )
                 formState.value = TimelineFormState(selectedType = form.selectedType)
                 infoState.value = R.string.timeline_event_saved
@@ -158,7 +136,8 @@ class TimelineViewModel @Inject constructor(
 
 private data class TimelineFormState(
     val showAddSheet: Boolean = false,
-    val selectedType: TimelineType = TimelineType.LABOR,
+    val selectedType: TimelineType = TimelineType.NOTE,
     val title: String = "",
     val description: String = ""
 )
+

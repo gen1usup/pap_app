@@ -45,7 +45,6 @@ class MainActivity : ComponentActivity() {
                     userId = appState.userId,
                     widthSizeClass = windowSizeClass.widthSizeClass,
                     appStage = appState.appStage,
-                    birthRecorded = appState.birthRecorded,
                     onUpdateAppStage = appViewModel::updateAppStage
                 )
             }

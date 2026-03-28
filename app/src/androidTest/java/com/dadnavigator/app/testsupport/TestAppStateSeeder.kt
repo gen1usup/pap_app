@@ -1,4 +1,4 @@
-package com.dadnavigator.app.testsupport
+﻿package com.dadnavigator.app.testsupport
 
 import android.content.Context
 import androidx.room.Room
@@ -41,7 +41,7 @@ class TestAppStateSeeder(
 
     fun seedContractionScenario(
         scenario: ContractionScenario,
-        appStage: AppStage = AppStage.CONTRACTIONS,
+        appStage: AppStage = AppStage.LABOR,
         userId: String = DEFAULT_USER_ID
     ) = runBlocking {
         val database = Room.databaseBuilder(context, AppDatabase::class.java, DATABASE_NAME)
@@ -161,16 +161,14 @@ class TestAppStateSeeder(
                 LaborSummaryEntity(
                     userId = userId,
                     laborStartTime = when (appStage) {
-                        AppStage.CONTRACTIONS,
-                        AppStage.AT_HOSPITAL,
-                        AppStage.AT_HOME -> now.minusSeconds(90 * 60)
+                        AppStage.LABOR,
+                        AppStage.BABY_BORN -> now.minusSeconds(90 * 60)
                         AppStage.PREPARING -> null
                     },
                     birthTime = when (appStage) {
-                        AppStage.AT_HOSPITAL,
-                        AppStage.AT_HOME -> now.minusSeconds(45 * 60)
+                        AppStage.BABY_BORN -> now.minusSeconds(45 * 60)
                         AppStage.PREPARING,
-                        AppStage.CONTRACTIONS -> null
+                        AppStage.LABOR -> null
                     },
                     babyName = null,
                     birthWeightGrams = null,
